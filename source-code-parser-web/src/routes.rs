@@ -36,15 +36,14 @@ pub fn ast(cont_type: &ContentType, file: Data) -> JsonValue {
         match multipart.read_entry() {
             Ok(entry) => {
                 if let Some(entry) = entry {
-                    println!("{}", entry.headers.name);
                     let mut reader = BufReader::new(entry.data);
 
                     let entry_header = entry.headers.name.to_string();
                     let buf = match entry_header.as_str() {
                         "file" => &mut code,
                         "ext" => &mut ext,
-                        _ => {
-                            let reason = format!("Invalid entry header {} provided", entry.headers.name);
+                        header => {
+                            let reason = format!("Invalid entry header {} provided", header);
                             return error_response(&reason);
                         }
                     };
