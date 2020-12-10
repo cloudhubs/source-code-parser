@@ -39,16 +39,19 @@ pub fn ast(cont_type: &ContentType, file: Data) -> JsonValue {
                     println!("{}", entry.headers.name);
                     let mut reader = BufReader::new(entry.data);
 
-                    if &entry.headers.name.to_string() == "file" {
-                        if let Err(err) = reader.read_to_string(&mut code) {
-                            let reason = format!("Error reading form data {:?}", err);
+                    let entry_header = entry.headers.name.to_string();
+                    let buf = match entry_header.as_str() {
+                        "file" => &mut code,
+                        "ext" => &mut ext,
+                        _ => {
+                            let reason = format!("Invalid entry header {} provided", entry.headers.name);
                             return error_response(&reason);
                         }
-                    } else if &entry.headers.name.to_string() == "ext" {
-                        if let Err(err) = reader.read_to_string(&mut ext) {
-                            let reason = format!("Error reading form data {:?}", err);
-                            return error_response(&reason);
-                        }
+                    };
+
+                    if let Err(err) = reader.read_to_string(buf) {
+                        let reason = format!("Error reading form data {:?}", err);
+                        return error_response(&reason);
                     }
                 }
             }
