@@ -26,31 +26,30 @@ pub fn parse_ast(payload: AstPayload) -> Option<AST> {
     let file = payload.file_name;
     let buf = payload.code.into_bytes();
     let (language, _ext) = guess_language(&buf, &file);
-    match language {
-        Some(language) => {
-            let cfg = AstCfg {
-                id: payload.id,
-                comment: payload.comment,
-                span: payload.span,
-            };
-            convert_ast_type(action::<AstCallback>(
-                &language,
-                buf,
-                &PathBuf::from(""),
-                None,
-                cfg,
-            ))
-        }
-        None => None,
-    }
+    let cfg = AstCfg {
+        id: payload.id,
+        comment: payload.comment,
+        span: payload.span,
+    };
+    Some(action::<AstCallback>(
+        &language?,
+        buf,
+        &PathBuf::from(""),
+        None,
+        cfg,
+    ).into())
 }
 
-fn convert_ast_type(response: AstResponse) -> Option<AST> {
-    let value = serde_json::to_value(response).unwrap();
-    let root = value.as_object().unwrap().get("root")?.to_owned();
-    match serde_json::from_value::<AST>(root) {
-        Ok(ast) => Some(ast),
-        Err(_) => None,
+impl From<AstResponse> for AST {
+    fn from(ast_response: AstResponse) -> Self {
+        let value = serde_json::to_value(ast_response).unwrap();
+        let root = value
+            .as_object()
+            .unwrap()
+            .get("root")
+            .expect(r#"AstResponse was missing "root" field"#)
+            .to_owned();
+        serde_json::from_value::<AST>(root).expect("could not deserialize AstResponse into AST")
     }
 }
 
