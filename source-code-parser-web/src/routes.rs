@@ -12,6 +12,11 @@ fn error_response(reason: &str) -> JsonValue {
     });
 }
 
+// TODO: Instead of accepting a multipart file, we need to create the AnalysisContext for a whole
+// project. They are downloading whole repositories and using local files.
+
+// TODO: Should also probably migrate from rocket to actix so we don't need to use the nightly toolchain.
+
 /// Endpoint for retrieving the AST of a source code file supported by the `rust_code_analysis` crate.
 /// The POST request's Content-Type header should be multipart/form-data and should contain two
 /// entries: one with key "file" with the file data, and another with the key "ext" with the
