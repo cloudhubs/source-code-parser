@@ -27,11 +27,34 @@ pub enum ComponentType<'a> {
 pub struct MethodComponent<'a> {
     #[serde(flatten)]
     component: ComponentInfo<'a>,
+    
+    id: i64,
+    accessor: AccessorType,
     method_name: &'a str,
-    // Need to add more info like parameters, statements which was not present
-    // in the jparser types.
+    return_type: &'a str,
+    parameters: Vec<MethodParamComponent<'a>>,
+    #[serde(rename = "static_method")]
+    is_static: bool,
+    #[serde(rename = "abstract_method")]
+    is_abstract: bool,
+    #[serde(rename = "subroutines")]
+    sub_methods: Vec<MethodComponent<'a>>,
+    annotations: Vec<AnnotationComponent<'a>>,
+    line_count: i32,
+    line_begin: i32,
+    line_end: i32,
+
+    // Statements were @JsonIgnore for some reason..
+    // statements: Vec<&'a str>,
 }
 
+#[derive(Debug, Eq, PartialEq, Serialize)]
+pub struct MethodParamComponent<'a> {
+    // r#type: ??? -- this is Class<?> in prophet
+    annotation: Option<AnnotationComponent<'a>>,
+    parameter_type: &'a str,
+    parameter_name: &'a str,
+}
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct ModuleComponent<'a> {
