@@ -5,7 +5,7 @@ use super::*;
 pub struct JSSAContext<'a> {
     #[serde(flatten)]
     component: ComponentInfo<'a>,
-    module_package_map: ModulePackageMap<'a>,
+    // module_package_map: ModulePackageMap<'a>,
     succeeded: bool,
     root_path: &'a str,
 
@@ -18,8 +18,8 @@ pub struct JSSAContext<'a> {
     // find anywhere in the prophet repos where this was actually used.
     // containers: Vec<ComponentType<'a>>,
 
-    classes: Vec<ClassComponent<'a>>,
-    interfaces: Vec<InterfaceComponent<'a>>,
+    // classes: Vec<ClassComponent<'a>>,
+    // interfaces: Vec<InterfaceComponent<'a>>,
     modules: Vec<ModuleComponent<'a>>,
-    methods: Vec<MethodComponent<'a>>,
+    // methods: Vec<MethodComponent<'a>>,
 }

@@ -12,16 +12,16 @@ pub struct ComponentInfo<'a> {
     // sub_components: Vec<ComponentType<'a>>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
-#[serde(untagged)]
-pub enum ComponentType<'a> {
-    ClassComponent(ClassComponent<'a>),
-    InterfaceComponent(InterfaceComponent<'a>),
-    AnnotationComponent(AnnotationComponent<'a>),
-    MethodComponent(MethodComponent<'a>),
-    ModuleComponent(ModuleComponent<'a>),
-    FieldComponent(FieldComponent<'a>),
-}
+// #[derive(Debug, Eq, PartialEq, Serialize)]
+// #[serde(untagged)]
+// pub enum ComponentType<'a> {
+//     ClassComponent(ClassComponent<'a>),
+//     InterfaceComponent(InterfaceComponent<'a>),
+//     AnnotationComponent(AnnotationComponent<'a>),
+//     MethodComponent(MethodComponent<'a>),
+//     ModuleComponent(ModuleComponent<'a>),
+//     FieldComponent(FieldComponent<'a>),
+// }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct MethodComponent<'a> {
@@ -58,14 +58,23 @@ pub struct MethodParamComponent<'a> {
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct ModuleComponent<'a> {
+    // can contain functions here
+    #[serde(flatten)]
+    component: ContainerComponent<'a>,
     module_name: &'a str,
     path: &'a str,
+    #[serde(rename = "moduleStereotype")]
+    module_stereotype: ModuleStereotype,
+    // class_names, interface_names, method_names
+    // containers
+    classes: Vec<ClassOrInterfaceComponent<'a>>,
+    interfaces: Vec<ClassOrInterfaceComponent<'a>>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
-pub struct ModulePackageMap<'a> {
-    module_path_map: Vec<ModuleComponent<'a>>,
-}
+// #[derive(Debug, Eq, PartialEq, Serialize)]
+// pub struct ModulePackageMap<'a> {
+//     module_path_map: Vec<ModuleComponent<'a>>,
+// }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct ContainerComponent<'a> {
@@ -93,16 +102,24 @@ pub struct ClassOrInterfaceComponent<'a> {
     declaration_type: ContainerType,
     annotations: Vec<AnnotationComponent<'a>>,
     stereotype: ContainerStereotype,
+
+    methods: Vec<MethodComponent<'a>>,
+    
+    // Class-specific fields
+    #[serde(skip_serializing_if = "Option::is_none")]
+    constructors: Option<Vec<MethodComponent<'a>>>,
+    #[serde(rename = "fieldComponents", skip_serializing_if = "Option::is_none")]
+    field_components: Option<Vec<FieldComponent<'a>>>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
-pub struct ClassComponent<'a> {
-    #[serde(flatten)]
-    container: ClassOrInterfaceComponent<'a>,
-    constructors: Vec<MethodComponent<'a>>,
-    #[serde(rename = "fieldComponents")]
-    field_components: Vec<FieldComponent<'a>>,
-}
+// #[derive(Debug, Eq, PartialEq, Serialize)]
+// pub struct ClassComponent<'a> {
+//     #[serde(flatten)]
+//     container: ClassOrInterfaceComponent<'a>,
+//     constructors: Vec<MethodComponent<'a>>,
+//     #[serde(rename = "fieldComponents")]
+//     field_components: Vec<FieldComponent<'a>>,
+// }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct FieldComponent<'a> {
@@ -137,8 +154,9 @@ pub struct AnnotationComponent<'a> {
     value: &'a str,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
-pub struct InterfaceComponent<'a> {
-    #[serde(flatten)]
-    container: ClassOrInterfaceComponent<'a>,
-}
+// Seems useless since it can be represented by the other component.
+// #[derive(Debug, Eq, PartialEq, Serialize)]
+// pub struct InterfaceComponent<'a> {
+//     #[serde(flatten)]
+//     container: ClassOrInterfaceComponent<'a>,
+// }
