@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::path::{Path, PathBuf};
 use std::io::prelude::*;
+use std::path::{Path, PathBuf};
 
 use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span,
@@ -51,51 +51,90 @@ impl From<AstResponse> for AST {
     }
 }
 
-pub fn parse_project_context(
-    root_path: &Path,
-    payload: AstPayload,
-) -> std::io::Result<JSSAContext> {
+pub fn parse_project_context(root_path: &Path) -> std::io::Result<JSSAContext> {
     let path_str = root_path.to_str().unwrap_or("");
-    let mut ctx = JSSAContext {
+    let modules = parse_directory(&root_path)?;
+    let ctx = JSSAContext {
         component: ComponentInfo {
-            path: path_str,
+            path: path_str.to_string(),
             package_name: "",
             instance_name: "context",
             instance_type: InstanceType::AnalysisComponent,
         },
         succeeded: true,
         root_path: path_str,
-        modules: vec![],
+        modules,
     };
-    if root_path.is_dir() {
-        if let Some(ast) = parse_ast(payload) {
-            let dir = std::fs::read_dir(root_path)?;
-            for entry in dir {
-                let entry = entry?;
-                if entry.path().is_dir() {
-                    let module = parse_directory(&entry.path());
-                } else {
-                    let file = File::open(entry.path())?;
-                    // put these in a root module?
-                    let component = parse_file(&file, &entry.path());
-                }
-            }
-        }
-    }
     Ok(ctx)
 }
 
-pub fn parse_directory(dir: &Path) -> Option<ModuleComponent> {
-    None
+fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
+    if dir.is_dir() {
+        let dir = std::fs::read_dir(dir)?;
+        let mut dirs: Vec<PathBuf> = dir.into_iter()
+            .filter(|entry| entry.is_ok())
+            .map(|entry| entry.unwrap())
+            .filter(|entry| entry.path().is_dir())
+            .map(|entry| entry.path().as_path().to_owned())
+            .collect();
+
+        for path in dirs.clone() {
+            let sub_dirs = flatten_dirs(path.as_path())?;
+            sub_dirs.into_iter().for_each(|dir| dirs.push(dir));
+        }
+        
+        Ok(dirs)
+    } else {
+        Ok(vec![])
+    }
 }
 
-pub fn parse_file<'a>(mut file: &'a File, path: &Path) -> Option<Vec<ComponentType<'a>>> {
-    let metadata = file.metadata();
-    let mut code = String::new();
-    if let Err(err) = file.read_to_string(&mut code) {
-        eprintln!("Could not read code from file: {}", err);
-        return None;
+pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
+    let mut modules = vec![];
+
+    if dir.is_dir() {
+        let dirs = flatten_dirs(dir)?;
+        for dir in dirs {
+            let path = dir.as_path().to_str().unwrap_or("").to_string();
+            let read_dir = std::fs::read_dir(dir.clone())?;
+            let module = ModuleComponent {
+                component: ContainerComponent {
+                    component: ComponentInfo {
+                        path: path.clone(),
+                        package_name: "",
+                        instance_name: "",
+                        instance_type: InstanceType::ModuleComponent,
+                    },
+                    accessor: AccessorType::Default,
+                    stereotype: ContainerStereotype::Module,
+                    methods: vec![],
+                    container_name: "",
+                    line_count: 0,
+                },
+                module_name: "",
+                path,
+                module_stereotype: ModuleStereotype::Controller,
+                classes: vec![],
+                interfaces: vec![],
+            };
+            for entry in read_dir {
+                let entry = entry?;
+                if !entry.path().is_dir() {
+                    let file = File::open(entry.path())?;
+                    
+                    let component = parse_file(&file, &entry.path())?;
+                    
+                }
+            }
+            modules.push(module);
+        }
     }
+    Ok(modules)
+}
+
+pub fn parse_file<'a>(mut file: &'a File, path: &Path) -> std::io::Result<Vec<ComponentType<'a>>> {
+    let mut code = String::new();
+    file.read_to_string(&mut code)?;
 
     let ast = parse_ast(AstPayload {
         id: "".to_owned(),
@@ -103,9 +142,9 @@ pub fn parse_file<'a>(mut file: &'a File, path: &Path) -> Option<Vec<ComponentTy
         code,
         comment: false,
         span: true,
-    })?;
-    
-    None
+    });
+
+    Ok(vec![])
 }
 
 #[cfg(test)]

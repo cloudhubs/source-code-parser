@@ -3,7 +3,7 @@ use serde::Serialize;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct ComponentInfo<'a> {
-    pub path: &'a str,
+    pub path: String,
     pub package_name: &'a str,
     pub instance_name: &'a str,
     pub instance_type: InstanceType,
@@ -62,7 +62,7 @@ pub struct ModuleComponent<'a> {
     #[serde(flatten)]
     pub component: ContainerComponent<'a>,
     pub module_name: &'a str,
-    pub path: &'a str,
+    pub path: String,
     #[serde(rename = "moduleStereotype")]
     pub module_stereotype: ModuleStereotype,
     // class_names, interface_names, method_names
@@ -97,7 +97,7 @@ pub struct ContainerComponent<'a> {
 pub struct ClassOrInterfaceComponent<'a> {
     #[serde(flatten)]
     pub component: ContainerComponent<'a>,
-    pub path: &'a str,
+    pub path: String,
     pub declaration_type: ContainerType,
     pub annotations: Vec<AnnotationComponent<'a>>,
     pub stereotype: ContainerStereotype,
