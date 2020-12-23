@@ -19,7 +19,7 @@ pub enum InstanceType {
     #[serde(rename = "FIELDCOMPONENT")]
     FieldComponent,
     #[serde(rename = "IMPORTCOMPONENT")]
-    ImportComponent
+    ImportComponent,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -32,7 +32,7 @@ pub enum ContainerStereotype {
     Entity,
     Repository,
     Bean,
-    Module
+    Module,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -69,7 +69,7 @@ pub enum LanguageFileType {
     Go,
     // ...
     #[serde(rename = "N/A")]
-    Unknown
+    Unknown,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -80,13 +80,11 @@ pub enum ModuleStereotype {
     Service,
     Response,
     Entity,
-    Repository
-
-    // The rest are for future expansion
-    /*
-    Bounded,
-    Specification,
-    ClosureOfOperations,
-    Aggregation
-    */
+    Repository, // The rest are for future expansion
+                /*
+                Bounded,
+                Specification,
+                ClosureOfOperations,
+                Aggregation
+                */
 }

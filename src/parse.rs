@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::path::{PathBuf, Path};
-use std::fs::{File, DirEntry};
+use std::fs::File;
+use std::path::{Path, PathBuf};
 
 use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span,
@@ -34,13 +34,7 @@ pub fn parse_ast(payload: AstPayload) -> Option<AST> {
         comment: payload.comment,
         span: payload.span,
     };
-    Some(action::<AstCallback>(
-        &language?,
-        buf,
-        &PathBuf::from(""),
-        None,
-        cfg,
-    ).into())
+    Some(action::<AstCallback>(&language?, buf, &PathBuf::from(""), None, cfg).into())
 }
 
 impl From<AstResponse> for AST {
@@ -56,7 +50,10 @@ impl From<AstResponse> for AST {
     }
 }
 
-pub fn parse_project_context(root_path: &Path, payload: AstPayload) -> std::io::Result<JSSAContext> {
+pub fn parse_project_context(
+    root_path: &Path,
+    payload: AstPayload,
+) -> std::io::Result<JSSAContext> {
     let path_str = root_path.to_str().unwrap_or("");
     let mut ctx = JSSAContext {
         component: ComponentInfo {
@@ -75,7 +72,7 @@ pub fn parse_project_context(root_path: &Path, payload: AstPayload) -> std::io::
             for entry in dir {
                 let entry = entry?;
                 if entry.path().is_dir() {
-                    let module = parse_directory(&entry);
+                    let module = parse_directory(&entry.path());
                 } else {
                     let file = File::open(entry.path())?;
                     // put these in a root module?
@@ -87,7 +84,7 @@ pub fn parse_project_context(root_path: &Path, payload: AstPayload) -> std::io::
     Ok(ctx)
 }
 
-pub fn parse_directory(entry: &DirEntry) -> Option<ModuleComponent> {
+pub fn parse_directory(entry: &Path) -> Option<ModuleComponent> {
     None
 }
 

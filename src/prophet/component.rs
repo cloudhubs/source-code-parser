@@ -1,5 +1,5 @@
-use serde::Serialize;
 use super::*;
+use serde::Serialize;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct ComponentInfo<'a> {
@@ -26,7 +26,7 @@ pub enum ComponentType<'a> {
 pub struct MethodComponent<'a> {
     #[serde(flatten)]
     pub component: ComponentInfo<'a>,
-    
+
     // excluding the IDs for now since I'm not sure why they're here
     // pub id: i64,
     pub accessor: AccessorType,
@@ -43,7 +43,6 @@ pub struct MethodComponent<'a> {
     pub line_count: i32,
     pub line_begin: i32,
     pub line_end: i32,
-
     // Statements were @JsonIgnore for some reason..
     // statements: Vec<&'a str>,
 }
@@ -89,7 +88,6 @@ pub struct ContainerComponent<'a> {
     pub container_name: &'a str,
     #[serde(rename = "lineCount")]
     pub line_count: i32,
-
     // Not including this would also make things easier
     // #[serde(rename = "rawSource")]
     // raw_source: &'a str,
@@ -105,7 +103,7 @@ pub struct ClassOrInterfaceComponent<'a> {
     pub stereotype: ContainerStereotype,
 
     pub methods: Vec<MethodComponent<'a>>,
-    
+
     // Class-specific fields
     #[serde(skip_serializing_if = "Option::is_none")]
     pub constructors: Option<Vec<MethodComponent<'a>>>,
