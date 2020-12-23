@@ -1,9 +1,12 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
+use std::fs::{File, DirEntry};
 
 use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span,
 };
+
+use crate::*;
 
 /// Information on an `AST` node.
 /// Taken directly from the `rust_code_analysis` crate with additional serde macros for deserialization.
@@ -51,6 +54,45 @@ impl From<AstResponse> for AST {
             .to_owned();
         serde_json::from_value::<AST>(root).expect("could not deserialize AstResponse into AST")
     }
+}
+
+pub fn parse_project_context(root_path: &Path, payload: AstPayload) -> std::io::Result<JSSAContext> {
+    let path_str = root_path.to_str().unwrap_or("");
+    let mut ctx = JSSAContext {
+        component: ComponentInfo {
+            path: path_str,
+            package_name: "",
+            instance_name: "context",
+            instance_type: InstanceType::AnalysisComponent,
+        },
+        succeeded: true,
+        root_path: path_str,
+        modules: vec![],
+    };
+    if root_path.is_dir() {
+        if let Some(ast) = parse_ast(payload) {
+            let dir = std::fs::read_dir(root_path)?;
+            for entry in dir {
+                let entry = entry?;
+                if entry.path().is_dir() {
+                    let module = parse_directory(&entry);
+                } else {
+                    let file = File::open(entry.path())?;
+                    // put these in a root module?
+                    let component = parse_file(&file);
+                }
+            }
+        }
+    }
+    Ok(ctx)
+}
+
+pub fn parse_directory(entry: &DirEntry) -> Option<ModuleComponent> {
+    None
+}
+
+pub fn parse_file(file: &File) -> Vec<ComponentType> {
+    vec![]
 }
 
 #[cfg(test)]

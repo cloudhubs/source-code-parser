@@ -12,16 +12,15 @@ pub struct ComponentInfo<'a> {
     // sub_components: Vec<ComponentType<'a>>,
 }
 
-// #[derive(Debug, Eq, PartialEq, Serialize)]
-// #[serde(untagged)]
-// pub enum ComponentType<'a> {
-//     ClassComponent(ClassComponent<'a>),
-//     InterfaceComponent(InterfaceComponent<'a>),
-//     AnnotationComponent(AnnotationComponent<'a>),
-//     MethodComponent(MethodComponent<'a>),
-//     ModuleComponent(ModuleComponent<'a>),
-//     FieldComponent(FieldComponent<'a>),
-// }
+#[derive(Debug, Eq, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum ComponentType<'a> {
+    ClassOrInterfaceComponent(ClassOrInterfaceComponent<'a>),
+    AnnotationComponent(AnnotationComponent<'a>),
+    MethodComponent(MethodComponent<'a>),
+    ModuleComponent(ModuleComponent<'a>),
+    FieldComponent(FieldComponent<'a>),
+}
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct MethodComponent<'a> {
