@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::io::prelude::*;
 
 use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span,
@@ -76,7 +77,7 @@ pub fn parse_project_context(
                 } else {
                     let file = File::open(entry.path())?;
                     // put these in a root module?
-                    let component = parse_file(&file);
+                    let component = parse_file(&file, &entry.path());
                 }
             }
         }
@@ -84,12 +85,27 @@ pub fn parse_project_context(
     Ok(ctx)
 }
 
-pub fn parse_directory(entry: &Path) -> Option<ModuleComponent> {
+pub fn parse_directory(dir: &Path) -> Option<ModuleComponent> {
     None
 }
 
-pub fn parse_file(file: &File) -> Vec<ComponentType> {
-    vec![]
+pub fn parse_file<'a>(mut file: &'a File, path: &Path) -> Option<Vec<ComponentType<'a>>> {
+    let metadata = file.metadata();
+    let mut code = String::new();
+    if let Err(err) = file.read_to_string(&mut code) {
+        eprintln!("Could not read code from file: {}", err);
+        return None;
+    }
+
+    let ast = parse_ast(AstPayload {
+        id: "".to_owned(),
+        file_name: path.to_str().unwrap_or("").to_owned(),
+        code,
+        comment: false,
+        span: true,
+    })?;
+    
+    None
 }
 
 #[cfg(test)]
