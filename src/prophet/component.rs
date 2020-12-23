@@ -3,10 +3,10 @@ use super::*;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct ComponentInfo<'a> {
-    path: &'a str,
-    package_name: &'a str,
-    instance_name: &'a str,
-    instance_type: InstanceType,
+    pub path: &'a str,
+    pub package_name: &'a str,
+    pub instance_name: &'a str,
+    pub instance_type: InstanceType,
     // I don't know whether this part is really necessary?
     // It just makes things a lot more complicated if so.
     // sub_components: Vec<ComponentType<'a>>,
@@ -26,23 +26,24 @@ pub struct ComponentInfo<'a> {
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct MethodComponent<'a> {
     #[serde(flatten)]
-    component: ComponentInfo<'a>,
+    pub component: ComponentInfo<'a>,
     
-    id: i64,
-    accessor: AccessorType,
-    method_name: &'a str,
-    return_type: &'a str,
-    parameters: Vec<MethodParamComponent<'a>>,
+    // excluding the IDs for now since I'm not sure why they're here
+    // pub id: i64,
+    pub accessor: AccessorType,
+    pub method_name: &'a str,
+    pub return_type: &'a str,
+    pub parameters: Vec<MethodParamComponent<'a>>,
     #[serde(rename = "static_method")]
-    is_static: bool,
+    pub is_static: bool,
     #[serde(rename = "abstract_method")]
-    is_abstract: bool,
+    pub is_abstract: bool,
     #[serde(rename = "subroutines")]
-    sub_methods: Vec<MethodComponent<'a>>,
-    annotations: Vec<AnnotationComponent<'a>>,
-    line_count: i32,
-    line_begin: i32,
-    line_end: i32,
+    pub sub_methods: Vec<MethodComponent<'a>>,
+    pub annotations: Vec<AnnotationComponent<'a>>,
+    pub line_count: i32,
+    pub line_begin: i32,
+    pub line_end: i32,
 
     // Statements were @JsonIgnore for some reason..
     // statements: Vec<&'a str>,
@@ -50,25 +51,26 @@ pub struct MethodComponent<'a> {
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct MethodParamComponent<'a> {
+    pub component: ComponentInfo<'a>,
     // r#type: ??? -- this is Class<?> in prophet
-    annotation: Option<AnnotationComponent<'a>>,
-    parameter_type: &'a str,
-    parameter_name: &'a str,
+    pub annotation: Option<AnnotationComponent<'a>>,
+    pub parameter_type: &'a str,
+    pub parameter_name: &'a str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct ModuleComponent<'a> {
     // can contain functions here
     #[serde(flatten)]
-    component: ContainerComponent<'a>,
-    module_name: &'a str,
-    path: &'a str,
+    pub component: ContainerComponent<'a>,
+    pub module_name: &'a str,
+    pub path: &'a str,
     #[serde(rename = "moduleStereotype")]
-    module_stereotype: ModuleStereotype,
+    pub module_stereotype: ModuleStereotype,
     // class_names, interface_names, method_names
     // containers
-    classes: Vec<ClassOrInterfaceComponent<'a>>,
-    interfaces: Vec<ClassOrInterfaceComponent<'a>>,
+    pub classes: Vec<ClassOrInterfaceComponent<'a>>,
+    pub interfaces: Vec<ClassOrInterfaceComponent<'a>>,
 }
 
 // #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -79,15 +81,15 @@ pub struct ModuleComponent<'a> {
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct ContainerComponent<'a> {
     #[serde(flatten)]
-    component: ComponentInfo<'a>,
-    id: i64,
-    accessor: AccessorType,
-    stereotype: ContainerStereotype,
-    methods: Vec<MethodComponent<'a>>,
+    pub component: ComponentInfo<'a>,
+    // pub id: i64,
+    pub accessor: AccessorType,
+    pub stereotype: ContainerStereotype,
+    pub methods: Vec<MethodComponent<'a>>,
     #[serde(rename = "containerName")]
-    container_name: &'a str,
+    pub container_name: &'a str,
     #[serde(rename = "lineCount")]
-    line_count: i32,
+    pub line_count: i32,
 
     // Not including this would also make things easier
     // #[serde(rename = "rawSource")]
@@ -97,19 +99,19 @@ pub struct ContainerComponent<'a> {
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct ClassOrInterfaceComponent<'a> {
     #[serde(flatten)]
-    component: ContainerComponent<'a>,
-    path: &'a str,
-    declaration_type: ContainerType,
-    annotations: Vec<AnnotationComponent<'a>>,
-    stereotype: ContainerStereotype,
+    pub component: ContainerComponent<'a>,
+    pub path: &'a str,
+    pub declaration_type: ContainerType,
+    pub annotations: Vec<AnnotationComponent<'a>>,
+    pub stereotype: ContainerStereotype,
 
-    methods: Vec<MethodComponent<'a>>,
+    pub methods: Vec<MethodComponent<'a>>,
     
     // Class-specific fields
     #[serde(skip_serializing_if = "Option::is_none")]
-    constructors: Option<Vec<MethodComponent<'a>>>,
+    pub constructors: Option<Vec<MethodComponent<'a>>>,
     #[serde(rename = "fieldComponents", skip_serializing_if = "Option::is_none")]
-    field_components: Option<Vec<FieldComponent<'a>>>,
+    pub field_components: Option<Vec<FieldComponent<'a>>>,
 }
 
 // #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -124,34 +126,36 @@ pub struct ClassOrInterfaceComponent<'a> {
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct FieldComponent<'a> {
     #[serde(flatten)]
-    component: ComponentInfo<'a>,
-    annotations: Vec<AnnotationComponent<'a>>,
+    pub component: ComponentInfo<'a>,
+    pub annotations: Vec<AnnotationComponent<'a>>,
     /// The declared variables. e.g. int x, y, z;
-    variables: Vec<&'a str>,
-    field_name: &'a str,
-    accessor: AccessorType,
+    pub variables: Vec<&'a str>,
+    pub field_name: &'a str,
+    pub accessor: AccessorType,
     #[serde(rename = "static")]
-    is_static: bool,
+    pub is_static: bool,
     #[serde(rename = "final")]
-    is_final: bool,
+    pub is_final: bool,
     #[serde(rename = "default_value_string")]
-    default_value: &'a str,
-    r#type: &'a str,
+    pub default_value: &'a str,
+    pub r#type: &'a str,
+    // is_collection -- may make more sense as a field due to language differences
 }
 
 // For some reason prophet-utils relies on an actual javaparser AnnotationExpr instead of putting the info here. Needs fix.
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct AnnotationComponent<'a> {
+    pub component: ComponentInfo<'a>,
     /// The annotation name as a string, including @
-    name: &'a str,
+    pub name: &'a str,
     #[serde(rename = "annotationMetaModel")]
-    annotation_meta_model: &'a str,
+    pub annotation_meta_model: &'a str,
     #[serde(rename = "metaModelFieldName")]
-    meta_model_field_name: &'a str,
+    pub meta_model_field_name: &'a str,
     // For now I mimiced the data structures used but this should really just be
     // a HashMap<&'a str, &'a str> and we could just implement serde::Serialize manually.
-    key_value_pairs: Vec<AnnotationValuePair<'a>>,
-    value: &'a str,
+    pub key_value_pairs: Vec<AnnotationValuePair<'a>>,
+    pub value: &'a str,
 }
 
 // Seems useless since it can be represented by the other component.

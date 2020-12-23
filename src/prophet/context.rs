@@ -4,10 +4,10 @@ use super::*;
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct JSSAContext<'a> {
     #[serde(flatten)]
-    component: ComponentInfo<'a>,
+    pub component: ComponentInfo<'a>,
     // module_package_map: ModulePackageMap<'a>,
-    succeeded: bool,
-    root_path: &'a str,
+    pub succeeded: bool,
+    pub root_path: &'a str,
 
     // The following two fields could be done with a manual 
     // serde::Serialization implementation rather than deriving it.
@@ -20,6 +20,6 @@ pub struct JSSAContext<'a> {
 
     // classes: Vec<ClassComponent<'a>>,
     // interfaces: Vec<InterfaceComponent<'a>>,
-    modules: Vec<ModuleComponent<'a>>,
+    pub modules: Vec<ModuleComponent<'a>>,
     // methods: Vec<MethodComponent<'a>>,
 }
