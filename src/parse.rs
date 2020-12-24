@@ -2,11 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
-use std::borrow::Cow;
 
-use rust_code_analysis::{
-    action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span,
-};
+use rust_code_analysis::{AstCallback, AstCfg, AstPayload, AstResponse, LANG, Span, action, guess_language};
 
 use crate::*;
 
@@ -27,7 +24,7 @@ pub struct AST {
 }
 
 /// Parse the given source code from the `AstPayload`
-pub fn parse_ast(payload: AstPayload) -> Option<AST> {
+pub fn parse_ast(payload: AstPayload) -> Option<(AST, LANG)> {
     let file = payload.file_name;
     let buf = payload.code.into_bytes();
     let (language, _ext) = guess_language(&buf, &file);
@@ -36,7 +33,7 @@ pub fn parse_ast(payload: AstPayload) -> Option<AST> {
         comment: payload.comment,
         span: payload.span,
     };
-    Some(action::<AstCallback>(&language?, buf, &PathBuf::from(""), None, cfg).into())
+    Some((action::<AstCallback>(&language?, buf, &PathBuf::from(""), None, cfg).into(), language?))
 }
 
 impl From<AstResponse> for AST {
@@ -150,13 +147,29 @@ pub fn parse_file<'a>(file: &mut File, path: &Path) -> std::io::Result<Vec<Compo
     let mut code = String::new();
     file.read_to_string(&mut code)?;
 
-    let ast = parse_ast(AstPayload {
+    let result = parse_ast(AstPayload {
         id: "".to_owned(),
         file_name: path.to_str().unwrap_or("").to_owned(),
         code,
         comment: false,
         span: true,
     });
+
+    let (ast, lang) = match result {
+        Some((ast, lang)) => (ast, lang),
+        None => return Ok(vec![]),
+    };
+
+    // Do language specific AST parsing
+    match lang {
+        LANG::Cpp => {},
+        LANG::Java => {},
+        LANG::Python => {},
+        LANG::Go => {},
+        lang => {
+            println!("unsupported lang: {:?}", lang);
+        },
+    }
 
     Ok(vec![])
 }
@@ -165,7 +178,7 @@ pub fn parse_file<'a>(file: &mut File, path: &Path) -> std::io::Result<Vec<Compo
 mod tests {
     use super::*;
 
-    fn parse_util(code: &str, path: &str) -> Option<AST> {
+    fn parse_util(code: &str, path: &str) -> Option<(AST, LANG)> {
         let payload = AstPayload {
             id: "".to_owned(),
             file_name: path.to_owned(),
