@@ -1,15 +1,23 @@
-#![feature(decl_macro)]
-#[macro_use]
-extern crate rocket;
-#[macro_use]
-extern crate rocket_contrib;
+use actix_web::{App, HttpServer};
+use structopt::StructOpt;
 
 mod routes;
 use routes::*;
 
-fn main() {
-    rocket::ignite()
-        .mount("/", routes![ast])
-        .register(catchers![not_found])
-        .launch();
+#[derive(StructOpt)]
+struct Opt {
+    #[structopt(long, short, default_value = "127.0.0.1")]
+    host: String,
+    #[structopt(long, short, default_value = "8080")]
+    port: i32,
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let opt = Opt::from_args();
+    let addr = format!("{}:{}", opt.host, opt.port);
+    HttpServer::new(|| App::new().service(ast))
+        .bind(addr)?
+        .run()
+        .await
 }

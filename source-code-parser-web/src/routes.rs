@@ -1,87 +1,30 @@
-use multipart::server::Multipart;
-use rocket::{http::ContentType, Data};
-use rocket_contrib::json::JsonValue;
-use rust_code_analysis::*;
+use actix_web::{post, web, HttpResponse};
+use serde::Deserialize;
+use serde_json::json;
 use source_code_parser::*;
-use std::io::{BufReader, Read};
+use std::path::PathBuf;
 
-fn error_response(reason: &str) -> JsonValue {
-    return json!({
-        "status": "error",
-        "reason": reason
-    });
+#[derive(Deserialize)]
+pub struct AstRequest {
+    root: String,
 }
 
-// TODO: Instead of accepting a multipart file, we need to create the AnalysisContext for a whole
-// project. They are downloading whole repositories and using local files.
-
-// TODO: Should also probably migrate from rocket to actix so we don't need to use the nightly toolchain.
-
-/// Endpoint for retrieving the AST of a source code file supported by the `rust_code_analysis` crate.
-/// The POST request's Content-Type header should be multipart/form-data and should contain two
-/// entries: one with key "file" with the file data, and another with the key "ext" with the
-/// extension type of the source code files (e.g. "cpp", "go", "rs", "py")
-#[post("/ast", data = "<file>")]
-pub fn ast(cont_type: &ContentType, file: Data) -> JsonValue {
-    if !cont_type.is_form_data() {
-        return error_response("Content-Type header must be multipart/form-data");
-    }
-
-    let (_, boundary) = match cont_type.params().find(|&(k, _)| k == "boundary") {
-        Some(x) => x,
-        None => {
-            return error_response("Error multipart/form-data: boundary parameter not provided");
+#[post("/ast")]
+pub fn ast(payload: web::Json<AstRequest>) -> HttpResponse {
+    match parse_project_context(&PathBuf::from(&payload.root)) {
+        Ok(ctx) => {
+            let resp = json!({
+                "status": 200,
+                "data": ctx
+            });
+            HttpResponse::Ok().json(resp)
         }
-    };
-    let mut code = String::new();
-    let mut ext = String::new();
-    let mut multipart = Multipart::with_body(file.open(), boundary);
-
-    for _ in (0..2).enumerate() {
-        match multipart.read_entry() {
-            Ok(entry) => {
-                if let Some(entry) = entry {
-                    let mut reader = BufReader::new(entry.data);
-
-                    let entry_header = entry.headers.name.to_string();
-                    let buf = match entry_header.as_str() {
-                        "file" => &mut code,
-                        "ext" => &mut ext,
-                        header => {
-                            let reason = format!("Invalid entry header {} provided", header);
-                            return error_response(&reason);
-                        }
-                    };
-
-                    if let Err(err) = reader.read_to_string(buf) {
-                        let reason = format!("Error reading form data {:?}", err);
-                        return error_response(&reason);
-                    }
-                }
-            }
-            Err(err) => {
-                let reason = format!("Error multipart/form-data: Could not read field {}", err);
-                return error_response(&reason);
-            }
+        Err(err) => {
+            let msg = format!("{:?}", err);
+            HttpResponse::InternalServerError().json(json!({
+                "status": 500,
+                "message": msg,
+            }))
         }
     }
-
-    let comment = false;
-    let span = true;
-
-    match parse_ast(AstPayload {
-        id: "".to_owned(),
-        file_name: format!("tmp.{}", ext),
-        code,
-        comment,
-        span,
-    }) {
-        Some(ast) => json!(ast),
-        None => error_response("Could not parse source file."),
-    }
-}
-
-#[catch(404)]
-pub fn not_found() -> JsonValue {
-    error_response("Resource was not found.")
 }
