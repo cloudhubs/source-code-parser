@@ -3,7 +3,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
-use rust_code_analysis::{AstCallback, AstCfg, AstPayload, AstResponse, LANG, Span, action, guess_language};
+use rust_code_analysis::{
+    action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span, LANG,
+};
 
 use crate::*;
 
@@ -33,7 +35,10 @@ pub fn parse_ast(payload: AstPayload) -> Option<(AST, LANG)> {
         comment: payload.comment,
         span: payload.span,
     };
-    Some((action::<AstCallback>(&language?, buf, &PathBuf::from(""), None, cfg).into(), language?))
+    Some((
+        action::<AstCallback>(&language?, buf, &PathBuf::from(""), None, cfg).into(),
+        language?,
+    ))
 }
 
 impl From<AstResponse> for AST {
@@ -97,19 +102,17 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
             let path = dir.as_path().to_str().unwrap_or("").to_string();
             let path_clone = path.clone();
             let module_name: Vec<&str> = path_clone.split("/").into_iter().collect();
-            let module_name = module_name
-                .get(module_name.len() - 1)
-                .unwrap_or(&"");
+            let module_name = module_name.get(module_name.len() - 1).unwrap_or(&"");
 
             let read_dir = std::fs::read_dir(dir.clone())?;
             let mut module = ModuleComponent::new(module_name.to_string(), path);
-            
+
             for entry in read_dir {
                 let entry = entry?;
                 if !entry.path().is_dir() {
                     let mut file = File::open(entry.path())?;
                     let components = parse_file(&mut file, &entry.path())?;
-                    
+
                     for component in components.into_iter() {
                         match component {
                             ComponentType::ClassOrInterfaceComponent(component) => {
@@ -135,7 +138,7 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
                     }
                 }
             }
-            
+
             modules.push(module);
         }
     }
@@ -162,13 +165,13 @@ pub fn parse_file<'a>(file: &mut File, path: &Path) -> std::io::Result<Vec<Compo
 
     // Do language specific AST parsing
     match lang {
-        LANG::Cpp => {},
-        LANG::Java => {},
-        LANG::Python => {},
-        LANG::Go => {},
+        LANG::Cpp => {}
+        LANG::Java => {}
+        LANG::Python => {}
+        LANG::Go => {}
         lang => {
             println!("unsupported lang: {:?}", lang);
-        },
+        }
     }
 
     Ok(vec![])
