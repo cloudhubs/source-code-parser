@@ -4,7 +4,7 @@ use serde::Serialize;
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct JSSAContext<'a> {
     #[serde(flatten)]
-    pub component: ComponentInfo<'a>,
+    pub component: ComponentInfo,
     // module_package_map: ModulePackageMap<'a>,
     pub succeeded: bool,
     pub root_path: &'a str,

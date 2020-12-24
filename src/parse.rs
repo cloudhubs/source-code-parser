@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
+use std::borrow::Cow;
 
 use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span,
@@ -57,8 +58,8 @@ pub fn parse_project_context(root_path: &Path) -> std::io::Result<JSSAContext> {
     let ctx = JSSAContext {
         component: ComponentInfo {
             path: path_str.to_string(),
-            package_name: "",
-            instance_name: "context",
+            package_name: "".to_string(),
+            instance_name: "context".to_string(),
             instance_type: InstanceType::AnalysisComponent,
         },
         succeeded: true,
@@ -71,7 +72,8 @@ pub fn parse_project_context(root_path: &Path) -> std::io::Result<JSSAContext> {
 fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
     if dir.is_dir() {
         let dir = std::fs::read_dir(dir)?;
-        let mut dirs: Vec<PathBuf> = dir.into_iter()
+        let mut dirs: Vec<PathBuf> = dir
+            .into_iter()
             .filter(|entry| entry.is_ok())
             .map(|entry| entry.unwrap())
             .filter(|entry| entry.path().is_dir())
@@ -82,7 +84,7 @@ fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
             let sub_dirs = flatten_dirs(path.as_path())?;
             sub_dirs.into_iter().for_each(|dir| dirs.push(dir));
         }
-        
+
         Ok(dirs)
     } else {
         Ok(vec![])
@@ -96,43 +98,55 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
         let dirs = flatten_dirs(dir)?;
         for dir in dirs {
             let path = dir.as_path().to_str().unwrap_or("").to_string();
+            let path_clone = path.clone();
+            let module_name: Vec<&str> = path_clone.split("/").into_iter().collect();
+            let module_name = module_name
+                .get(module_name.len() - 1)
+                .unwrap_or(&"");
+
             let read_dir = std::fs::read_dir(dir.clone())?;
-            let module = ModuleComponent {
-                component: ContainerComponent {
-                    component: ComponentInfo {
-                        path: path.clone(),
-                        package_name: "",
-                        instance_name: "",
-                        instance_type: InstanceType::ModuleComponent,
-                    },
-                    accessor: AccessorType::Default,
-                    stereotype: ContainerStereotype::Module,
-                    methods: vec![],
-                    container_name: "",
-                    line_count: 0,
-                },
-                module_name: "",
-                path,
-                module_stereotype: ModuleStereotype::Controller,
-                classes: vec![],
-                interfaces: vec![],
-            };
+            let mut module = ModuleComponent::new(module_name.to_string(), path);
+            
             for entry in read_dir {
                 let entry = entry?;
                 if !entry.path().is_dir() {
-                    let file = File::open(entry.path())?;
+                    let mut file = File::open(entry.path())?;
+                    let components = parse_file(&mut file, &entry.path())?;
                     
-                    let component = parse_file(&file, &entry.path())?;
-                    
+                    for component in components.into_iter() {
+                        match component {
+                            ComponentType::ClassOrInterfaceComponent(component) => {
+                                match component.declaration_type {
+                                    ContainerType::Class => {
+                                        module.classes.push(component);
+                                    }
+                                    ContainerType::Interface => {
+                                        module.interfaces.push(component);
+                                    }
+                                    r#type => {
+                                        println!("got other label when it should have been class/ifc: {:#?}", r#type);
+                                    }
+                                }
+                            }
+                            ComponentType::MethodComponent(method) => {
+                                module.component.methods.push(method);
+                            }
+                            ComponentType::ModuleComponent(module) => {
+                                modules.push(module);
+                            }
+                        }
+                    }
                 }
             }
+            
             modules.push(module);
         }
     }
+
     Ok(modules)
 }
 
-pub fn parse_file<'a>(mut file: &'a File, path: &Path) -> std::io::Result<Vec<ComponentType<'a>>> {
+pub fn parse_file<'a>(file: &mut File, path: &Path) -> std::io::Result<Vec<ComponentType<'a>>> {
     let mut code = String::new();
     file.read_to_string(&mut code)?;
 
