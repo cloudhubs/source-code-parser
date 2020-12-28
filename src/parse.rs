@@ -54,6 +54,31 @@ impl From<AstResponse> for AST {
     }
 }
 
+impl AST {
+    /// Transform the language-specific AST into generic components.
+    pub fn transform<'a>(self, lang: LANG) -> Vec<ComponentType<'a>> {
+        // Do language specific AST parsing
+        match lang {
+            LANG::Cpp => {
+                todo!();
+            }
+            LANG::Java => {
+                todo!();
+            }
+            LANG::Python => {
+                todo!();
+            }
+            LANG::Go => {
+                todo!();
+            }
+            lang => {
+                println!("unsupported lang: {:?}", lang);
+                todo!();
+            }
+        }
+    }
+}
+
 pub fn parse_project_context(root_path: &Path) -> std::io::Result<JSSAContext> {
     let path_str = root_path.to_str().unwrap_or("");
     let modules = parse_directory(&root_path)?;
@@ -163,18 +188,7 @@ pub fn parse_file<'a>(file: &mut File, path: &Path) -> std::io::Result<Vec<Compo
         None => return Ok(vec![]),
     };
 
-    // Do language specific AST parsing
-    match lang {
-        LANG::Cpp => {}
-        LANG::Java => {}
-        LANG::Python => {}
-        LANG::Go => {}
-        lang => {
-            println!("unsupported lang: {:?}", lang);
-        }
-    }
-
-    Ok(vec![])
+    Ok(ast.transform(lang))
 }
 
 #[cfg(test)]
