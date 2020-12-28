@@ -7,7 +7,7 @@ use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span, LANG,
 };
 
-use crate::{*, lang::*};
+use crate::{lang::*, *};
 
 /// Information on an `AST` node.
 /// Taken directly from the `rust_code_analysis` crate with additional serde macros for deserialization.
@@ -59,9 +59,7 @@ impl AST {
     pub fn transform(self, lang: LANG) -> Vec<ComponentType> {
         // Do language specific AST parsing
         match lang {
-            LANG::Cpp => {
-                cpp::find_components(self)
-            }
+            LANG::Cpp => cpp::find_components(self),
             LANG::Java => {
                 todo!();
             }
