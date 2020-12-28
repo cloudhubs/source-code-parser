@@ -7,7 +7,7 @@ use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span, LANG,
 };
 
-use crate::*;
+use crate::{*, lang::*};
 
 /// Information on an `AST` node.
 /// Taken directly from the `rust_code_analysis` crate with additional serde macros for deserialization.
@@ -56,11 +56,11 @@ impl From<AstResponse> for AST {
 
 impl AST {
     /// Transform the language-specific AST into generic components.
-    pub fn transform<'a>(self, lang: LANG) -> Vec<ComponentType<'a>> {
+    pub fn transform(self, lang: LANG) -> Vec<ComponentType> {
         // Do language specific AST parsing
         match lang {
             LANG::Cpp => {
-                todo!();
+                cpp::find_components(self)
             }
             LANG::Java => {
                 todo!();
@@ -171,7 +171,7 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
     Ok(modules)
 }
 
-pub fn parse_file<'a>(file: &mut File, path: &Path) -> std::io::Result<Vec<ComponentType<'a>>> {
+pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<Vec<ComponentType>> {
     let mut code = String::new();
     file.read_to_string(&mut code)?;
 

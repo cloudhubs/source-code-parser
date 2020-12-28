@@ -20,6 +20,6 @@ pub struct JSSAContext<'a> {
 
     // classes: Vec<ClassComponent<'a>>,
     // interfaces: Vec<InterfaceComponent<'a>>,
-    pub modules: Vec<ModuleComponent<'a>>,
+    pub modules: Vec<ModuleComponent>,
     // methods: Vec<MethodComponent<'a>>,
 }
