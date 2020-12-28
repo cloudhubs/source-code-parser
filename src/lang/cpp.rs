@@ -42,7 +42,7 @@ fn type_ident(ast: &AST) -> String {
         "primitive_type" | "type_identifier" => ast.value.clone(),
         "scoped_type_identifier" | "scoped_namespace_identifier" => {
             let ret: String = ast.children.iter().map(|child| match &*child.r#type {
-                "scoped_namespace_identifier" => type_ident(ast),
+                "scoped_namespace_identifier" => type_ident(child),
                 _ => child.value.clone(),
             }).collect();
             ret
@@ -64,5 +64,48 @@ mod tests {
             value: "uint32_t".to_string(),
         };
         assert_eq!("uint32_t".to_string(), type_ident(&prim));
+    }
+
+    #[test]
+    fn type_ident_scoped() {
+        let prim = AST {
+            children: vec![
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "::".to_string(),
+                            value: "::".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "namespace_identifier".to_string(),
+                            value: "thrift".to_string(),
+                        }
+                    ],
+                    span: None,
+                    r#type: "scoped_namespace_identifier".to_string(),
+                    value: "".to_string(),
+                },
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: "::".to_string(),
+                    value: "::".to_string(),
+                },
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: "namespace_identifier".to_string(),
+                    value: "protocol".to_string(),
+                },
+            ],
+            span: None,
+            r#type: "scoped_namespace_identifier".to_string(),
+            value: "".to_string(),
+        };
+        assert_eq!("::thrift::protocol".to_string(), type_ident(&prim));
     }
 }
