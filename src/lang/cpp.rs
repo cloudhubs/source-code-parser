@@ -115,7 +115,7 @@ mod tests {
 
     #[test]
     fn type_ident_scoped() {
-        let prim = AST {
+        let t = AST {
             children: vec![
                 AST {
                     children: vec![
@@ -153,12 +153,12 @@ mod tests {
             r#type: "scoped_namespace_identifier".to_string(),
             value: "".to_string(),
         };
-        assert_eq!("::thrift::protocol".to_string(), type_ident(&prim));
+        assert_eq!("::thrift::protocol".to_string(), type_ident(&t));
     }
 
     #[test]
     fn func_ident_destructor() {
-        let prim = AST {
+        let f = AST {
             children: vec![AST {
                 children: vec![
                     AST {
@@ -203,7 +203,45 @@ mod tests {
         };
         assert_eq!(
             "CastInfoService_WriteCastInfo_args::~CastInfoService_WriteCastInfo_args".to_string(),
-            func_ident(&prim)
+            func_ident(&f)
+        );
+    }
+
+    #[test]
+    fn func_ident_regular() {
+        let f = AST {
+            children: vec![AST {
+                children: vec![
+                    AST {
+                        children: vec![],
+                        span: None,
+                        r#type: "namespace_identifier".to_string(),
+                        value: "CastInfoService_WriteCastInfo_args".to_string(),
+                    },
+                    AST {
+                        children: vec![],
+                        span: None,
+                        r#type: "::".to_string(),
+                        value: "::".to_string(),
+                    },
+                    AST {
+                        children: vec![],
+                        span: None,
+                        r#type: "identifier".to_string(),
+                        value: "read".to_string(),
+                    },
+                ],
+                span: None,
+                r#type: "scoped_identifier".to_string(),
+                value: "".to_string(),
+            }],
+            span: None,
+            r#type: "function_declarator".to_string(),
+            value: "".to_string(),
+        };
+        assert_eq!(
+            "CastInfoService_WriteCastInfo_args::read".to_string(),
+            func_ident(&f)
         );
     }
 }
