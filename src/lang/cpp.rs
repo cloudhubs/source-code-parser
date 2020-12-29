@@ -35,15 +35,12 @@ fn transform_into_method(ast: AST) -> Option<MethodComponent> {
         .iter()
         .find(|child| child.r#type == "function_declarator")?;
 
-    let identifier = decl
-        .children
-        .iter()
-        .find(|child| match &*child.r#type {
-            "scoped_identifier" | "identifier" => true,
-            _ => false,
-        })?;
+    let identifier = decl.children.iter().find(|child| match &*child.r#type {
+        "scoped_identifier" | "identifier" => true,
+        _ => false,
+    })?;
     let fn_ident = func_ident(identifier);
-    
+
     let parameter_list = decl
         .children
         .iter()
@@ -106,6 +103,58 @@ fn func_ident(ast: &AST) -> String {
         "identifier" => ast.value.clone(),
         _ => "".to_string(),
     }
+}
+
+// TODO: Change return to Vec<MethodParamComponent>
+fn func_parameters(param_list: &AST) -> Vec<(String, String)> {
+    let params: Vec<(String, String)> = param_list
+        .children
+        .iter()
+        .filter(|child| child.r#type == "parameter_declaration")
+        .map(|param_decl| func_parameter(param_decl))
+        .filter_map(|param_decl| param_decl)
+        .collect();
+
+    params
+}
+
+// TODO: Change return to Vec<MethodParamComponent>
+fn func_parameter(param_decl: &AST) -> Option<(String, String)> {
+    let scoped_type_ident = param_decl
+        .children
+        .iter()
+        .find(|child| match &*child.r#type {
+            "scoped_type_identifier" | "primitive_type" | "type_identifier" => true,
+            _ => false,
+        })?;
+    let mut param_type = type_ident(scoped_type_ident);
+
+    let ident = param_decl
+        .children
+        .iter()
+        .find(|child| match &*child.r#type {
+            "pointer_declarator" | "identifier" => true,
+            _ => false,
+        })?;
+
+    let ident = match &*ident.r#type {
+        "pointer_declarator" => {
+            ident
+                .children
+                .iter()
+                .filter(|child| child.r#type == "*")
+                .for_each(|star| param_type.push_str(&star.value));
+            ident
+                .children
+                .iter()
+                .find(|child| child.r#type == "identifier")
+                .map_or_else(|| "".to_string(), |identifier| identifier.value.clone())
+        }
+        "identifier" => ident.value.clone(),
+        _ => "".to_string(),
+    };
+
+    Some((param_type, ident))
 }
 
 #[cfg(test)]
@@ -252,6 +301,116 @@ mod tests {
         assert_eq!(
             "CastInfoService_WriteCastInfo_args::read".to_string(),
             func_ident(&f)
+        );
+    }
+
+    #[test]
+    fn func_param_single() {
+        let param = AST {
+            children: vec![
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![
+                                AST {
+                                    children: vec![
+                                        AST {
+                                            children: vec![
+                                                AST {
+                                                    children: vec![],
+                                                    span: None,
+                                                    r#type: "::".to_string(),
+                                                    value: "::".to_string(),
+                                                },
+                                                AST {
+                                                    children: vec![],
+                                                    span: None,
+                                                    r#type: "namespace_identifier".to_string(),
+                                                    value: "apache".to_string(),
+                                                },
+                                            ],
+                                            span: None,
+                                            r#type: "scoped_namespace_identifier".to_string(),
+                                            value: "".to_string(),
+                                        },
+                                        AST {
+                                            children: vec![],
+                                            span: None,
+                                            r#type: "::".to_string(),
+                                            value: "::".to_string(),
+                                        },
+                                        AST {
+                                            children: vec![],
+                                            span: None,
+                                            r#type: "namespace_identifier".to_string(),
+                                            value: "thrift".to_string(),
+                                        },
+                                    ],
+                                    span: None,
+                                    r#type: "scoped_namespace_identifier".to_string(),
+                                    value: "".to_string(),
+                                },
+                                AST {
+                                    children: vec![],
+                                    span: None,
+                                    r#type: "::".to_string(),
+                                    value: "::".to_string(),
+                                },
+                                AST {
+                                    children: vec![],
+                                    span: None,
+                                    r#type: "namespace_identifier".to_string(),
+                                    value: "protocol".to_string(),
+                                },
+                            ],
+                            span: None,
+                            r#type: "scoped_namespace_identifier".to_string(),
+                            value: "".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "::".to_string(),
+                            value: "::".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "type_identifier".to_string(),
+                            value: "TProtocol".to_string(),
+                        },
+                    ],
+                    span: None,
+                    r#type: "scoped_type_identifier".to_string(),
+                    value: "".to_string(),
+                },
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "*".to_string(),
+                            value: "*".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "identifier".to_string(),
+                            value: "name".to_string(),
+                        }
+                    ],
+                    span: None,
+                    r#type: "pointer_declarator".to_string(),
+                    value: "".to_string(),
+                }
+            ],
+            span: None,
+            r#type: "parameter_declarator".to_string(),
+            value: "".to_string(),
+        };
+        assert_eq!(
+            Some(("::apache::thrift::protocol::TProtocol*".to_string(), "name".to_string())),
+            func_parameter(&param)
         );
     }
 }
