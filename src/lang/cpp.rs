@@ -25,15 +25,25 @@ fn transform_into_method(ast: AST) -> Option<MethodComponent> {
         "primitive_type" | "scoped_type_identifier" | "type_identifier" => true,
         _ => false,
     });
+    let ret_type = match ret {
+        Some(ret) => type_ident(ret),
+        None => "".to_string(),
+    };
+
     let decl = ast
         .children
         .iter()
         .find(|child| child.r#type == "function_declarator")?;
 
-    let scoped_identifier = decl
+    let identifier = decl
         .children
         .iter()
-        .find(|child| child.r#type == "scoped_identifier")?;
+        .find(|child| match &*child.r#type {
+            "scoped_identifier" | "identifier" => true,
+            _ => false,
+        })?;
+    let fn_ident = func_ident(identifier);
+    
     let parameter_list = decl
         .children
         .iter()
