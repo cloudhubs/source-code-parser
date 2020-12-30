@@ -149,7 +149,7 @@ fn type_ident(ast: &AST) -> String {
                 .map(|child| type_ident(&child))
                 .fold(String::new(), |t1, t2| match &*t1 {
                     "" => t2,
-                    _ => t1 + &t2 + ", ",
+                    _ => t1 + ", " + &t2,
                 });
 
             format!("{}<{}>", outer_type, inner_types)
