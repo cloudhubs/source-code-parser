@@ -485,12 +485,11 @@ mod tests {
             r#type: "parameter_declarator".to_string(),
             value: "".to_string(),
         };
+        let actual_param = func_parameter(&param, "", "").unwrap();
         assert_eq!(
-            Some((
-                "::apache::thrift::protocol::TProtocol*".to_string(),
-                "name".to_string()
-            )),
-            func_parameter(&param)
+            "::apache::thrift::protocol::TProtocol*".to_string(),
+            actual_param.parameter_type,
         );
+        assert_eq!("name".to_string(), actual_param.parameter_name,);
     }
 }
