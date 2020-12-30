@@ -170,7 +170,6 @@ fn func_ident(ast: &AST) -> String {
     }
 }
 
-// TODO: Change return to Vec<MethodParamComponent>
 fn func_parameters(param_list: &AST, module_name: &str, path: &str) -> Vec<MethodParamComponent> {
     let params: Vec<MethodParamComponent> = param_list
         .children
@@ -183,7 +182,6 @@ fn func_parameters(param_list: &AST, module_name: &str, path: &str) -> Vec<Metho
     params
 }
 
-// TODO: Change return to Vec<MethodParamComponent>
 fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<MethodParamComponent> {
     let scoped_type_ident = param_decl
         .children
@@ -198,16 +196,16 @@ fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<Met
         .children
         .iter()
         .find(|child| match &*child.r#type {
-            "pointer_declarator" | "identifier" => true,
+            "pointer_declarator" | "reference_declarator" | "identifier" => true,
             _ => false,
         })?;
 
     let ident = match &*ident.r#type {
-        "pointer_declarator" => {
+        "pointer_declarator" | "reference_declarator" => {
             ident
                 .children
                 .iter()
-                .filter(|child| child.r#type == "*")
+                .filter(|child| child.r#type != "identifier") // get either & or * type
                 .for_each(|star| param_type.push_str(&star.value));
             ident
                 .children
