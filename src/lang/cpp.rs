@@ -118,18 +118,43 @@ fn transform_into_method(ast: AST, module_name: &str, path: &str) -> Option<Meth
 fn type_ident(ast: &AST) -> String {
     match &*ast.r#type {
         "primitive_type" | "type_identifier" => ast.value.clone(),
-        "scoped_type_identifier" | "scoped_namespace_identifier" => {
+        "scoped_type_identifier" | "scoped_namespace_identifier" | "type_descriptor" => {
             let ret: String = ast
                 .children
                 .iter()
                 .map(|child| match &*child.r#type {
-                    "scoped_namespace_identifier" => type_ident(child),
+                    "scoped_namespace_identifier" | "scoped_type_identifier" => type_ident(child),
                     _ => child.value.clone(),
                 })
                 .collect();
             ret
         }
-        _ => "".to_string(),
+        "template_type" => {
+            let outer_type: String = ast
+                .children
+                .iter()
+                .filter(|child| child.r#type != "template_argument_list")
+                .map(|child| type_ident(&child))
+                .collect();
+
+            let type_args = ast
+                .children
+                .iter()
+                .find(|child| child.r#type == "template_argument_list")
+                .expect("No argument list for template");
+
+            let inner_types = type_args.children
+                .iter()
+                .filter(|child| child.r#type == "type_descriptor")
+                .map(|child| type_ident(&child))
+                .fold(String::new(), |t1, t2| match &*t1 {
+                    "" => t2,
+                    _ => t1 + &t2 + ", ",
+                });
+
+            format!("{}<{}>", outer_type, inner_types)
+        }
+        _ => ast.value.clone(),
     }
 }
 
@@ -288,6 +313,114 @@ mod tests {
             value: "".to_string(),
         };
         assert_eq!("::thrift::protocol".to_string(), type_ident(&t));
+    }
+
+    #[test]
+    fn type_ident_generics() {
+        let t = AST {
+            children: vec![
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "namespace_identifier".to_string(),
+                            value: "stdcxx".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "::".to_string(),
+                            value: "::".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "type_identifier".to_string(),
+                            value: "shared_ptr".to_string(),
+                        },
+                    ],
+                    span: None,
+                    r#type: "scoped_type_identifier".to_string(),
+                    value: "".to_string(),
+                },
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![
+                                AST {
+                                    children: vec![
+                                        AST {
+                                            children: vec![
+                                                AST {
+                                                    children: vec![
+                                                        AST {
+                                                            children: vec![],
+                                                            span: None,
+                                                            r#type: "::".to_string(),
+                                                            value: "::".to_string(),
+                                                        },
+                                                        AST {
+                                                            children: vec![],
+                                                            span: None,
+                                                            r#type: "namespace_identifier".to_string(),
+                                                            value: "apache".to_string(),
+                                                        },
+                                                    ],
+                                                    span: None,
+                                                    r#type: "scoped_namespace_identifier".to_string(),
+                                                    value: "".to_string(),
+                                                },
+                                                AST {
+                                                    children: vec![],
+                                                    span: None,
+                                                    r#type: "::".to_string(),
+                                                    value: "::".to_string(),
+                                                },
+                                                AST {
+                                                    children: vec![],
+                                                    span: None,
+                                                    r#type: "namespace_identifier".to_string(),
+                                                    value: "thrift".to_string(),
+                                                },
+                                            ],
+                                            span: None,
+                                            r#type: "scoped_namespace_identifier".to_string(),
+                                            value: "".to_string(),
+                                        },
+                                        AST {
+                                            children: vec![],
+                                            span: None,
+                                            r#type: "::".to_string(),
+                                            value: "::".to_string(),
+                                        },
+                                        AST {
+                                            children: vec![],
+                                            span: None,
+                                            r#type: "type_identifier".to_string(),
+                                            value: "TProcessor".to_string(),
+                                        },
+                                    ],
+                                    span: None,
+                                    r#type: "scoped_type_identifier".to_string(),
+                                    value: "".to_string(),
+                                },
+                            ],
+                            span: None,
+                            r#type: "type_descriptor".to_string(),
+                            value: "".to_string(),
+                        }
+                    ],
+                    span: None,
+                    r#type: "template_argument_list".to_string(),
+                    value: "".to_string(),
+                }
+            ],
+            span: None,
+            r#type: "template_type".to_string(),
+            value: "".to_string(),
+        };
+        assert_eq!("stdcxx::shared_ptr<::apache::thrift::TProcessor>".to_string(), type_ident(&t));
     }
 
     #[test]
