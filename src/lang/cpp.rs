@@ -1,8 +1,12 @@
 use crate::parse::AST;
 use crate::prophet::*;
 
-pub fn find_components(ast: AST) -> Vec<ComponentType> {
+pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
     match &*ast.r#type {
+        "namespace_definition" => match transform_namespace_to_module(ast, path) {
+            Some(module) => vec![ComponentType::ModuleComponent(module)],
+            None => vec![],
+        },
         "function_definition" => match transform_into_method(ast) {
             Some(method) => vec![ComponentType::MethodComponent(method)],
             None => vec![],
@@ -11,11 +15,51 @@ pub fn find_components(ast: AST) -> Vec<ComponentType> {
             let components: Vec<ComponentType> = ast
                 .children
                 .into_iter()
-                .flat_map(|child| find_components(child))
+                .flat_map(|child| find_components(child, path))
                 .collect();
             components
         }
     }
+}
+
+fn transform_namespace_to_module(ast: AST, path: &str) -> Option<ModuleComponent> {
+    let name = ast
+        .children
+        .iter()
+        .find(|child| child.r#type == "identifier")?
+        .value
+        .clone();
+
+    let mut module = ModuleComponent::new(name, path.to_string());
+    ast.children
+        .into_iter()
+        .flat_map(|child| find_components(child, path))
+        .for_each(|component| match component {
+            ComponentType::ClassOrInterfaceComponent(component) => {
+                match component.declaration_type {
+                    ContainerType::Class => {
+                        module.classes.push(component);
+                    }
+                    ContainerType::Interface => {
+                        module.interfaces.push(component);
+                    }
+                    r#type => {
+                        println!(
+                            "got other label when it should have been class/ifc: {:#?}",
+                            r#type
+                        );
+                    }
+                }
+            }
+            ComponentType::MethodComponent(method) => {
+                module.component.methods.push(method);
+            }
+            ComponentType::ModuleComponent(_module) => {
+                unimplemented!();
+            }
+        });
+
+    Some(module)
 }
 
 /// Transforms an AST with type label "function_definition" to a `MethodComponent`
@@ -45,6 +89,7 @@ fn transform_into_method(ast: AST) -> Option<MethodComponent> {
         .children
         .iter()
         .find(|child| child.r#type == "parameter_list")?;
+    let params = func_parameters(parameter_list);
 
     None
 }
@@ -397,19 +442,22 @@ mod tests {
                             span: None,
                             r#type: "identifier".to_string(),
                             value: "name".to_string(),
-                        }
+                        },
                     ],
                     span: None,
                     r#type: "pointer_declarator".to_string(),
                     value: "".to_string(),
-                }
+                },
             ],
             span: None,
             r#type: "parameter_declarator".to_string(),
             value: "".to_string(),
         };
         assert_eq!(
-            Some(("::apache::thrift::protocol::TProtocol*".to_string(), "name".to_string())),
+            Some((
+                "::apache::thrift::protocol::TProtocol*".to_string(),
+                "name".to_string()
+            )),
             func_parameter(&param)
         );
     }

@@ -56,10 +56,10 @@ impl From<AstResponse> for AST {
 
 impl AST {
     /// Transform the language-specific AST into generic components.
-    pub fn transform(self, lang: LANG) -> Vec<ComponentType> {
+    pub fn transform(self, lang: LANG, path: &str) -> Vec<ComponentType> {
         // Do language specific AST parsing
         match lang {
-            LANG::Cpp => cpp::find_components(self),
+            LANG::Cpp => cpp::find_components(self, path),
             LANG::Java => {
                 todo!();
             }
@@ -186,7 +186,7 @@ pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<Vec<Component
         None => return Ok(vec![]),
     };
 
-    Ok(ast.transform(lang))
+    Ok(ast.transform(lang, path.to_str().unwrap_or_default()))
 }
 
 #[cfg(test)]
