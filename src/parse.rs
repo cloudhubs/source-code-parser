@@ -59,7 +59,7 @@ impl AST {
     pub fn transform(self, lang: LANG, path: &str) -> Vec<ComponentType> {
         // Do language specific AST parsing
         match lang {
-            LANG::Cpp => cpp::find_components(self, path),
+            LANG::Cpp => cpp::find_components(self, path, path),
             LANG::Java => {
                 todo!();
             }

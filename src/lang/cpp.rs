@@ -1,13 +1,13 @@
 use crate::parse::AST;
 use crate::prophet::*;
 
-pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
+pub fn find_components(ast: AST, module_name: &str, path: &str) -> Vec<ComponentType> {
     match &*ast.r#type {
         "namespace_definition" => match transform_namespace_to_module(ast, path) {
             Some(module) => vec![ComponentType::ModuleComponent(module)],
             None => vec![],
         },
-        "function_definition" => match transform_into_method(ast) {
+        "function_definition" => match transform_into_method(ast, module_name, path) {
             Some(method) => vec![ComponentType::MethodComponent(method)],
             None => vec![],
         },
@@ -15,7 +15,7 @@ pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
             let components: Vec<ComponentType> = ast
                 .children
                 .into_iter()
-                .flat_map(|child| find_components(child, path))
+                .flat_map(|child| find_components(child, module_name, path))
                 .collect();
             components
         }
@@ -30,10 +30,10 @@ fn transform_namespace_to_module(ast: AST, path: &str) -> Option<ModuleComponent
         .value
         .clone();
 
-    let mut module = ModuleComponent::new(name, path.to_string());
+    let mut module = ModuleComponent::new(name.clone(), path.to_string());
     ast.children
         .into_iter()
-        .flat_map(|child| find_components(child, path))
+        .flat_map(|child| find_components(child, &name, path))
         .for_each(|component| match component {
             ComponentType::ClassOrInterfaceComponent(component) => {
                 match component.declaration_type {
@@ -63,7 +63,7 @@ fn transform_namespace_to_module(ast: AST, path: &str) -> Option<ModuleComponent
 }
 
 /// Transforms an AST with type label "function_definition" to a `MethodComponent`
-fn transform_into_method(ast: AST) -> Option<MethodComponent> {
+fn transform_into_method(ast: AST, module_name: &str, path: &str) -> Option<MethodComponent> {
     // TODO: child type "compound_statement" for function block
     let ret = ast.children.iter().find(|child| match &*child.r#type {
         "primitive_type" | "scoped_type_identifier" | "type_identifier" => true,
@@ -89,9 +89,29 @@ fn transform_into_method(ast: AST) -> Option<MethodComponent> {
         .children
         .iter()
         .find(|child| child.r#type == "parameter_list")?;
-    let params = func_parameters(parameter_list);
+    let params = func_parameters(parameter_list, module_name, path);
 
-    None
+    let method = MethodComponent {
+        component: ComponentInfo {
+            path: path.to_string(),
+            package_name: module_name.to_string(),
+            instance_name: fn_ident.clone(),
+            instance_type: InstanceType::MethodComponent,
+        },
+        accessor: AccessorType::Default,
+        method_name: fn_ident,
+        return_type: ret_type,
+        parameters: params,
+        is_static: false,
+        is_abstract: false,
+        sub_methods: vec![],
+        annotations: vec![],
+        line_count: 0,
+        line_begin: 0,
+        line_end: 0,
+    };
+
+    Some(method)
 }
 
 /// Get the value for a type identifier
@@ -151,12 +171,12 @@ fn func_ident(ast: &AST) -> String {
 }
 
 // TODO: Change return to Vec<MethodParamComponent>
-fn func_parameters(param_list: &AST) -> Vec<(String, String)> {
-    let params: Vec<(String, String)> = param_list
+fn func_parameters(param_list: &AST, module_name: &str, path: &str) -> Vec<MethodParamComponent> {
+    let params: Vec<MethodParamComponent> = param_list
         .children
         .iter()
         .filter(|child| child.r#type == "parameter_declaration")
-        .map(|param_decl| func_parameter(param_decl))
+        .map(|param_decl| func_parameter(param_decl, module_name, path))
         .filter_map(|param_decl| param_decl)
         .collect();
 
@@ -164,7 +184,7 @@ fn func_parameters(param_list: &AST) -> Vec<(String, String)> {
 }
 
 // TODO: Change return to Vec<MethodParamComponent>
-fn func_parameter(param_decl: &AST) -> Option<(String, String)> {
+fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<MethodParamComponent> {
     let scoped_type_ident = param_decl
         .children
         .iter()
@@ -199,7 +219,19 @@ fn func_parameter(param_decl: &AST) -> Option<(String, String)> {
         _ => "".to_string(),
     };
 
-    Some((param_type, ident))
+    let param = MethodParamComponent {
+        component: ComponentInfo {
+            path: path.to_string(),
+            package_name: module_name.to_string(),
+            instance_name: ident.clone(),
+            instance_type: InstanceType::AnalysisComponent,
+        },
+        annotation: None,
+        parameter_name: ident,
+        parameter_type: param_type,
+    };
+
+    Some(param)
 }
 
 #[cfg(test)]
