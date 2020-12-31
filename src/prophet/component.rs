@@ -49,6 +49,7 @@ pub struct MethodComponent {
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct MethodParamComponent {
+    #[serde(flatten)]
     pub component: ComponentInfo,
     // r#type: ??? -- this is Class<?> in prophet
     pub annotation: Option<AnnotationComponent>,
@@ -170,6 +171,7 @@ pub struct FieldComponent {
 // For some reason prophet-utils relies on an actual javaparser AnnotationExpr instead of putting the info here. Needs fix.
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct AnnotationComponent {
+    #[serde(flatten)]
     pub component: ComponentInfo,
     /// The annotation name as a string, including @
     pub name: String,
