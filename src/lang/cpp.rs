@@ -143,7 +143,8 @@ fn type_ident(ast: &AST) -> String {
                 .find(|child| child.r#type == "template_argument_list")
                 .expect("No argument list for template");
 
-            let inner_types = type_args.children
+            let inner_types = type_args
+                .children
                 .iter()
                 .filter(|child| child.r#type == "type_descriptor")
                 .map(|child| type_ident(&child))
@@ -345,32 +346,13 @@ mod tests {
                     value: "".to_string(),
                 },
                 AST {
-                    children: vec![
-                        AST {
+                    children: vec![AST {
+                        children: vec![AST {
                             children: vec![
                                 AST {
                                     children: vec![
                                         AST {
                                             children: vec![
-                                                AST {
-                                                    children: vec![
-                                                        AST {
-                                                            children: vec![],
-                                                            span: None,
-                                                            r#type: "::".to_string(),
-                                                            value: "::".to_string(),
-                                                        },
-                                                        AST {
-                                                            children: vec![],
-                                                            span: None,
-                                                            r#type: "namespace_identifier".to_string(),
-                                                            value: "apache".to_string(),
-                                                        },
-                                                    ],
-                                                    span: None,
-                                                    r#type: "scoped_namespace_identifier".to_string(),
-                                                    value: "".to_string(),
-                                                },
                                                 AST {
                                                     children: vec![],
                                                     span: None,
@@ -381,7 +363,7 @@ mod tests {
                                                     children: vec![],
                                                     span: None,
                                                     r#type: "namespace_identifier".to_string(),
-                                                    value: "thrift".to_string(),
+                                                    value: "apache".to_string(),
                                                 },
                                             ],
                                             span: None,
@@ -397,30 +379,48 @@ mod tests {
                                         AST {
                                             children: vec![],
                                             span: None,
-                                            r#type: "type_identifier".to_string(),
-                                            value: "TProcessor".to_string(),
+                                            r#type: "namespace_identifier".to_string(),
+                                            value: "thrift".to_string(),
                                         },
                                     ],
                                     span: None,
-                                    r#type: "scoped_type_identifier".to_string(),
+                                    r#type: "scoped_namespace_identifier".to_string(),
                                     value: "".to_string(),
+                                },
+                                AST {
+                                    children: vec![],
+                                    span: None,
+                                    r#type: "::".to_string(),
+                                    value: "::".to_string(),
+                                },
+                                AST {
+                                    children: vec![],
+                                    span: None,
+                                    r#type: "type_identifier".to_string(),
+                                    value: "TProcessor".to_string(),
                                 },
                             ],
                             span: None,
-                            r#type: "type_descriptor".to_string(),
+                            r#type: "scoped_type_identifier".to_string(),
                             value: "".to_string(),
-                        }
-                    ],
+                        }],
+                        span: None,
+                        r#type: "type_descriptor".to_string(),
+                        value: "".to_string(),
+                    }],
                     span: None,
                     r#type: "template_argument_list".to_string(),
                     value: "".to_string(),
-                }
+                },
             ],
             span: None,
             r#type: "template_type".to_string(),
             value: "".to_string(),
         };
-        assert_eq!("stdcxx::shared_ptr<::apache::thrift::TProcessor>".to_string(), type_ident(&t));
+        assert_eq!(
+            "stdcxx::shared_ptr<::apache::thrift::TProcessor>".to_string(),
+            type_ident(&t)
+        );
     }
 
     #[test]

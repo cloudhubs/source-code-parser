@@ -96,8 +96,8 @@ pub fn parse_project_context(root_path: &Path) -> std::io::Result<JSSAContext> {
 
 fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
     if dir.is_dir() {
-        let dir = std::fs::read_dir(dir)?;
-        let mut dirs: Vec<PathBuf> = dir
+        let read_dir = std::fs::read_dir(dir.clone())?;
+        let mut dirs: Vec<PathBuf> = read_dir
             .into_iter()
             .filter(|entry| entry.is_ok())
             .map(|entry| entry.unwrap())
@@ -110,6 +110,7 @@ fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
             sub_dirs.into_iter().for_each(|dir| dirs.push(dir));
         }
 
+        dirs.push(dir.to_path_buf());
         Ok(dirs)
     } else {
         Ok(vec![])
@@ -121,6 +122,7 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
 
     if dir.is_dir() {
         let dirs = flatten_dirs(dir)?;
+
         for dir in dirs {
             let path = dir.as_path().to_str().unwrap_or("").to_string();
             let path_clone = path.clone();
