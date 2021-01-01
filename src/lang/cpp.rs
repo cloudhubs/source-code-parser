@@ -331,17 +331,12 @@ fn transform_into_class(
         .find(|child| child.r#type == "type_identifier")
         .map_or_else(|| "".into(), |t| t.value.clone());
 
-    let fields_list = ast
+    let field_list = ast
         .children
         .iter()
         .find(|child| child.r#type == "field_declaration_list")?;
 
-    let fields: Vec<FieldComponent> = fields_list
-        .children
-        .iter()
-        .map(|child| class_field(child, AccessorType::Default))
-        .filter_map(|field| field)
-        .collect();
+    let fields: Vec<FieldComponent> = class_fields(&field_list.children);
 
     Some(ClassOrInterfaceComponent {
         component: ContainerComponent {
@@ -365,8 +360,36 @@ fn transform_into_class(
     })
 }
 
-fn class_field(ast: &AST, accessor: AccessorType) -> Option<FieldComponent> {
-    None
+fn class_fields(field_list: &Vec<AST>) -> Vec<FieldComponent> {
+    let mut accessor = AccessorType::Default;
+    for field in field_list.iter() {
+        match &*field.r#type {
+            "access_specifier" => {
+                let access_specifier = field
+                    .children
+                    .iter()
+                    .find(|child| child.r#type != ":")
+                    .map(|child| match &*child.value {
+                        "public" => AccessorType::Public,
+                        "private" => AccessorType::Private,
+                        "protected" => AccessorType::Protected,
+                        _ => AccessorType::Default
+                    });
+                if let Some(access_specifier) = access_specifier {
+                    accessor = access_specifier;
+                }
+            }
+            "function_definition" => {
+                // Need to consider that functions could be declared inside of the class
+                // This means I need to alter class/method merging
+            }
+            "field_declaration" => {
+                todo!()
+            }
+            _ => {}
+        }
+    }
+    vec![]
 }
 
 #[cfg(test)]
