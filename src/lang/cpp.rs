@@ -28,7 +28,12 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
                     .filter(|m| m.method_name.starts_with(&class.component.container_name))
                     .collect();
                 for method in methods {
-                    class.methods.push(method.clone());
+                    let class_method = class.methods.iter_mut().find(|m| {
+                        m.method_name == method.method_name && m.parameters == method.parameters
+                    });
+                    if let Some(_class_method) = class_method {
+                        // TODO: add the body from method into class_method
+                    }
                 }
             }
 
