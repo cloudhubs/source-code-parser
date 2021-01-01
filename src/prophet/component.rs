@@ -130,8 +130,6 @@ pub struct ClassOrInterfaceComponent {
     pub annotations: Vec<AnnotationComponent>,
     pub stereotype: ContainerStereotype,
 
-    pub methods: Vec<MethodComponent>,
-
     // Class-specific fields
     #[serde(skip_serializing_if = "Option::is_none")]
     pub constructors: Option<Vec<MethodComponent>>,

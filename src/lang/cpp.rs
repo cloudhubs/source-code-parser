@@ -28,7 +28,7 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
                     .filter(|m| m.method_name.starts_with(&class.component.container_name))
                     .collect();
                 for method in methods {
-                    let class_method = class.methods.iter_mut().find(|m| {
+                    let class_method = class.component.methods.iter_mut().find(|m| {
                         m.method_name == method.method_name && m.parameters == method.parameters
                     });
                     if let Some(_class_method) = class_method {
@@ -360,7 +360,6 @@ fn transform_into_class(
         declaration_type: ContainerType::Class,
         annotations: vec![],
         stereotype: ContainerStereotype::Entity,
-        methods: vec![],
         constructors: None,
         field_components: Some(fields),
     })
