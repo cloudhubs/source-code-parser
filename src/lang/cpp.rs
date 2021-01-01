@@ -67,6 +67,11 @@ pub fn find_components(ast: AST, module_name: &str, path: &str) -> Vec<Component
             Some(method) => vec![ComponentType::MethodComponent(method)],
             None => vec![],
         },
+        "class_specifier" => match transform_into_class(ast, module_name, path) {
+            Some(class) => vec![ComponentType::ClassOrInterfaceComponent(class)],
+            None => vec![],
+        },
+        "type_definition" => vec![], // could be typedef'd class
         _ => {
             let components: Vec<ComponentType> = ast
                 .children
@@ -312,6 +317,57 @@ fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<Met
     };
 
     Some(param)
+}
+
+/// Transforms an AST with type label "class_specifier" to a `ClassOrInterfaceComponent`
+fn transform_into_class(
+    ast: AST,
+    module_name: &str,
+    path: &str,
+) -> Option<ClassOrInterfaceComponent> {
+    let class_name = ast
+        .children
+        .iter()
+        .find(|child| child.r#type == "type_identifier")
+        .map_or_else(|| "".into(), |t| t.value.clone());
+
+    let fields_list = ast
+        .children
+        .iter()
+        .find(|child| child.r#type == "field_declaration_list")?;
+
+    let fields: Vec<FieldComponent> = fields_list
+        .children
+        .iter()
+        .map(|child| class_field(child, AccessorType::Default))
+        .filter_map(|field| field)
+        .collect();
+
+    Some(ClassOrInterfaceComponent {
+        component: ContainerComponent {
+            component: ComponentInfo {
+                path: path.into(),
+                package_name: module_name.into(),
+                instance_name: class_name.clone(),
+                instance_type: InstanceType::ClassComponent,
+            },
+            accessor: AccessorType::Default,
+            stereotype: ContainerStereotype::Entity,
+            methods: vec![],
+            container_name: class_name,
+            line_count: 0,
+        },
+        declaration_type: ContainerType::Class,
+        annotations: vec![],
+        stereotype: ContainerStereotype::Entity,
+        methods: vec![],
+        constructors: None,
+        field_components: Some(fields),
+    })
+}
+
+fn class_field(ast: &AST, accessor: AccessorType) -> Option<FieldComponent> {
+    None
 }
 
 #[cfg(test)]

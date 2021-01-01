@@ -126,7 +126,6 @@ pub struct ContainerComponent {
 pub struct ClassOrInterfaceComponent {
     #[serde(flatten)]
     pub component: ContainerComponent,
-    pub path: String,
     pub declaration_type: ContainerType,
     pub annotations: Vec<AnnotationComponent>,
     pub stereotype: ContainerStereotype,

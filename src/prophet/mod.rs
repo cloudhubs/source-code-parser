@@ -84,7 +84,6 @@ mod tests {
                     container_name: "class".to_string(),
                     line_count: 3,
                 },
-                path: "/path/module_name/class".to_string(),
                 declaration_type: ContainerType::Class,
                 annotations: vec![],
                 stereotype: ContainerStereotype::Service,
