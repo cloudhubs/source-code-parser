@@ -1,6 +1,57 @@
 use crate::parse::AST;
 use crate::prophet::*;
 
+pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
+    let mut merged = vec![];
+    for mut module in modules {
+        if merged.len() == 0 {
+            merged.push(module);
+            continue;
+        }
+
+        let mergeable = merged
+            .iter_mut()
+            .find(|m| m.module_name == module.module_name);
+        if let Some(mergeable) = mergeable {
+            mergeable.classes.append(&mut module.classes);
+            mergeable.interfaces.append(&mut module.interfaces);
+            mergeable
+                .component
+                .methods
+                .append(&mut module.component.methods);
+
+            for class in mergeable.classes.iter_mut() {
+                let methods: Vec<&mut MethodComponent> = mergeable
+                    .component
+                    .methods
+                    .iter_mut()
+                    .filter(|m| m.method_name.starts_with(&class.component.container_name))
+                    .collect();
+                for method in methods {
+                    class.methods.push(method.clone());
+                }
+            }
+
+            mergeable.component.methods =
+                mergeable
+                    .component
+                    .methods
+                    .clone()
+                    .into_iter()
+                    .filter(|m| {
+                        match mergeable.classes.iter_mut().find(|class| {
+                            m.method_name.starts_with(&class.component.container_name)
+                        }) {
+                            Some(_) => false,
+                            None => true,
+                        }
+                    })
+                    .collect();
+        }
+    }
+    merged
+}
+
 pub fn find_components(ast: AST, module_name: &str, path: &str) -> Vec<ComponentType> {
     match &*ast.r#type {
         "namespace_definition" => match transform_namespace_to_module(ast, path) {

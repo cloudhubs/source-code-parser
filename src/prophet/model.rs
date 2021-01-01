@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub enum InstanceType {
     #[serde(rename = "CLASSCOMPONENT")]
     ClassComponent,
@@ -43,13 +43,13 @@ pub enum ContainerType {
     Interface,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct AnnotationValuePair {
     key: String,
     value: String,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub enum AccessorType {
     #[serde(rename = "private")]
     Private,

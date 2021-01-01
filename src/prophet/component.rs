@@ -1,7 +1,7 @@
 use super::*;
 use serde::Serialize;
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ComponentInfo {
     pub path: String,
     pub package_name: String,
@@ -22,7 +22,7 @@ pub enum ComponentType {
     // FieldComponent(FieldComponent<'a>),
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct MethodComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -47,7 +47,7 @@ pub struct MethodComponent {
     // statements: Vec<&'a str>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct MethodParamComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -169,7 +169,7 @@ pub struct FieldComponent {
 }
 
 // For some reason prophet-utils relies on an actual javaparser AnnotationExpr instead of putting the info here. Needs fix.
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct AnnotationComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
