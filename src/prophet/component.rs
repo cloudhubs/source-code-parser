@@ -42,7 +42,6 @@ pub struct MethodComponent {
     pub line_count: i32,
     pub line_begin: i32,
     pub line_end: i32,
-   
     // TODO: method body
 }
 
