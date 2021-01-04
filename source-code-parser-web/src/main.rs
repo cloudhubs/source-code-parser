@@ -16,7 +16,7 @@ struct Opt {
 async fn main() -> std::io::Result<()> {
     let opt = Opt::from_args();
     let addr = format!("{}:{}", opt.host, opt.port);
-    HttpServer::new(|| App::new().service(ast))
+    HttpServer::new(|| App::new().service(ast).service(ctx))
         .bind(addr)?
         .run()
         .await

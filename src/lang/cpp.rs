@@ -365,16 +365,17 @@ fn class_fields(field_list: &Vec<AST>) -> Vec<FieldComponent> {
     for field in field_list.iter() {
         match &*field.r#type {
             "access_specifier" => {
-                let access_specifier = field
-                    .children
-                    .iter()
-                    .find(|child| child.r#type != ":")
-                    .map(|child| match &*child.value {
-                        "public" => AccessorType::Public,
-                        "private" => AccessorType::Private,
-                        "protected" => AccessorType::Protected,
-                        _ => AccessorType::Default
-                    });
+                let access_specifier =
+                    field
+                        .children
+                        .iter()
+                        .find(|child| child.r#type != ":")
+                        .map(|child| match &*child.value {
+                            "public" => AccessorType::Public,
+                            "private" => AccessorType::Private,
+                            "protected" => AccessorType::Protected,
+                            _ => AccessorType::Default,
+                        });
                 if let Some(access_specifier) = access_specifier {
                     accessor = access_specifier;
                 }

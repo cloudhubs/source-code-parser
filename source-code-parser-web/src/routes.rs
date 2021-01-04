@@ -1,7 +1,11 @@
 use actix_web::{post, web, HttpResponse};
-use serde::Deserialize;
+use rust_code_analysis::AstPayload;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use source_code_parser::*;
+use std::fmt::Debug;
+use std::fs::File;
+use std::io::prelude::*;
 use std::path::PathBuf;
 
 #[derive(Deserialize)]
@@ -9,22 +13,52 @@ pub struct AstRequest {
     root: String,
 }
 
+#[post("/ctx")]
+pub fn ctx(payload: web::Json<AstRequest>) -> HttpResponse {
+    match parse_project_context(&PathBuf::from(&payload.root)) {
+        Ok(ctx) => ok(ctx),
+        Err(err) => internal_server_error(err),
+    }
+}
+
 #[post("/ast")]
 pub fn ast(payload: web::Json<AstRequest>) -> HttpResponse {
-    match parse_project_context(&PathBuf::from(&payload.root)) {
-        Ok(ctx) => {
-            let resp = json!({
-                "status": 200,
-                "data": ctx
-            });
-            HttpResponse::Ok().json(resp)
-        }
-        Err(err) => {
-            let msg = format!("{:?}", err);
-            HttpResponse::InternalServerError().json(json!({
-                "status": 500,
-                "message": msg,
-            }))
-        }
+    let mut code = String::new();
+    let path = PathBuf::from(&payload.root);
+    let mut file = match File::open(path) {
+        Ok(file) => file,
+        Err(err) => return internal_server_error(err),
+    };
+    if let Err(err) = file.read_to_string(&mut code) {
+        return internal_server_error(err);
     }
+
+    let result = parse_ast(AstPayload {
+        id: "".to_owned(),
+        file_name: payload.root.clone(),
+        code,
+        comment: false,
+        span: true,
+    });
+
+    match result {
+        Some((ast, _lang)) => ok(ast),
+        None => internal_server_error("Invalid language"),
+    }
+}
+
+fn ok<T: Serialize>(data: T) -> HttpResponse {
+    let resp = json!({
+        "status": 200,
+        "data": data,
+    });
+    HttpResponse::Ok().json(resp)
+}
+
+fn internal_server_error<E: Debug>(err: E) -> HttpResponse {
+    let resp = json!({
+        "status": 500,
+        "message": format!("{:?}", err),
+    });
+    HttpResponse::InternalServerError().json(resp)
 }
