@@ -7,8 +7,7 @@ pub struct ComponentInfo {
     pub package_name: String,
     pub instance_name: String,
     pub instance_type: InstanceType,
-    // I don't know whether this part is really necessary?
-    // It just makes things a lot more complicated if so.
+    // This does not seem to be used in Prophet.
     // sub_components: Vec<ComponentType<'a>>,
 }
 
@@ -43,15 +42,15 @@ pub struct MethodComponent {
     pub line_count: i32,
     pub line_begin: i32,
     pub line_end: i32,
-    // Statements were @JsonIgnore for some reason..
-    // statements: Vec<&'a str>,
+   
+    // TODO: method body
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct MethodParamComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
-    // r#type: ??? -- this is Class<?> in prophet
+    // r#type: ??? -- this is Class<?> in prophet, not sure if used.
     pub annotation: Option<AnnotationComponent>,
     pub parameter_type: String,
     pub parameter_name: String,
@@ -100,11 +99,6 @@ impl ModuleComponent {
     }
 }
 
-// #[derive(Debug, Eq, PartialEq, Serialize)]
-// pub struct ModulePackageMap<'a> {
-//     module_path_map: Vec<ModuleComponent<'a>>,
-// }
-
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct ContainerComponent {
     #[serde(flatten)]
@@ -117,7 +111,7 @@ pub struct ContainerComponent {
     pub container_name: String,
     #[serde(rename = "lineCount")]
     pub line_count: i32,
-    // Not including this would also make things easier
+    // I don't think this is actually used in Prophet
     // #[serde(rename = "rawSource")]
     // raw_source: &'a str,
 }
@@ -137,15 +131,6 @@ pub struct ClassOrInterfaceComponent {
     pub field_components: Option<Vec<FieldComponent>>,
 }
 
-// #[derive(Debug, Eq, PartialEq, Serialize)]
-// pub struct ClassComponent<'a> {
-//     #[serde(flatten)]
-//     container: ClassOrInterfaceComponent<'a>,
-//     constructors: Vec<MethodComponent<'a>>,
-//     #[serde(rename = "fieldComponents")]
-//     field_components: Vec<FieldComponent<'a>>,
-// }
-
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct FieldComponent {
     #[serde(flatten)]
@@ -162,7 +147,7 @@ pub struct FieldComponent {
     #[serde(rename = "default_value_string")]
     pub default_value: String,
     pub r#type: String,
-    // is_collection -- may make more sense as a field due to language differences
+    // is_collection -- may make sense as a field due to language differences
 }
 
 // For some reason prophet-utils relies on an actual javaparser AnnotationExpr instead of putting the info here. Needs fix.
@@ -176,15 +161,9 @@ pub struct AnnotationComponent {
     pub annotation_meta_model: String,
     #[serde(rename = "metaModelFieldName")]
     pub meta_model_field_name: String,
-    // For now I mimiced the data structures used but this should really just be
-    // a HashMap<&'a str, &'a str> and we could just implement serde::Serialize manually.
+    // For now I mimiced the data structure here but this should really just be
+    // a HashMap<&'a str, &'a str> with a manual serde::Serialize implementation.
+    // I also am not sure where this is used.
     pub key_value_pairs: Vec<AnnotationValuePair>,
     pub value: String,
 }
-
-// Seems useless since it can be represented by the other component.
-// #[derive(Debug, Eq, PartialEq, Serialize)]
-// pub struct InterfaceComponent<'a> {
-//     #[serde(flatten)]
-//     container: ClassOrInterfaceComponent<'a>,
-// }
