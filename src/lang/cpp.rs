@@ -134,15 +134,19 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         "scoped_identifier_type",
         "type_identifier",
     ]);
-    let ret_type = match ret {
+    let mut ret_type = match ret {
         Some(ret) => type_ident(ret),
         None => "".to_string(),
     };
 
-    let decl = ast
-        .children
-        .iter()
-        .find(|child| child.r#type == "function_declarator")?;
+    let decl = match ast.find_child_by_type(&["reference_declarator", "pointer_declarator"]) {
+        Some(reference_decl) => {
+            let reference = reference_decl.find_child_by_type(&["*", "&"])?;
+            ret_type.push_str(&reference.value);
+            reference_decl.find_child_by_type(&["function_declarator"])
+        }
+        None => ast.find_child_by_type(&["function_declarator"]),
+    }?;
 
     let identifier = decl.find_child_by_type(&["scoped_identifier", "identifier"])?;
     let fn_ident = func_ident(identifier);
