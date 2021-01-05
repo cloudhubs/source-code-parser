@@ -11,7 +11,7 @@ use crate::{lang::*, *};
 
 /// Information on an `AST` node.
 /// Taken directly from the `rust_code_analysis` crate with additional serde macros for deserialization.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all(deserialize = "PascalCase"))]
 pub struct AST {
     /// The type of node
@@ -159,6 +159,7 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
                             ComponentType::ModuleComponent(module) => {
                                 modules.push(module);
                             }
+                            _ => {}
                         }
                     }
                 }

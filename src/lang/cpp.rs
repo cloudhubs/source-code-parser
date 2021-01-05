@@ -63,11 +63,11 @@ pub fn find_components(ast: AST, module_name: &str, path: &str) -> Vec<Component
             Some(module) => vec![ComponentType::ModuleComponent(module)],
             None => vec![],
         },
-        "function_definition" => match transform_into_method(ast, module_name, path) {
+        "function_definition" => match transform_into_method(&ast, module_name, path) {
             Some(method) => vec![ComponentType::MethodComponent(method)],
             None => vec![],
         },
-        "class_specifier" => match transform_into_class(ast, module_name, path) {
+        "class_specifier" => match transform_into_class(&ast, module_name, path) {
             Some(class) => vec![ComponentType::ClassOrInterfaceComponent(class)],
             None => vec![],
         },
@@ -118,13 +118,16 @@ fn transform_namespace_to_module(ast: AST, path: &str) -> Option<ModuleComponent
             ComponentType::ModuleComponent(_module) => {
                 unimplemented!();
             }
+            _ => {
+                unimplemented!();
+            }
         });
 
     Some(module)
 }
 
-/// Transforms an AST with type label "function_definition" to a `MethodComponent`
-fn transform_into_method(ast: AST, module_name: &str, path: &str) -> Option<MethodComponent> {
+/// Transforms an AST with type label "function_definition" or "field_declaration" or "declaration" to a `MethodComponent`
+fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<MethodComponent> {
     // TODO: child type "compound_statement" for function block
     let ret = ast.children.iter().find(|child| match &*child.r#type {
         "primitive_type" | "scoped_type_identifier" | "type_identifier" => true,
@@ -269,31 +272,27 @@ fn func_parameters(param_list: &AST, module_name: &str, path: &str) -> Vec<Metho
     params
 }
 
-fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<MethodParamComponent> {
-    let scoped_type_ident = param_decl
-        .children
-        .iter()
-        .find(|child| match &*child.r#type {
-            "scoped_type_identifier" | "primitive_type" | "type_identifier" => true,
-            _ => false,
-        })?;
-    let mut param_type = type_ident(scoped_type_ident);
+fn variable_type(ast: &AST) -> Option<String> {
+    let scoped_type_ident = ast.children.iter().find(|child| match &*child.r#type {
+        "scoped_type_identifier" | "primitive_type" | "type_identifier" => true,
+        _ => false,
+    })?;
+    Some(type_ident(scoped_type_ident))
+}
 
-    let ident = param_decl
-        .children
-        .iter()
-        .find(|child| match &*child.r#type {
-            "pointer_declarator" | "reference_declarator" | "identifier" => true,
-            _ => false,
-        })?;
+fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
+    let ident = ast.children.iter().find(|child| match &*child.r#type {
+        "pointer_declarator" | "reference_declarator" | "identifier" => true,
+        _ => false,
+    })?;
 
-    let ident = match &*ident.r#type {
+    Some(match &*ident.r#type {
         "pointer_declarator" | "reference_declarator" => {
             ident
                 .children
                 .iter()
                 .filter(|child| child.r#type != "identifier") // get either & or * type
-                .for_each(|star| param_type.push_str(&star.value));
+                .for_each(|star| variable_type.push_str(&star.value));
             ident
                 .children
                 .iter()
@@ -302,7 +301,12 @@ fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<Met
         }
         "identifier" => ident.value.clone(),
         _ => "".to_string(),
-    };
+    })
+}
+
+fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<MethodParamComponent> {
+    let mut param_type = variable_type(param_decl)?;
+    let ident = variable_ident(param_decl, &mut param_type)?;
 
     let param = MethodParamComponent {
         component: ComponentInfo {
@@ -321,7 +325,7 @@ fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<Met
 
 /// Transforms an AST with type label "class_specifier" to a `ClassOrInterfaceComponent`
 fn transform_into_class(
-    ast: AST,
+    ast: &AST,
     module_name: &str,
     path: &str,
 ) -> Option<ClassOrInterfaceComponent> {
@@ -336,7 +340,16 @@ fn transform_into_class(
         .iter()
         .find(|child| child.r#type == "field_declaration_list")?;
 
-    let fields: Vec<FieldComponent> = class_fields(&field_list.children);
+    let field_components = class_fields(&field_list.children, module_name, path);
+    let mut fields = vec![];
+    let mut methods = vec![];
+    for field in field_components {
+        match field {
+            ComponentType::MethodComponent(method) => methods.push(method),
+            ComponentType::FieldComponent(field) => fields.push(field),
+            _ => {}
+        }
+    }
 
     Some(ClassOrInterfaceComponent {
         component: ContainerComponent {
@@ -348,7 +361,7 @@ fn transform_into_class(
             },
             accessor: AccessorType::Default,
             stereotype: ContainerStereotype::Entity,
-            methods: vec![],
+            methods,
             container_name: class_name,
             line_count: 0,
         },
@@ -360,37 +373,61 @@ fn transform_into_class(
     })
 }
 
-fn class_fields(field_list: &Vec<AST>) -> Vec<FieldComponent> {
-    let mut accessor = AccessorType::Default;
+// ComponentType variants will always be FieldComponent or MethodComponent
+fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<ComponentType> {
+    let mut fields = vec![];
+    let mut access_specifier = AccessorType::Default;
     for field in field_list.iter() {
         match &*field.r#type {
             "access_specifier" => {
-                let access_specifier =
-                    field
-                        .children
-                        .iter()
-                        .find(|child| child.r#type != ":")
-                        .map(|child| match &*child.value {
-                            "public" => AccessorType::Public,
-                            "private" => AccessorType::Private,
-                            "protected" => AccessorType::Protected,
-                            _ => AccessorType::Default,
-                        });
-                if let Some(access_specifier) = access_specifier {
-                    accessor = access_specifier;
-                }
+                access_specifier = field
+                    .children
+                    .iter()
+                    .find(|child| child.r#type != ":")
+                    .map(|accessor| field_accessor(accessor))
+                    .unwrap_or(AccessorType::Default);
             }
-            "function_definition" => {
+            "function_definition" | "field_declaration" | "declaration" => {
                 // Need to consider that functions could be declared inside of the class
                 // This means I need to alter class/method merging
-            }
-            "field_declaration" => {
-                todo!()
+                if let Some(mut method) = transform_into_method(field, module_name, path) {
+                    method.accessor = access_specifier.clone();
+                    method.is_abstract = field_is_abstract_method(field);
+                    fields.push(ComponentType::MethodComponent(method));
+                }
             }
             _ => {}
         }
     }
-    vec![]
+    fields
+}
+
+fn field_accessor(accessor: &AST) -> AccessorType {
+    match &*accessor.value {
+        "public" => AccessorType::Public,
+        "private" => AccessorType::Private,
+        "protected" => AccessorType::Protected,
+        _ => AccessorType::Default,
+    }
+}
+
+fn field_is_abstract_method(field: &AST) -> bool {
+    let virtual_specifier = field
+        .children
+        .iter()
+        .find(|child| &*child.r#type == "virtual_function_specifier")
+        .is_some();
+    let eq = field
+        .children
+        .iter()
+        .find(|child| &*child.r#type == "=")
+        .is_some();
+    let zero = field
+        .children
+        .iter()
+        .find(|child| &*child.value == "0")
+        .is_some();
+    virtual_specifier && eq && zero
 }
 
 #[cfg(test)]

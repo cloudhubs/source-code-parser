@@ -18,7 +18,7 @@ pub enum ComponentType {
     // AnnotationComponent(AnnotationComponent<'a>),
     MethodComponent(MethodComponent),
     ModuleComponent(ModuleComponent),
-    // FieldComponent(FieldComponent<'a>),
+    FieldComponent(FieldComponent),
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
