@@ -25,6 +25,18 @@ pub struct AST {
     pub children: Vec<AST>,
 }
 
+impl AST {
+    pub fn find_child_by_type(&self, r#type: &[&str]) -> Option<&AST> {
+        self.children
+            .iter()
+            .find(|child| r#type.iter().find(|t| &*child.r#type == **t).is_some())
+    }
+
+    pub fn find_child_by_value(&self, value: &str) -> Option<&AST> {
+        self.children.iter().find(|child| child.value == value)
+    }
+}
+
 /// Parse the given source code from the `AstPayload`
 pub fn parse_ast(payload: AstPayload) -> Option<(AST, LANG)> {
     let file = payload.file_name;

@@ -129,10 +129,11 @@ fn transform_namespace_to_module(ast: AST, path: &str) -> Option<ModuleComponent
 /// Transforms an AST with type label "function_definition" or "field_declaration" or "declaration" to a `MethodComponent`
 fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<MethodComponent> {
     // TODO: child type "compound_statement" for function block
-    let ret = ast.children.iter().find(|child| match &*child.r#type {
-        "primitive_type" | "scoped_type_identifier" | "type_identifier" => true,
-        _ => false,
-    });
+    let ret = ast.find_child_by_type(&[
+        "primitive_type",
+        "scoped_identifier_type",
+        "type_identifier",
+    ]);
     let ret_type = match ret {
         Some(ret) => type_ident(ret),
         None => "".to_string(),
@@ -143,16 +144,10 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         .iter()
         .find(|child| child.r#type == "function_declarator")?;
 
-    let identifier = decl.children.iter().find(|child| match &*child.r#type {
-        "scoped_identifier" | "identifier" => true,
-        _ => false,
-    })?;
+    let identifier = decl.find_child_by_type(&["scoped_identifier", "identifier"])?;
     let fn_ident = func_ident(identifier);
 
-    let parameter_list = decl
-        .children
-        .iter()
-        .find(|child| child.r#type == "parameter_list")?;
+    let parameter_list = decl.find_child_by_type(&["parameter_list"])?;
     let params = func_parameters(parameter_list, module_name, path);
 
     let method = MethodComponent {
@@ -202,9 +197,7 @@ fn type_ident(ast: &AST) -> String {
                 .collect();
 
             let type_args = ast
-                .children
-                .iter()
-                .find(|child| child.r#type == "template_argument_list")
+                .find_child_by_type(&["template_argument_list"])
                 .expect("No argument list for template");
 
             let inner_types = type_args
@@ -227,10 +220,7 @@ fn type_ident(ast: &AST) -> String {
 fn func_ident(ast: &AST) -> String {
     match &*ast.r#type {
         "function_declarator" => {
-            let ident = ast.children.iter().find(|child| match &*child.r#type {
-                "scoped_identifier" | "identifier" => true,
-                _ => false,
-            });
+            let ident = ast.find_child_by_type(&["scoped_identifier", "identifier"]);
             match ident {
                 Some(ident) => func_ident(ident),
                 None => "".to_string(),
@@ -273,18 +263,17 @@ fn func_parameters(param_list: &AST, module_name: &str, path: &str) -> Vec<Metho
 }
 
 fn variable_type(ast: &AST) -> Option<String> {
-    let scoped_type_ident = ast.children.iter().find(|child| match &*child.r#type {
-        "scoped_type_identifier" | "primitive_type" | "type_identifier" => true,
-        _ => false,
-    })?;
+    let scoped_type_ident = ast.find_child_by_type(&[
+        "scoped_type_identifier",
+        "primitive_type",
+        "type_identifier",
+    ])?;
     Some(type_ident(scoped_type_ident))
 }
 
 fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
-    let ident = ast.children.iter().find(|child| match &*child.r#type {
-        "pointer_declarator" | "reference_declarator" | "identifier" => true,
-        _ => false,
-    })?;
+    let ident =
+        ast.find_child_by_type(&["pointer_declarator", "reference_declarator", "identifier"])?;
 
     Some(match &*ident.r#type {
         "pointer_declarator" | "reference_declarator" => {
@@ -294,9 +283,7 @@ fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
                 .filter(|child| child.r#type != "identifier") // get either & or * type
                 .for_each(|star| variable_type.push_str(&star.value));
             ident
-                .children
-                .iter()
-                .find(|child| child.r#type == "identifier")
+                .find_child_by_type(&["identifier"])
                 .map_or_else(|| "".to_string(), |identifier| identifier.value.clone())
         }
         "identifier" => ident.value.clone(),
@@ -330,15 +317,10 @@ fn transform_into_class(
     path: &str,
 ) -> Option<ClassOrInterfaceComponent> {
     let class_name = ast
-        .children
-        .iter()
-        .find(|child| child.r#type == "type_identifier")
+        .find_child_by_type(&["type_identifier"])
         .map_or_else(|| "".into(), |t| t.value.clone());
 
-    let field_list = ast
-        .children
-        .iter()
-        .find(|child| child.r#type == "field_declaration_list")?;
+    let field_list = ast.find_child_by_type(&["field_declaration_list"])?;
 
     let field_components = class_fields(&field_list.children, module_name, path);
     let mut fields = vec![];
@@ -381,9 +363,7 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
         match &*field.r#type {
             "access_specifier" => {
                 access_specifier = field
-                    .children
-                    .iter()
-                    .find(|child| child.r#type != ":")
+                    .find_child_by_type(&[":"])
                     .map(|accessor| field_accessor(accessor))
                     .unwrap_or(AccessorType::Default);
             }
@@ -413,20 +393,10 @@ fn field_accessor(accessor: &AST) -> AccessorType {
 
 fn field_is_abstract_method(field: &AST) -> bool {
     let virtual_specifier = field
-        .children
-        .iter()
-        .find(|child| &*child.r#type == "virtual_function_specifier")
+        .find_child_by_type(&["virtual_function_specifier"])
         .is_some();
-    let eq = field
-        .children
-        .iter()
-        .find(|child| &*child.r#type == "=")
-        .is_some();
-    let zero = field
-        .children
-        .iter()
-        .find(|child| &*child.value == "0")
-        .is_some();
+    let eq = field.find_child_by_type(&["="]).is_some();
+    let zero = field.find_child_by_value("0").is_some();
     virtual_specifier && eq && zero
 }
 
