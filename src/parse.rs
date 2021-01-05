@@ -26,10 +26,10 @@ pub struct AST {
 }
 
 impl AST {
-    pub fn find_child_by_type(&self, r#type: &[&str]) -> Option<&AST> {
+    pub fn find_child_by_type(&self, types: &[&str]) -> Option<&AST> {
         self.children
             .iter()
-            .find(|child| r#type.iter().find(|t| &*child.r#type == **t).is_some())
+            .find(|child| types.iter().find(|t| &*child.r#type == **t).is_some())
     }
 
     pub fn find_child_by_value(&self, value: &str) -> Option<&AST> {
