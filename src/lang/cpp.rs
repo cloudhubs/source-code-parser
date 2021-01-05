@@ -378,7 +378,35 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
                     method.accessor = access_specifier.clone();
                     method.is_abstract = field_is_abstract_method(field);
                     fields.push(ComponentType::MethodComponent(method));
+                    continue;
                 }
+
+                assert!(&*field.r#type == "field_declaration");
+                // Not a method if this is reached
+                let field_name = field
+                    .find_child_by_type(&["field_identifier"])
+                    .expect("Field declaration had no identifier")
+                    .value
+                    .clone();
+                let field_type = variable_type(field).expect("Field declaration had no type");
+                let field = FieldComponent {
+                    component: ComponentInfo {
+                        path: path.to_string(),
+                        package_name: module_name.to_string(),
+                        instance_name: field_name.clone(),
+                        instance_type: InstanceType::FieldComponent,
+                    },
+                    annotations: vec![],
+                    variables: vec![],
+                    field_name,
+                    accessor: access_specifier.clone(),
+                    is_static: false,
+                    is_final: false,
+                    default_value: "".to_string(),
+                    r#type: field_type,
+                };
+
+                fields.push(ComponentType::FieldComponent(field));
             }
             _ => {}
         }
