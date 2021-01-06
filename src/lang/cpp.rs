@@ -148,8 +148,8 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         None => ast.find_child_by_type(&["function_declarator"]),
     }?;
 
-    let identifier = decl.find_child_by_type(&["scoped_identifier", "identifier"])?;
-    let fn_ident = func_ident(identifier);
+    // let identifier = decl.find_child_by_type(&["scoped_identifier", "identifier"])?;
+    let fn_ident = func_ident(decl);
 
     let parameter_list = decl.find_child_by_type(&["parameter_list"])?;
     let params = func_parameters(parameter_list, module_name, path);
@@ -224,7 +224,12 @@ fn type_ident(ast: &AST) -> String {
 fn func_ident(ast: &AST) -> String {
     match &*ast.r#type {
         "function_declarator" => {
-            let ident = ast.find_child_by_type(&["scoped_identifier", "identifier"]);
+            let ident = ast.find_child_by_type(&[
+                "scoped_identifier",
+                "identifier",
+                "destructor_name",
+                "constructor_name",
+            ]);
             match ident {
                 Some(ident) => func_ident(ident),
                 None => "".to_string(),
@@ -271,13 +276,18 @@ fn variable_type(ast: &AST) -> Option<String> {
         "scoped_type_identifier",
         "primitive_type",
         "type_identifier",
+        "template_type",
     ])?;
     Some(type_ident(scoped_type_ident))
 }
 
 fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
-    let ident =
-        ast.find_child_by_type(&["pointer_declarator", "reference_declarator", "identifier"])?;
+    let ident = ast.find_child_by_type(&[
+        "pointer_declarator",
+        "reference_declarator",
+        "identifier",
+        "field_identifier",
+    ])?;
 
     Some(match &*ident.r#type {
         "pointer_declarator" | "reference_declarator" => {
@@ -290,7 +300,7 @@ fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
                 .find_child_by_type(&["identifier"])
                 .map_or_else(|| "".to_string(), |identifier| identifier.value.clone())
         }
-        "identifier" => ident.value.clone(),
+        "identifier" | "field_identifier" => ident.value.clone(),
         _ => "".to_string(),
     })
 }
@@ -383,12 +393,9 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
 
                 assert!(&*field.r#type == "field_declaration");
                 // Not a method if this is reached
-                let field_name = field
-                    .find_child_by_type(&["field_identifier"])
-                    .expect("Field declaration had no identifier")
-                    .value
-                    .clone();
-                let field_type = variable_type(field).expect("Field declaration had no type");
+                let mut field_type = variable_type(field).expect("Field declaration had no type");
+                let field_name = variable_ident(field, &mut field_type)
+                    .expect("Field declaration had no identifier");
                 let field = FieldComponent {
                     component: ComponentInfo {
                         path: path.to_string(),
@@ -796,5 +803,93 @@ mod tests {
             actual_param.parameter_type,
         );
         assert_eq!("name".to_string(), actual_param.parameter_name,);
+    }
+
+    #[test]
+    fn destructor_method() {
+        let destructor = AST {
+            children: vec![
+                AST {
+                    children: vec![AST {
+                        children: vec![],
+                        span: None,
+                        r#type: "virtual".to_string(),
+                        value: "virtual".to_string(),
+                    }],
+                    span: None,
+                    r#type: "virtual_function_specifier".to_string(),
+                    value: "".to_string(),
+                },
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![
+                                AST {
+                                    children: vec![],
+                                    span: None,
+                                    r#type: "~".to_string(),
+                                    value: "~".to_string(),
+                                },
+                                AST {
+                                    children: vec![],
+                                    span: None,
+                                    r#type: "identifier".to_string(),
+                                    value: "CastInfoServiceIf".to_string(),
+                                },
+                            ],
+                            span: None,
+                            r#type: "destructor_name".to_string(),
+                            value: "".to_string(),
+                        },
+                        AST {
+                            children: vec![
+                                AST {
+                                    children: vec![],
+                                    span: None,
+                                    r#type: "(".to_string(),
+                                    value: "(".to_string(),
+                                },
+                                AST {
+                                    children: vec![],
+                                    span: None,
+                                    r#type: ")".to_string(),
+                                    value: ")".to_string(),
+                                },
+                            ],
+                            span: None,
+                            r#type: "parameter_list".to_string(),
+                            value: "".to_string(),
+                        },
+                    ],
+                    span: None,
+                    r#type: "function_declarator".to_string(),
+                    value: "".to_string(),
+                },
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "{".to_string(),
+                            value: "{".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "}".to_string(),
+                            value: "}".to_string(),
+                        },
+                    ],
+                    span: None,
+                    r#type: "compound_statement".to_string(),
+                    value: "".to_string(),
+                },
+            ],
+            span: None,
+            r#type: "function_definition".to_string(),
+            value: "".to_string(),
+        };
+        let destructor = transform_into_method(&destructor, "", "").unwrap();
+        assert_eq!("~CastInfoServiceIf", destructor.method_name);
     }
 }
