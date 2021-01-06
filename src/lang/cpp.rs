@@ -254,7 +254,7 @@ fn func_ident(ast: &AST) -> String {
                 .collect();
             ident
         }
-        "identifier" => ast.value.clone(),
+        "identifier" | "field_identifier" => ast.value.clone(),
         _ => "".to_string(),
     }
 }
@@ -294,10 +294,13 @@ fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
             ident
                 .children
                 .iter()
-                .filter(|child| child.r#type != "identifier") // get either & or * type
+                .filter(|child| match &*child.r#type {
+                    "identifier" | "field_identifier" => false,
+                    _ => true,
+                }) // get either & or * type
                 .for_each(|star| variable_type.push_str(&star.value));
             ident
-                .find_child_by_type(&["identifier"])
+                .find_child_by_type(&["identifier", "field_identifier"])
                 .map_or_else(|| "".to_string(), |identifier| identifier.value.clone())
         }
         "identifier" | "field_identifier" => ident.value.clone(),
