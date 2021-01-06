@@ -227,6 +227,7 @@ fn func_ident(ast: &AST) -> String {
             let ident = ast.find_child_by_type(&[
                 "scoped_identifier",
                 "identifier",
+                "field_identifier",
                 "destructor_name",
                 "constructor_name",
             ]);
