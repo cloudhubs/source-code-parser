@@ -36,8 +36,12 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
                         function.method_name.ends_with(&m.method_name)
                             && m.parameters == function.parameters
                     });
-                    if let Some(_class_method) = class_method {
+
+                    if let Some(class_method) = class_method {
                         // TODO: add the body from method into class_method
+                        class_method.line_begin = function.line_begin;
+                        class_method.line_end = function.line_end;
+                        class_method.line_count = function.line_count;
                     }
                 }
             }
@@ -162,6 +166,17 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
     let parameter_list = decl.find_child_by_type(&["parameter_list"])?;
     let params = func_parameters(parameter_list, module_name, path);
 
+    let body = ast.find_child_by_type(&["compound_statement"]);
+    let (line_begin, line_end) = match body {
+        Some(body) => match body.span {
+            Some((line_start, _col_start, line_end, _col_end)) => {
+                (line_start as i32, line_end as i32)
+            }
+            None => (0, 0),
+        },
+        None => (0, 0),
+    };
+
     let method = MethodComponent {
         component: ComponentInfo {
             path: path.to_string(),
@@ -177,9 +192,9 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         is_abstract: false,
         sub_methods: vec![],
         annotations: vec![],
-        line_count: 0,
-        line_begin: 0,
-        line_end: 0,
+        line_count: line_end - line_begin + 1,
+        line_begin,
+        line_end,
     };
 
     Some(method)
