@@ -1,3 +1,4 @@
+use rust_code_analysis::LANG;
 use serde::Serialize;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -62,14 +63,24 @@ pub enum AccessorType {
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
-pub enum LanguageFileType {
+pub enum Language {
     Java,
     Cpp,
     Python,
-    Go,
     // ...
     #[serde(rename = "N/A")]
     Unknown,
+}
+
+impl Into<Language> for LANG {
+    fn into(self) -> Language {
+        match self {
+            LANG::Cpp => Language::Cpp,
+            LANG::Java => Language::Java,
+            LANG::Python => Language::Python,
+            _ => Language::Unknown,
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]

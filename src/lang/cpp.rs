@@ -4,6 +4,7 @@ use crate::prophet::*;
 pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
     let mut merged = vec![];
     for mut module in modules {
+        // First module is not a duplicate
         if merged.len() == 0 {
             merged.push(module);
             continue;
@@ -12,7 +13,9 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
         let mergeable = merged
             .iter_mut()
             .find(|m| m.module_name == module.module_name);
+        // Check if there is a module with the same name already merged
         if let Some(mergeable) = mergeable {
+            // Move the classes, ifcs, functions from the module
             mergeable.classes.append(&mut module.classes);
             mergeable.interfaces.append(&mut module.interfaces);
             mergeable
@@ -20,16 +23,18 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
                 .methods
                 .append(&mut module.component.methods);
 
+            // Check if there are class methods declared in the functions
             for class in mergeable.classes.iter_mut() {
-                let methods: Vec<&mut MethodComponent> = mergeable
+                let functions: Vec<&mut MethodComponent> = mergeable
                     .component
                     .methods
                     .iter_mut()
                     .filter(|m| m.method_name.starts_with(&class.component.container_name))
                     .collect();
-                for method in methods {
+                for function in functions {
                     let class_method = class.component.methods.iter_mut().find(|m| {
-                        m.method_name == method.method_name && m.parameters == method.parameters
+                        function.method_name.ends_with(&m.method_name)
+                            && m.parameters == function.parameters
                     });
                     if let Some(_class_method) = class_method {
                         // TODO: add the body from method into class_method
@@ -37,6 +42,7 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
                 }
             }
 
+            // Filter out the class methods since the merge already occurred in the previous loop
             mergeable.component.methods =
                 mergeable
                     .component
@@ -52,6 +58,8 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
                         }
                     })
                     .collect();
+        } else {
+            merged.push(module);
         }
     }
     merged

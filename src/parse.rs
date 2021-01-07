@@ -68,17 +68,14 @@ impl From<AstResponse> for AST {
 
 impl AST {
     /// Transform the language-specific AST into generic components.
-    pub fn transform(self, lang: LANG, path: &str) -> Vec<ComponentType> {
+    pub fn transform(self, lang: LANG, path: &str) -> (Vec<ComponentType>, Language) {
         // Do language specific AST parsing
         match lang {
-            LANG::Cpp => cpp::find_components(self, path, path),
+            LANG::Cpp => (cpp::find_components(self, path, path), lang.into()),
             LANG::Java => {
                 todo!();
             }
             LANG::Python => {
-                todo!();
-            }
-            LANG::Go => {
                 todo!();
             }
             lang => {
@@ -131,6 +128,7 @@ fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
 
 pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
     let mut modules = vec![];
+    let mut language = Language::Unknown;
 
     if dir.is_dir() {
         let dirs = flatten_dirs(dir)?;
@@ -148,7 +146,8 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
                 let entry = entry?;
                 if !entry.path().is_dir() {
                     let mut file = File::open(entry.path())?;
-                    let components = parse_file(&mut file, &entry.path())?;
+                    let (components, lang) = parse_file(&mut file, &entry.path())?;
+                    language = lang;
 
                     for component in components.into_iter() {
                         match component {
@@ -181,10 +180,17 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
         }
     }
 
-    Ok(modules)
+    Ok(merge_modules(modules, language))
 }
 
-pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<Vec<ComponentType>> {
+fn merge_modules(modules: Vec<ModuleComponent>, lang: Language) -> Vec<ModuleComponent> {
+    match lang {
+        Language::Cpp => cpp::merge_modules(modules),
+        _ => modules,
+    }
+}
+
+pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<(Vec<ComponentType>, Language)> {
     let mut code = String::new();
     file.read_to_string(&mut code)?;
 
@@ -198,7 +204,7 @@ pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<Vec<Component
 
     let (ast, lang) = match result {
         Some((ast, lang)) => (ast, lang),
-        None => return Ok(vec![]),
+        None => return Ok((vec![], Language::Unknown)),
     };
 
     Ok(ast.transform(lang, path.to_str().unwrap_or_default()))
