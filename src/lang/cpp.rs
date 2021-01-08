@@ -79,11 +79,12 @@ pub fn find_components(ast: AST, module_name: &str, path: &str) -> Vec<Component
             Some(method) => vec![ComponentType::MethodComponent(method)],
             None => vec![],
         },
-        "class_specifier" => match transform_into_class(&ast, module_name, path) {
-            Some(class) => vec![ComponentType::ClassOrInterfaceComponent(class)],
-            None => vec![],
-        },
-        "type_definition" => vec![], // could be typedef'd class
+        "class_specifier" | "struct_specifier" | "type_definition" => {
+            match transform_into_class(&ast, module_name, path) {
+                Some(class) => vec![ComponentType::ClassOrInterfaceComponent(class)],
+                None => vec![],
+            }
+        }
         _ => {
             let components: Vec<ComponentType> = ast
                 .children
@@ -351,7 +352,7 @@ fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<Met
     Some(param)
 }
 
-/// Transforms an AST with type label "class_specifier" to a `ClassOrInterfaceComponent`
+/// Transforms an AST with type label "class_specifier", "struct_specifier" or "type_definition" to a `ClassOrInterfaceComponent`
 fn transform_into_class(
     ast: &AST,
     module_name: &str,
@@ -361,7 +362,13 @@ fn transform_into_class(
         .find_child_by_type(&["type_identifier"])
         .map_or_else(|| "".into(), |t| t.value.clone());
 
-    let field_list = ast.find_child_by_type(&["field_declaration_list"])?;
+    // If a "type_definition" is the given AST, it should have one of these as a child.
+    let struct_specifier = ast.find_child_by_type(&["struct_specifier", "class_specifier"]);
+    let field_list = match struct_specifier {
+        Some(struct_specifier) => struct_specifier.find_child_by_type(&["field_declaration_list"]),
+        // Both class_specifier and struct_specifier both have a field_declaration_list child
+        None => ast.find_child_by_type(&["field_declaration_list"]),
+    }?;
 
     let field_components = class_fields(&field_list.children, module_name, path);
     let mut fields = vec![];
