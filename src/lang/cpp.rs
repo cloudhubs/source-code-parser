@@ -253,6 +253,7 @@ fn func_ident(ast: &AST) -> String {
                 "field_identifier",
                 "destructor_name",
                 "constructor_name",
+                "operator_name",
             ]);
             match ident {
                 Some(ident) => func_ident(ident),
@@ -278,7 +279,7 @@ fn func_ident(ast: &AST) -> String {
                 .collect();
             ident
         }
-        "identifier" | "field_identifier" => ast.value.clone(),
+        "identifier" | "field_identifier" | "operator_name" => ast.value.clone(),
         _ => "".to_string(),
     }
 }
