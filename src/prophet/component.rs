@@ -130,7 +130,7 @@ pub struct ClassOrInterfaceComponent {
     pub field_components: Option<Vec<FieldComponent>>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct FieldComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
