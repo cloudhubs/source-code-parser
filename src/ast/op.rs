@@ -1,3 +1,6 @@
+use serde::Serialize;
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub enum Op {
     Plus,
     Minus,

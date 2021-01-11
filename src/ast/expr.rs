@@ -1,4 +1,5 @@
 use serde::Serialize;
+use crate::ast::op::Op;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(untagged)]
@@ -18,13 +19,14 @@ pub enum Expr {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct BinaryExpr {
     pub lhs: Box<Expr>,
-    // pub op: Op,
+    pub op: Op,
     pub rhs: Box<Expr>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct UnaryExpr {
     pub expr: Box<Expr>,
+    pub op: Op,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
