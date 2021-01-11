@@ -76,3 +76,12 @@ pub struct IncDecStmt {
     pub is_inc: bool,
     pub expr: Expr,
 }
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+pub struct ImportStmt {
+    // Whether the import is a specific type or a package/module etc.
+    pub container: bool,
+    // Whether the import lets functions be referenced by name directly
+    pub use_direct: bool,
+    pub value: String,
+}
