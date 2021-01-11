@@ -11,7 +11,8 @@ pub enum Expr {
     DotExpr(DotExpr),
     RefExpr(RefExpr),
     StarExpr(StarExpr),
-    Literal(String),
+    Ident(Ident),
+    Literal(String)
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -30,7 +31,7 @@ pub struct UnaryExpr {
 pub struct CallExpr {
     // This could either be a Literal or a DotExpr
     pub name: Box<Expr>,
-    pub args: Vec<crate::MethodParamComponent>,
+    pub args: Vec<Ident>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -58,4 +59,12 @@ pub struct RefExpr {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct StarExpr {
     pub expr: Box<Expr>,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+pub struct Ident {
+    pub name: String,
+    pub is_static: Option<bool>,
+    pub is_final: Option<bool>,
+    pub r#type: Option<String>,
 }

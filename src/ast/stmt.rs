@@ -14,6 +14,7 @@ pub enum Stmt {
     ReturnStmt(ReturnStmt),
     SwitchStmt(SwitchStmt),
     IncDecStmt(IncDecStmt),
+    ImportStmt(ImportStmt),
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -24,7 +25,7 @@ pub struct AssignStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct DeclStmt {
-    pub lhs: crate::FieldComponent,
+    pub lhs: Ident,
     pub rhs: Vec<Expr>, // Vec since FieldComponent could declare multiple variables
 }
 
