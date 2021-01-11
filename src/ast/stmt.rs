@@ -24,9 +24,8 @@ pub struct AssignStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct DeclStmt {
-    pub r#type: String,
-    pub name: String,
-    pub rhs: Expr,
+    pub lhs: crate::FieldComponent,
+    pub rhs: Vec<Expr>, // Vec since FieldComponent could declare multiple variables
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]

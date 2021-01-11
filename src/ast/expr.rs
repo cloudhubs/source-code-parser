@@ -30,7 +30,7 @@ pub struct UnaryExpr {
 pub struct CallExpr {
     // This could either be a Literal or a DotExpr
     pub name: Box<Expr>,
-    pub args: Vec<crate::FieldComponent>, // Should this be FieldComponent or a new type?
+    pub args: Vec<crate::MethodParamComponent>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
