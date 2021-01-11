@@ -16,6 +16,7 @@ pub enum Op {
     Tilde,
     BitShiftLeft,
     BitShiftRight,
+    UnsignedBitShiftRight,
 
     FatArrow,
     ThinArrow,
@@ -33,6 +34,9 @@ pub enum Op {
     PipeEqual,
     CaratEqual,
     TildeEqual,
+    ShiftLeftEqual,
+    ShiftRightEqual,
+    UnsignedShiftRightEqual,
 
     AndAnd,
     PipePipe,
@@ -42,6 +46,8 @@ pub enum Op {
     GreaterThanEqualTo,
     LessThan,
     LessThanEqualTo,
+
+    Spaceship,
 
     Other(String),
 }
@@ -63,6 +69,7 @@ impl From<Op> for String {
             Op::Tilde => "~".into(),
             Op::BitShiftLeft => "<<".into(),
             Op::BitShiftRight => ">>".into(),
+            Op::UnsignedBitShiftRight => ">>>".into(),
 
             Op::FatArrow => "=>".into(),
             Op::ThinArrow => "->".into(),
@@ -80,6 +87,9 @@ impl From<Op> for String {
             Op::PipeEqual => "|=".into(),
             Op::CaratEqual => "^=".into(),
             Op::TildeEqual => "~=".into(),
+            Op::ShiftLeftEqual => "<<=".into(),
+            Op::ShiftRightEqual => ">>=".into(),
+            Op::UnsignedShiftRightEqual => ">>>=".into(),
 
             Op::AndAnd => "&&".into(),
             Op::PipePipe => "||".into(),
@@ -89,6 +99,8 @@ impl From<Op> for String {
             Op::GreaterThanEqualTo => ">=".into(),
             Op::LessThan => "<".into(),
             Op::LessThanEqualTo => "<=".into(),
+
+            Op::Spaceship => "<=>",
 
             Op::Other(value) => value,
         }
@@ -112,6 +124,7 @@ impl From<&str> for Op {
             "~" => Op::Tilde,
             "<<" => Op::BitShiftLeft,
             ">>" => Op::BitShiftRight,
+            ">>>" => UnsignedBitShiftRight,
 
             "=>" => Op::FatArrow,
             "->" => Op::ThinArrow,
@@ -129,6 +142,9 @@ impl From<&str> for Op {
             "|=" => Op::PipeEqual,
             "^=" => Op::CaratEqual,
             "~=" => Op::TildeEqual,
+            "<<=" => Op::ShiftLeftEqual,
+            ">>=" => Op::ShiftRightEqual,
+            ">>>=" => Op::UnsignedShiftRightEqual,
 
             "&&" => Op::AndAnd,
             "||" => Op::PipePipe,
@@ -138,6 +154,8 @@ impl From<&str> for Op {
             ">=" => Op::GreaterThanEqualTo,
             "<" => Op::LessThan,
             "<=" => Op::LessThanEqualTo,
+
+            "<=>" => Op::Spaceship,
 
             other => Op::Other(String::from(other)),
         }
