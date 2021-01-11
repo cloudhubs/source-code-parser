@@ -100,7 +100,7 @@ impl From<Op> for String {
             Op::LessThan => "<".into(),
             Op::LessThanEqualTo => "<=".into(),
 
-            Op::Spaceship => "<=>",
+            Op::Spaceship => "<=>".into(),
 
             Op::Other(value) => value,
         }
@@ -124,7 +124,7 @@ impl From<&str> for Op {
             "~" => Op::Tilde,
             "<<" => Op::BitShiftLeft,
             ">>" => Op::BitShiftRight,
-            ">>>" => UnsignedBitShiftRight,
+            ">>>" => Op::UnsignedBitShiftRight,
 
             "=>" => Op::FatArrow,
             "->" => Op::ThinArrow,
