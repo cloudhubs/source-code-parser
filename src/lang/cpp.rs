@@ -1,5 +1,6 @@
 use crate::parse::AST;
 use crate::prophet::*;
+use crate::ast::*;
 
 pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
     let mut merged = vec![];
@@ -177,6 +178,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         },
         None => (0, 0),
     };
+    let body = body.map_or_else(|| None, |body| func_body(body));
 
     let method = MethodComponent {
         component: ComponentInfo {
@@ -196,7 +198,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         line_count: line_end - line_begin + 1,
         line_begin,
         line_end,
-        body: None,
+        body,
     };
 
     Some(method)
@@ -473,6 +475,11 @@ fn field_is_abstract_method(field: &AST) -> bool {
     let eq = field.find_child_by_type(&["="]).is_some();
     let zero = field.find_child_by_value("0").is_some();
     virtual_specifier && eq && zero
+}
+
+// Takes in an AST with type field "compound_statement"
+fn func_body(body: &AST) -> Option<Block> {
+    None
 }
 
 #[cfg(test)]
