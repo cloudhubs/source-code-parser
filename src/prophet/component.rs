@@ -1,4 +1,4 @@
-use super::*;
+use super::{*, ast::Block};
 use serde::Serialize;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -42,7 +42,7 @@ pub struct MethodComponent {
     pub line_count: i32,
     pub line_begin: i32,
     pub line_end: i32,
-    // TODO: method body
+    pub body: Option<Block>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
