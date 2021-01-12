@@ -1,6 +1,6 @@
+use crate::ast::*;
 use crate::parse::AST;
 use crate::prophet::*;
-use crate::ast::*;
 
 pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
     let mut merged = vec![];
@@ -313,13 +313,18 @@ fn variable_type(ast: &AST) -> Option<String> {
 fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
     let ident = ast.find_child_by_type(&[
         "pointer_declarator",
+        "pointer_expression",
         "reference_declarator",
+        "reference_expression",
         "identifier",
         "field_identifier",
     ])?;
 
     Some(match &*ident.r#type {
-        "pointer_declarator" | "reference_declarator" => {
+        "pointer_declarator"
+        | "reference_declarator"
+        | "pointer_expression"
+        | "reference_expression" => {
             ident
                 .children
                 .iter()
@@ -479,24 +484,95 @@ fn field_is_abstract_method(field: &AST) -> bool {
 
 // Takes in an AST with type field "compound_statement"
 fn func_body(body: &AST) -> Option<Block> {
-    let nodes = body.children.iter().map(|child| func_body_node(child)).collect();
+    let nodes = block_nodes(body);
 
-    Some(Block {
-        nodes,
-    })
+    Some(Block { nodes })
 }
 
+fn block_nodes(compound_statement: &AST) -> Vec<Node> {
+    compound_statement
+        .children
+        .iter()
+        .map(|child| func_body_node(child))
+        .collect()
+}
+
+// Takes child of compound_statement
 fn func_body_node(node: &AST) -> Node {
     match &*node.r#type {
-        "declaration" => {},
-        "while_statement" => {},
-        "expression_statement" => {},
-        "using_declaration" => {},
-        "return_statement" => {},
+        "declaration" => Node::Stmt(Stmt::DeclStmt(variable_declaration(node))),
+        // TODO
+        "while_statement" => Node::Expr(Expr::Literal("".into())),
+        "expression_statement" => Node::Expr(Expr::Literal("".into())),
+        "using_declaration" => Node::Expr(Expr::Literal("".into())),
+        "return_statement" => Node::Expr(Expr::Literal("".into())),
         // ...
-        _ => {}
+        _ => Node::Expr(Expr::Literal("".into())),
     }
-    todo!()
+}
+
+// Takes in node type "declaration"
+fn variable_declaration(node: &AST) -> DeclStmt {
+    let mut variable_type = node
+        .find_child_by_type(&[
+            "primitive_type",
+            "scoped_identifier_type",
+            "type_identifier",
+        ])
+        .map_or_else(|| "".into(), |node| type_ident(node));
+
+    let init_declarator = node.find_child_by_type(&["init_declarator"]);
+    match init_declarator {
+        Some(init_declarator) => {
+            let name = variable_ident(init_declarator, &mut variable_type)
+                .expect("No identifier for init declarator");
+            let decl_type = init_declarator.find_child_by_type(&["=", "argument_list"]);
+            let rhs = match decl_type {
+                Some(decl_type) => match &*decl_type.r#type {
+                    "=" => {
+                        let value = init_declarator.children.iter().next_back();
+                        // TODO: This will not always be a literal. It could be a function expression, binary expression, etc.
+                        value.map_or_else(|| None, |value| Some(Expr::Literal(value.value.clone())))
+                    }
+                    "argument_list" => {
+                        let argument_list = decl_type;
+                        let args: Vec<String> = argument_list
+                            .children
+                            .iter()
+                            .map(|arg| {
+                                let mut arg_ptr_symbol = String::new();
+                                let arg_name =
+                                    variable_ident(arg, &mut arg_ptr_symbol).map(|arg| {
+                                        arg_ptr_symbol.push_str(&arg);
+                                        arg
+                                    });
+                                arg_name
+                            })
+                            .flat_map(|arg| arg)
+                            .collect();
+                        let init = CallExpr::new("new".into(), args);
+                        Some(Expr::CallExpr(init))
+                    }
+                    _ => None,
+                },
+                None => None,
+            };
+            let ident = Ident::new(name);
+            DeclStmt {
+                lhs: ident,
+                rhs: rhs.map_or_else(|| vec![], |rhs| vec![rhs]),
+            }
+        }
+        None => {
+            let name = variable_ident(node, &mut variable_type)
+                .expect("No variable name for declaration with no init");
+            let ident = Ident::new(name);
+            DeclStmt {
+                lhs: ident,
+                rhs: vec![],
+            }
+        }
+    }
 }
 
 #[cfg(test)]

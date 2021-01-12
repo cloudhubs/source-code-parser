@@ -1,5 +1,5 @@
-use serde::Serialize;
 use crate::ast::op::Op;
+use serde::Serialize;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(untagged)]
@@ -13,7 +13,7 @@ pub enum Expr {
     RefExpr(RefExpr),
     StarExpr(StarExpr),
     Ident(Ident),
-    Literal(String)
+    Literal(String),
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -34,6 +34,15 @@ pub struct CallExpr {
     // This could either be a Literal or a DotExpr
     pub name: Box<Expr>,
     pub args: Vec<Ident>,
+}
+
+impl CallExpr {
+    pub fn new(name: String, args: Vec<String>) -> CallExpr {
+        CallExpr {
+            name: Box::new(Expr::Ident(Ident::new(name))),
+            args: args.into_iter().map(|arg| Ident::new(arg)).collect(),
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -69,4 +78,15 @@ pub struct Ident {
     pub is_static: Option<bool>,
     pub is_final: Option<bool>,
     pub r#type: Option<String>,
+}
+
+impl Ident {
+    pub fn new(name: String) -> Ident {
+        Ident {
+            name,
+            is_static: None,
+            is_final: None,
+            r#type: None,
+        }
+    }
 }
