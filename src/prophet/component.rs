@@ -1,5 +1,6 @@
-use super::{*, ast::Block};
+use super::*;
 use serde::Serialize;
+use crate::ast::Block;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ComponentInfo {
