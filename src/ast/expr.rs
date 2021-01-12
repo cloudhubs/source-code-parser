@@ -33,14 +33,17 @@ pub struct UnaryExpr {
 pub struct CallExpr {
     // This could either be a Literal or a DotExpr
     pub name: Box<Expr>,
-    pub args: Vec<Ident>,
+    pub args: Vec<Expr>,
 }
 
 impl CallExpr {
     pub fn new(name: String, args: Vec<String>) -> CallExpr {
         CallExpr {
             name: Box::new(Expr::Ident(Ident::new(name))),
-            args: args.into_iter().map(|arg| Ident::new(arg)).collect(),
+            args: args
+                .into_iter()
+                .map(|arg| Expr::Ident(Ident::new(arg)))
+                .collect(),
         }
     }
 }

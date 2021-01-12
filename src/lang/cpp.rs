@@ -523,46 +523,7 @@ fn variable_declaration(node: &AST) -> DeclStmt {
 
     let init_declarator = node.find_child_by_type(&["init_declarator"]);
     match init_declarator {
-        Some(init_declarator) => {
-            let name = variable_ident(init_declarator, &mut variable_type)
-                .expect("No identifier for init declarator");
-            let decl_type = init_declarator.find_child_by_type(&["=", "argument_list"]);
-            let rhs = match decl_type {
-                Some(decl_type) => match &*decl_type.r#type {
-                    "=" => {
-                        let value = init_declarator.children.iter().next_back();
-                        // TODO: This will not always be a literal. It could be a function expression, binary expression, etc.
-                        value.map_or_else(|| None, |value| Some(Expr::Literal(value.value.clone())))
-                    }
-                    "argument_list" => {
-                        let argument_list = decl_type;
-                        let args: Vec<String> = argument_list
-                            .children
-                            .iter()
-                            .map(|arg| {
-                                let mut arg_ptr_symbol = String::new();
-                                let arg_name =
-                                    variable_ident(arg, &mut arg_ptr_symbol).map(|arg| {
-                                        arg_ptr_symbol.push_str(&arg);
-                                        arg
-                                    });
-                                arg_name
-                            })
-                            .flat_map(|arg| arg)
-                            .collect();
-                        let init = CallExpr::new("new".into(), args);
-                        Some(Expr::CallExpr(init))
-                    }
-                    _ => None,
-                },
-                None => None,
-            };
-            let ident = Ident::new(name);
-            DeclStmt {
-                lhs: ident,
-                rhs: rhs.map_or_else(|| vec![], |rhs| vec![rhs]),
-            }
-        }
+        Some(init_declarator) => variable_init_declaration(init_declarator, &mut variable_type),
         None => {
             let name = variable_ident(node, &mut variable_type)
                 .expect("No variable name for declaration with no init");
@@ -572,6 +533,48 @@ fn variable_declaration(node: &AST) -> DeclStmt {
                 rhs: vec![],
             }
         }
+    }
+}
+
+fn variable_init_declaration(init_declarator: &AST, variable_type: &mut String) -> DeclStmt {
+    let name =
+        variable_ident(init_declarator, variable_type).expect("No identifier for init declarator");
+    let decl_type = init_declarator.find_child_by_type(&["=", "argument_list"]);
+    let rhs = match decl_type {
+        Some(decl_type) => match &*decl_type.r#type {
+            "=" => {
+                let value = init_declarator.children.iter().next_back();
+                // TODO: This will not always be a literal. It could be a function expression, binary expression, etc.
+                value.map_or_else(|| None, |value| Some(Expr::Literal(value.value.clone())))
+            }
+            "argument_list" => {
+                let argument_list = decl_type;
+                // TODO: These args might not be identifiers or deref expressions, etc. Could be binary expressions, function calls, etc.
+                let args: Vec<String> = argument_list
+                    .children
+                    .iter()
+                    .map(|arg| {
+                        // Get
+                        let mut arg_ptr_symbol = String::new();
+                        let arg_name = variable_ident(arg, &mut arg_ptr_symbol).map(|arg| {
+                            arg_ptr_symbol.push_str(&arg);
+                            arg_ptr_symbol
+                        });
+                        arg_name
+                    })
+                    .flat_map(|arg| arg)
+                    .collect();
+                let init = CallExpr::new("new".into(), args);
+                Some(Expr::CallExpr(init))
+            }
+            _ => None,
+        },
+        None => None,
+    };
+    let ident = Ident::new(name);
+    DeclStmt {
+        lhs: ident,
+        rhs: rhs.map_or_else(|| vec![], |rhs| vec![rhs]),
     }
 }
 
