@@ -479,7 +479,24 @@ fn field_is_abstract_method(field: &AST) -> bool {
 
 // Takes in an AST with type field "compound_statement"
 fn func_body(body: &AST) -> Option<Block> {
-    None
+    let nodes = body.children.iter().map(|child| func_body_node(child)).collect();
+
+    Some(Block {
+        nodes,
+    })
+}
+
+fn func_body_node(node: &AST) -> Node {
+    match &*node.r#type {
+        "declaration" => {},
+        "while_statement" => {},
+        "expression_statement" => {},
+        "using_declaration" => {},
+        "return_statement" => {},
+        // ...
+        _ => {}
+    }
+    todo!()
 }
 
 #[cfg(test)]
