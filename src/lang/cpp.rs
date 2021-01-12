@@ -196,6 +196,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         line_count: line_end - line_begin + 1,
         line_begin,
         line_end,
+        body: None,
     };
 
     Some(method)
