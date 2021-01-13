@@ -486,7 +486,7 @@ fn field_is_abstract_method(field: &AST) -> bool {
 fn func_body(body: &AST) -> Option<Block> {
     let nodes = block_nodes(body);
 
-    Some(Block { nodes })
+    Some(Block::new(nodes))
 }
 
 fn block_nodes(compound_statement: &AST) -> Vec<Node> {
@@ -501,7 +501,11 @@ fn block_nodes(compound_statement: &AST) -> Vec<Node> {
 // Takes child of compound_statement
 fn func_body_node(node: &AST) -> Option<Node> {
     match &*node.r#type {
-        "declaration" => Some(Node::Stmt(Stmt::DeclStmt(variable_declaration(node)))),
+        "declaration" => {
+            let decl: Stmt = variable_declaration(node).into();
+            let decl = decl.into();
+            Some(decl)
+        }
         // TODO
         "while_statement" => None,
         "expression_statement" => {
@@ -510,7 +514,8 @@ fn func_body_node(node: &AST) -> Option<Node> {
                 .iter()
                 .next()
                 .map_or_else(|| None, |node| expression(node))?;
-            Some(Node::Stmt(Stmt::ExprStmt(ExprStmt::new(expr))))
+            let stmt: Stmt = expr.into();
+            Some(stmt.into())
         }
         "using_declaration" => None,
         "return_statement" => None,
