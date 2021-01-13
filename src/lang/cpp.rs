@@ -494,20 +494,28 @@ fn block_nodes(compound_statement: &AST) -> Vec<Node> {
         .children
         .iter()
         .map(|child| func_body_node(child))
+        .flat_map(|node| node)
         .collect()
 }
 
 // Takes child of compound_statement
-fn func_body_node(node: &AST) -> Node {
+fn func_body_node(node: &AST) -> Option<Node> {
     match &*node.r#type {
-        "declaration" => Node::Stmt(Stmt::DeclStmt(variable_declaration(node))),
+        "declaration" => Some(Node::Stmt(Stmt::DeclStmt(variable_declaration(node)))),
         // TODO
-        "while_statement" => Node::Expr(Expr::Literal("".into())),
-        "expression_statement" => Node::Expr(Expr::Literal("".into())),
-        "using_declaration" => Node::Expr(Expr::Literal("".into())),
-        "return_statement" => Node::Expr(Expr::Literal("".into())),
+        "while_statement" => None,
+        "expression_statement" => {
+            let expr = node
+                .children
+                .iter()
+                .next()
+                .map_or_else(|| None, |node| expression(node))?;
+            Some(Node::Stmt(Stmt::ExprStmt(ExprStmt::new(expr))))
+        }
+        "using_declaration" => None,
+        "return_statement" => None,
         // ...
-        _ => Node::Expr(Expr::Literal("".into())),
+        _ => None,
     }
 }
 
@@ -528,10 +536,7 @@ fn variable_declaration(node: &AST) -> DeclStmt {
             let name = variable_ident(node, &mut variable_type)
                 .expect("No variable name for declaration with no init");
             let ident = Ident::new(name);
-            DeclStmt {
-                lhs: ident,
-                rhs: vec![],
-            }
+            DeclStmt::new(ident, vec![])
         }
     }
 }
@@ -562,10 +567,7 @@ fn variable_init_declaration(init_declarator: &AST, variable_type: &mut String) 
         None => None,
     };
     let ident = Ident::new(name);
-    DeclStmt {
-        lhs: ident,
-        rhs: rhs.map_or_else(|| vec![], |rhs| vec![rhs]),
-    }
+    DeclStmt::new(ident, rhs.map_or_else(|| vec![], |rhs| vec![rhs]))
 }
 
 fn expression(node: &AST) -> Option<Expr> {
@@ -582,6 +584,33 @@ fn expression(node: &AST) -> Option<Expr> {
             })?;
             Some(Expr::Ident(Ident::new(name)))
         }
+        "assignment_expression" => {
+            let name = match &*node.r#type {
+                "pointer_declarator"
+                | "reference_declarator"
+                | "pointer_expression"
+                | "reference_expression" => {
+                    let name = node
+                        .find_child_by_type(&["identifier", "field_identifier"])
+                        .map_or_else(|| "".to_string(), |identifier| identifier.value.clone());
+                    let ident = Ident::new(name);
+                    let stars: Vec<_> = node
+                        .children
+                        .iter()
+                        .filter(|child| match &*child.r#type {
+                            "identifier" | "field_identifier" => false,
+                            _ => true,
+                        }) // get either & or * type
+                        .map(|star| Op::from(&*star.value))
+                        .collect();
+                }
+                "identifier" | "field_identifier" => Expr::Ident(Ident::new(ident.value.clone()));,
+                _ => "".to_string(),
+            };
+            // variable_ident(node.iter().next(), variable_type)
+            None
+        },
+        "call_expression" => None,
         _ => None,
     }
 }

@@ -29,9 +29,21 @@ pub struct DeclStmt {
     pub rhs: Vec<Expr>, // Vec since FieldComponent could declare multiple variables
 }
 
+impl DeclStmt {
+    pub fn new(lhs: Ident, rhs: Vec<Expr>) -> DeclStmt {
+        DeclStmt { lhs, rhs }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ExprStmt {
     pub expr: Expr,
+}
+
+impl ExprStmt {
+    pub fn new(expr: Expr) -> ExprStmt {
+        ExprStmt { expr }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
