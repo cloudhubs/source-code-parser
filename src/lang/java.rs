@@ -61,6 +61,8 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
     let mut constructors = vec![];
     let mut methods = vec![];
     let mut annotations = vec![];
+    let mut start = 0;
+    let mut end = 0;
 
     // Generate the implementation data
     for member in ast.children.iter() {
@@ -71,42 +73,27 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
                 annotations = _annotations;
             }
             "identifier" => instance_name = member.value.clone(),
-            "class_body" | "enum_body" => {
-                instance_type = InstanceType::ClassComponent;
-                parse_body(
+            "class_body" | "interface_body" | "enum_body" | "annotation_body" => {
+                let (_start, _end) = parse_class_body(
                     member,
                     package,
                     path,
+                    &*instance_name,
                     &mut constructors,
                     &mut methods,
                     &mut fields,
                 );
+                start = _start as i32;
+                end = _end as i32;
             }
-            "interface_body" => {
-                instance_type = InstanceType::InterfaceComponent;
-                parse_body(
-                    member,
-                    package,
-                    path,
-                    &mut constructors,
-                    &mut methods,
-                    &mut fields,
-                );
-            }
-            "annotation_body" => {
-                instance_type = InstanceType::AnnotationComponent;
-                parse_body(
-                    member,
-                    package,
-                    path,
-                    &mut constructors,
-                    &mut methods,
-                    &mut fields,
-                );
-            }
-
+            "class" | "enum" => instance_type = InstanceType::ClassComponent,
+            "interface" => instance_type = InstanceType::InterfaceComponent,
+            "annotation" => instance_type = InstanceType::AnnotationComponent,
             unknown_type => {
-                println!("{} unhandled", unknown_type);
+                eprintln!(
+                    "{} tag unhandled. This may or may not be an issue.",
+                    unknown_type
+                );
             }
         };
     }
@@ -124,7 +111,7 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
             stereotype: stereotype,
             methods,
             container_name: instance_name,
-            line_count: 0,
+            line_count: end - start,
         },
         declaration_type: ContainerType::Class,
         annotations,
@@ -177,58 +164,138 @@ fn parse_annotations(ast: &AST, annotations: &mut Vec<AnnotationComponent>) {
 }
 
 /// Parse the AST for a specified method
-fn parse_method(ast: &AST, package: &str, path: &str) -> MethodComponent {
-    eprintln!("Attempting to parse a method, not currently supported. TODO implement fully!");
+fn parse_method(ast: &AST, package: &str, path: &str, instance_name: &str) -> MethodComponent {
+    // Define fields
+    let mut accessor = AccessorType::Private;
+    let mut method_name = String::new();
+    let mut parameters = vec![];
+    let mut return_type = String::new();
+    let mut is_static = false;
+    let mut is_abstract = false;
+    let mut sub_methods = vec![];
+    let mut annotations = vec![];
+    let line_begin = ast.span.expect("No span for a method! AST malformed!").0 as i32;
+    let line_end = ast.span.expect("No span for a method! AST malformed!").2 as i32;
+
+    // Parse method
+    for member in ast.children.iter() {
+        match &*member.r#type {
+            "identifier" | "static" => method_name = member.value.clone(),
+            "modifiers" => {
+                let (_access, _annotations) = parse_modifiers(ast);
+                accessor = _access;
+                annotations = _annotations;
+            }
+            "formal_parameters" => parameters = parse_method_parameters(ast, package, path),
+            "constructor_body" | "block" => {
+                parse_method_body(member, package, path);
+            }
+            unknown => eprintln!("Unknown tag {} encountered while parsing a method", unknown),
+        }
+    }
+
+    // Return the method component
     MethodComponent {
         component: ComponentInfo {
             path: path.clone().into(),
             package_name: package.clone().into(),
-            instance_name: String::from("foo"),
+            instance_name: instance_name.into(),
             instance_type: InstanceType::MethodComponent,
         },
-        accessor: AccessorType::Private,
-        method_name: String::from("foo"),
-        return_type: String::from("goo"),
-        parameters: vec![],
-        is_static: false,
-        is_abstract: false,
-        sub_methods: vec![],
-        annotations: vec![],
-        line_count: 0,
-        line_begin: 0,
-        line_end: 0,
+        accessor,
+        method_name,
+        return_type,
+        parameters,
+        is_static,
+        is_abstract,
+        sub_methods,
+        annotations,
+        line_count: line_end - line_begin,
+        line_begin,
+        line_end,
     }
 }
 
-// parse_field(ast: &AST, package: &str, path: &str) -> FieldComponent {
-//     todo!("No field parsing yet");
-// }
+fn parse_method_parameters(ast: &AST, package: &str, path: &str) -> Vec<MethodParamComponent> {
+    let params = vec![];
 
-fn parse_body(
+    for parameter in ast.children.iter() {
+        //
+    }
+
+    params
+}
+
+/// Parse the body of a method, static block, constructor, etc.
+fn parse_method_body(ast: &AST, package: &str, path: &str) {
+    for member in ast.children.iter() {
+        match &*member.r#type {
+            "" => {}
+            unknown => eprintln!("{} unknown tag in parsing method body!", unknown),
+        }
+    }
+}
+
+fn parse_field(ast: &AST, package: &str, path: &str) -> FieldComponent {
+    FieldComponent {
+        component: ComponentInfo {
+            path: path.into(),
+            package_name: package.into(),
+            instance_name: "".into(),
+            instance_type: InstanceType::FieldComponent,
+        },
+        annotations: vec![],
+        variables: vec![],
+        field_name: String::new(),
+        accessor: AccessorType::Default,
+        is_static: false,
+        is_final: false,
+        default_value: String::new(),
+        r#type: String::new(),
+    }
+}
+
+fn parse_class_body(
     ast: &AST,
     package: &str,
     path: &str,
+    class_name: &str,
     constructors: &mut Vec<MethodComponent>,
     methods: &mut Vec<MethodComponent>,
     fields: &mut Vec<FieldComponent>,
-) {
+) -> (usize, usize) {
+    let mut start = 0;
+    let mut end = 0;
+
     // Traverse body
     for member in ast.children.iter() {
         match &*member.r#type {
-            "constructor_declaration" => constructors.push(parse_method(member, package, path)),
-            "method_declaration" => methods.push(parse_method(member, package, path)),
-            // "field_declaration" => {
-            //     //fields.push(parse_field(member, package, path)),
-            //     println!("Can't parse {} yet", member.r#value);
-            // }
-            unknown => {
-                eprintln!(
-                    "Attempting to parse {}, not currently supported. TODO implement fully!",
-                    unknown
-                );
+            "constructor_declaration" | "static_initializer" => {
+                constructors.push(parse_method(member, package, path, class_name))
             }
+            "method_declaration" => methods.push(parse_method(member, package, path, class_name)),
+            "{" => match member.span {
+                Some((line, _, _, _)) => start = line,
+                None => eprintln!("No span for open parenthesis! Cannot detect line number."),
+            },
+            "}" => match member.span {
+                Some((line, _, _, _)) => end = line,
+                None => eprintln!("No span for close parenthesis! Cannot detect line number."),
+            },
+            "field_declaration" => fields.push(parse_field(member, package, path)),
+            "class_declaration"
+            | "interface_declaration"
+            | "enum_declaration"
+            | "annotation_declaration" => { /* None, since these were extracted + handled elsewhere */
+            }
+            unknown => eprintln!(
+                "Attempting to parse {}, not currently supported. TODO implement fully!",
+                unknown
+            ),
         }
     }
+
+    (start, end)
 }
 
 /// Convert a vector into an Option. If the vector is empty, swaps it out for None; otherwise is Some(vector)
