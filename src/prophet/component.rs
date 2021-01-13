@@ -15,7 +15,7 @@ pub struct ComponentInfo {
 #[serde(untagged)]
 pub enum ComponentType {
     ClassOrInterfaceComponent(ClassOrInterfaceComponent),
-    // AnnotationComponent(AnnotationComponent<'a>),
+    AnnotationComponent(AnnotationComponent),
     MethodComponent(MethodComponent),
     ModuleComponent(ModuleComponent),
     FieldComponent(FieldComponent),
