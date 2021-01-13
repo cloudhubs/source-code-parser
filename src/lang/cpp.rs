@@ -587,8 +587,14 @@ fn expression(node: &AST) -> Option<Expr> {
                 .for_each(|star| ident = UnaryExpr::new(Box::new(ident.clone()), star).into());
             Some(ident)
         }
-        "assignment_expression" | "field_expression" => binary_expression(node),
+        "assignment_expression" => binary_expression(node), //| "field_expression"
         "call_expression" => call_expression(node),
+        "field_expression" => {
+            let mut nodes = node.children.iter();
+            let lhs = expression(nodes.next()?)?;
+            let rhs = expression(nodes.next()?)?;
+            Some(DotExpr::new(Box::new(lhs), Box::new(rhs)).into())
+        }
         _ => None,
     }
 }
