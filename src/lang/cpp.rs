@@ -544,24 +544,14 @@ fn variable_init_declaration(init_declarator: &AST, variable_type: &mut String) 
         Some(decl_type) => match &*decl_type.r#type {
             "=" => {
                 let value = init_declarator.children.iter().next_back();
-                // TODO: This will not always be a literal. It could be a function expression, binary expression, etc.
-                value.map_or_else(|| None, |value| Some(Expr::Literal(value.value.clone())))
+                value.map_or_else(|| None, |value| expression(value))
             }
             "argument_list" => {
                 let argument_list = decl_type;
-                // TODO: These args might not be identifiers or deref expressions, etc. Could be binary expressions, function calls, etc.
-                let args: Vec<String> = argument_list
+                let args: Vec<Expr> = argument_list
                     .children
                     .iter()
-                    .map(|arg| {
-                        // Get
-                        let mut arg_ptr_symbol = String::new();
-                        let arg_name = variable_ident(arg, &mut arg_ptr_symbol).map(|arg| {
-                            arg_ptr_symbol.push_str(&arg);
-                            arg_ptr_symbol
-                        });
-                        arg_name
-                    })
+                    .map(|arg| expression(arg))
                     .flat_map(|arg| arg)
                     .collect();
                 let init = CallExpr::new("new".into(), args);
@@ -575,6 +565,24 @@ fn variable_init_declaration(init_declarator: &AST, variable_type: &mut String) 
     DeclStmt {
         lhs: ident,
         rhs: rhs.map_or_else(|| vec![], |rhs| vec![rhs]),
+    }
+}
+
+fn expression(node: &AST) -> Option<Expr> {
+    match &*node.r#type {
+        "pointer_declarator"
+        | "pointer_expression"
+        | "reference_declarator"
+        | "reference_expression"
+        | "identifier" => {
+            let mut ptr_symbol = String::new();
+            let name = variable_ident(node, &mut ptr_symbol).map(|name| {
+                ptr_symbol.push_str(&name);
+                ptr_symbol
+            })?;
+            Some(Expr::Ident(Ident::new(name)))
+        }
+        _ => None,
     }
 }
 

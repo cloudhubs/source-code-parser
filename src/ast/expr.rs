@@ -37,13 +37,10 @@ pub struct CallExpr {
 }
 
 impl CallExpr {
-    pub fn new(name: String, args: Vec<String>) -> CallExpr {
+    pub fn new(name: String, args: Vec<Expr>) -> CallExpr {
         CallExpr {
             name: Box::new(Expr::Ident(Ident::new(name))),
-            args: args
-                .into_iter()
-                .map(|arg| Expr::Ident(Ident::new(arg)))
-                .collect(),
+            args,
         }
     }
 }
