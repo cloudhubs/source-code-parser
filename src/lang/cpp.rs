@@ -559,8 +559,8 @@ fn variable_init_declaration(init_declarator: &AST, variable_type: &mut String) 
                     .map(|arg| expression(arg))
                     .flat_map(|arg| arg)
                     .collect();
-                let init = CallExpr::new(Box::new("new".to_string().into()), args);
-                Some(Expr::CallExpr(init))
+                let init = CallExpr::new(Box::new("new".to_string().into()), args).into();
+                Some(init)
             }
             _ => None,
         },
@@ -576,7 +576,8 @@ fn expression(node: &AST) -> Option<Expr> {
         | "pointer_expression"
         | "reference_declarator"
         | "reference_expression"
-        | "identifier" => {
+        | "identifier"
+        | "field_identifier" => {
             let mut ptr_symbol = String::new();
             let name = variable_ident(node, &mut ptr_symbol)?;
             let mut ident: Expr = Ident::new(name).into();
@@ -586,17 +587,33 @@ fn expression(node: &AST) -> Option<Expr> {
                 .for_each(|star| ident = UnaryExpr::new(Box::new(ident.clone()), star).into());
             Some(ident)
         }
-        "assignment_expression" => binary_expression(node),
-        "call_expression" => None,
+        "assignment_expression" | "field_expression" => binary_expression(node),
+        "call_expression" => call_expression(node),
         _ => None,
     }
 }
 
 fn binary_expression(node: &AST) -> Option<Expr> {
-    let lhs = expression(node.children.iter().next()?)?;
-    let op = Op::from(&*node.children.iter().nth(1)?.value);
-    let rhs = expression(node.children.iter().next_back()?)?;
+    let mut nodes = node.children.iter();
+    let lhs = expression(nodes.next()?)?;
+    let op = Op::from(&*nodes.next()?.value);
+    let rhs = expression(nodes.next()?)?;
     Some(BinaryExpr::new(Box::new(lhs), op, Box::new(rhs)).into())
+}
+
+// Takes AST node type "call_expression"
+fn call_expression(node: &AST) -> Option<Expr> {
+    let mut nodes = node.children.iter();
+    // field_expression, identifier
+    let function_name = expression(nodes.next()?)?;
+    let argument_list = nodes.next_back()?;
+    let args: Vec<Expr> = argument_list
+        .children
+        .iter()
+        .map(|arg| expression(arg))
+        .flat_map(|arg| arg)
+        .collect();
+    Some(CallExpr::new(Box::new(function_name), args).into())
 }
 
 #[cfg(test)]
