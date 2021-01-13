@@ -237,7 +237,7 @@ fn parse_method(ast: &AST, package: &str, path: &str, instance_name: &str) -> Me
         parameters,
         is_static: modifier.is_static,
         is_abstract: modifier.is_abstract,
-        // is_final: modifier.is_final,
+        is_final: modifier.is_final,
         sub_methods,
         annotations: modifier.annotations,
         line_count: line_end - line_begin,

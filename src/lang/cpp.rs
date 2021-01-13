@@ -191,6 +191,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         parameters: params,
         is_static: false,
         is_abstract: false,
+        is_final: false,
         sub_methods: vec![],
         annotations: vec![],
         line_count: line_end - line_begin + 1,

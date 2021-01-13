@@ -48,6 +48,7 @@ mod tests {
                     }],
                     is_static: false,
                     is_abstract: false,
+                    is_final: false,
                     sub_methods: vec![],
                     annotations: vec![AnnotationComponent {
                         component: ComponentInfo {

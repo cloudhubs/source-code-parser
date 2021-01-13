@@ -1,6 +1,6 @@
 use super::*;
-use serde::Serialize;
 use crate::ast::Block;
+use serde::Serialize;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ComponentInfo {
@@ -37,6 +37,8 @@ pub struct MethodComponent {
     pub is_static: bool,
     #[serde(rename = "abstract_method")]
     pub is_abstract: bool,
+    #[serde(rename = "final_method")]
+    pub is_final: bool,
     #[serde(rename = "subroutines")]
     pub sub_methods: Vec<MethodComponent>,
     pub annotations: Vec<AnnotationComponent>,
