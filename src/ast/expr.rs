@@ -1,5 +1,5 @@
-use serde::Serialize;
 use crate::ast::op::Op;
+use serde::Serialize;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(untagged)]
@@ -13,7 +13,7 @@ pub enum Expr {
     RefExpr(RefExpr),
     StarExpr(StarExpr),
     Ident(Ident),
-    Literal(String)
+    Literal(String),
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -33,7 +33,7 @@ pub struct UnaryExpr {
 pub struct CallExpr {
     // This could either be a Literal or a DotExpr
     pub name: Box<Expr>,
-    pub args: Vec<Ident>,
+    pub args: Vec<Expr>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
