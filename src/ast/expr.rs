@@ -1,7 +1,10 @@
 use crate::ast::op::Op;
+use crate::ast::stmt::*;
+use derive_more::From;
+use derive_new::new;
 use serde::Serialize;
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, From)]
 #[serde(untagged)]
 pub enum Expr {
     BinaryExpr(BinaryExpr),
@@ -10,83 +13,60 @@ pub enum Expr {
     IndexExpr(IndexExpr),
     ParenExpr(ParenExpr),
     DotExpr(DotExpr),
-    RefExpr(RefExpr),
-    StarExpr(StarExpr),
     Ident(Ident),
     Literal(String),
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+impl Into<Stmt> for Expr {
+    fn into(self) -> Stmt {
+        Stmt::ExprStmt(ExprStmt::new(self))
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct BinaryExpr {
     pub lhs: Box<Expr>,
     pub op: Op,
     pub rhs: Box<Expr>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct UnaryExpr {
     pub expr: Box<Expr>,
     pub op: Op,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct CallExpr {
     // This could either be a Literal or a DotExpr
     pub name: Box<Expr>,
     pub args: Vec<Expr>,
 }
 
-impl CallExpr {
-    pub fn new(name: String, args: Vec<Expr>) -> CallExpr {
-        CallExpr {
-            name: Box::new(Expr::Ident(Ident::new(name))),
-            args,
-        }
-    }
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct IndexExpr {
     pub expr: Box<Expr>,
     pub index_expr: Box<Expr>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ParenExpr {
     pub expr: Box<Expr>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct DotExpr {
     pub expr: Box<Expr>,
     pub rhs: Box<Expr>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
-pub struct RefExpr {
-    pub expr: Box<Expr>,
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
-pub struct StarExpr {
-    pub expr: Box<Expr>,
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct Ident {
     pub name: String,
+    #[new(default)]
     pub is_static: Option<bool>,
+    #[new(default)]
     pub is_final: Option<bool>,
+    #[new(default)]
     pub r#type: Option<String>,
-}
-
-impl Ident {
-    pub fn new(name: String) -> Ident {
-        Ident {
-            name,
-            is_static: None,
-            is_final: None,
-            r#type: None,
-        }
-    }
 }

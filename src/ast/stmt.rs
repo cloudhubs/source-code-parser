@@ -1,7 +1,9 @@
 use super::*;
+use derive_more::From;
+use derive_new::new;
 use serde::Serialize;
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, From)]
 #[serde(untagged)]
 pub enum Stmt {
     AssignStmt(AssignStmt),
@@ -17,42 +19,31 @@ pub enum Stmt {
     ImportStmt(ImportStmt),
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct AssignStmt {
-    pub lhs: String,
+    // lhs could be something like *var
+    pub lhs: Expr,
     pub rhs: Expr,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct DeclStmt {
     pub lhs: Ident,
     pub rhs: Vec<Expr>, // Vec since FieldComponent could declare multiple variables
 }
 
-impl DeclStmt {
-    pub fn new(lhs: Ident, rhs: Vec<Expr>) -> DeclStmt {
-        DeclStmt { lhs, rhs }
-    }
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, From, new)]
 pub struct ExprStmt {
     pub expr: Expr,
 }
 
-impl ExprStmt {
-    pub fn new(expr: Expr) -> ExprStmt {
-        ExprStmt { expr }
-    }
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct IfStmt {
     pub body: Block,
     pub else_body: Block,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ForStmt {
     pub init: Expr, // Expr, BinExpr that is = ? or a new DeclExpr?
     pub condition: Expr,
@@ -60,37 +51,37 @@ pub struct ForStmt {
     pub post: Expr,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct WhileStmt {
     pub condition: Expr,
     pub body: Block,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct DoWhileStmt {
     pub condition: Expr,
     pub body: Block,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ReturnStmt {
     pub expr: Expr,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct SwitchStmt {
     pub condition: Expr,
     pub cases: Vec<(Expr, Block)>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct IncDecStmt {
     pub is_pre: bool,
     pub is_inc: bool,
     pub expr: Expr,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ImportStmt {
     // Whether the import is a specific type or a package/module etc.
     pub container: bool,

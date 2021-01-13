@@ -559,7 +559,7 @@ fn variable_init_declaration(init_declarator: &AST, variable_type: &mut String) 
                     .map(|arg| expression(arg))
                     .flat_map(|arg| arg)
                     .collect();
-                let init = CallExpr::new("new".into(), args);
+                let init = CallExpr::new(Box::new("new".to_string().into()), args);
                 Some(Expr::CallExpr(init))
             }
             _ => None,
@@ -604,12 +604,12 @@ fn expression(node: &AST) -> Option<Expr> {
                         .map(|star| Op::from(&*star.value))
                         .collect();
                 }
-                "identifier" | "field_identifier" => Expr::Ident(Ident::new(ident.value.clone()));,
-                _ => "".to_string(),
+                "identifier" | "field_identifier" => Some(Ident::new(ident.value.clone()).into()),
+                _ => None,
             };
             // variable_ident(node.iter().next(), variable_type)
             None
-        },
+        }
         "call_expression" => None,
         _ => None,
     }
