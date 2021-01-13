@@ -54,24 +54,19 @@ fn parse_package(ast: &AST) -> Option<String> {
 fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceComponent> {
     // Define default values
     let mut instance_name = String::new();
-    let mut accessor = AccessorType::Default;
     let mut stereotype = ContainerStereotype::Entity;
     let mut instance_type = InstanceType::ClassComponent;
     let mut fields = vec![];
     let mut constructors = vec![];
     let mut methods = vec![];
-    let mut annotations = vec![];
+    let mut modifier = Modifier::new();
     let mut start = 0;
     let mut end = 0;
 
     // Generate the implementation data
     for member in ast.children.iter() {
         match &*member.r#type {
-            "modifiers" => {
-                let (_accessor, _annotations) = parse_modifiers(member);
-                accessor = _accessor;
-                annotations = _annotations;
-            }
+            "modifiers" => modifier = parse_modifiers(member),
             "identifier" => instance_name = member.value.clone(),
             "class_body" | "interface_body" | "enum_body" | "annotation_body" => {
                 let (_start, _end) = parse_class_body(
@@ -107,22 +102,42 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
                 instance_name: instance_name.clone(),
                 instance_type,
             },
-            accessor,
+            accessor: modifier.accessor,
             stereotype: stereotype,
             methods,
             container_name: instance_name,
             line_count: end - start,
         },
         declaration_type: ContainerType::Class,
-        annotations,
+        annotations: modifier.annotations,
         stereotype: ContainerStereotype::Entity,
         constructors: fold_vec(constructors),
         field_components: fold_vec(fields),
     })
 }
 
+/// Struct to hold return data from parse_modifiers
+struct Modifier {
+    accessor: AccessorType,
+    annotations: Vec<AnnotationComponent>,
+    is_abstract: bool,
+    is_final: bool,
+    is_static: bool,
+}
+impl Modifier {
+    fn new() -> Modifier {
+        Modifier {
+            accessor: AccessorType::Default,
+            annotations: vec![],
+            is_abstract: false,
+            is_final: false,
+            is_static: false,
+        }
+    }
+}
+
 /// Parse the modifiers field of the AST; this includes access level and annotations
-fn parse_modifiers(ast: &AST) -> (AccessorType, Vec<AnnotationComponent>) {
+fn parse_modifiers(ast: &AST) -> Modifier {
     // Parse access level
     let access_level = match ast.find_child_by_type(&["public", "protected", "private"]) {
         Some(ast) => match &*ast.r#type {
@@ -134,11 +149,30 @@ fn parse_modifiers(ast: &AST) -> (AccessorType, Vec<AnnotationComponent>) {
         None => AccessorType::Default,
     };
 
+    // Parse final, static, abstract keywords
+    let mut is_final = false;
+    let mut is_static = false;
+    let mut is_abstract = false;
+    for attribute in ast.children.iter() {
+        match &*attribute.r#type {
+            "final" => is_final = true,
+            "static" => is_static = true,
+            "abstract" => is_abstract = true,
+            _ => {}
+        }
+    }
+
     // Parse annotations
     let mut annotations = vec![];
     parse_annotations(ast, &mut annotations);
 
-    (access_level, annotations)
+    Modifier {
+        accessor: access_level,
+        annotations,
+        is_final,
+        is_static,
+        is_abstract,
+    }
 }
 
 /// Recursively parse the annotations on a field
@@ -166,33 +200,28 @@ fn parse_annotations(ast: &AST, annotations: &mut Vec<AnnotationComponent>) {
 /// Parse the AST for a specified method
 fn parse_method(ast: &AST, package: &str, path: &str, instance_name: &str) -> MethodComponent {
     // Define fields
-    let mut accessor = AccessorType::Private;
+    let mut modifier = Modifier::new();
     let mut method_name = String::new();
     let mut parameters = vec![];
     let mut return_type = String::new();
-    let mut is_static = false;
-    let mut is_abstract = false;
     let mut sub_methods = vec![];
-    let mut annotations = vec![];
     let line_begin = ast.span.expect("No span for a method! AST malformed!").0 as i32;
     let line_end = ast.span.expect("No span for a method! AST malformed!").2 as i32;
 
     // Parse method
+    println!("{}:", instance_name);
     for member in ast.children.iter() {
         match &*member.r#type {
             "identifier" | "static" => method_name = member.value.clone(),
-            "modifiers" => {
-                let (_access, _annotations) = parse_modifiers(ast);
-                accessor = _access;
-                annotations = _annotations;
-            }
-            "formal_parameters" => parameters = parse_method_parameters(ast, package, path),
+            "modifiers" => modifier = parse_modifiers(member),
+            "formal_parameters" => parameters = parse_method_parameters(member, package, path),
             "constructor_body" | "block" => {
                 parse_method_body(member, package, path);
             }
             unknown => eprintln!("Unknown tag {} encountered while parsing a method", unknown),
         }
     }
+    println!("");
 
     // Return the method component
     MethodComponent {
@@ -202,17 +231,19 @@ fn parse_method(ast: &AST, package: &str, path: &str, instance_name: &str) -> Me
             instance_name: instance_name.into(),
             instance_type: InstanceType::MethodComponent,
         },
-        accessor,
+        accessor: modifier.accessor,
         method_name,
         return_type,
         parameters,
-        is_static,
-        is_abstract,
+        is_static: modifier.is_static,
+        is_abstract: modifier.is_abstract,
+        // is_final: modifier.is_final,
         sub_methods,
-        annotations,
+        annotations: modifier.annotations,
         line_count: line_end - line_begin,
         line_begin,
         line_end,
+        body: None,
     }
 }
 
@@ -220,7 +251,11 @@ fn parse_method_parameters(ast: &AST, package: &str, path: &str) -> Vec<MethodPa
     let params = vec![];
 
     for parameter in ast.children.iter() {
-        //
+        parse_method_parameters(parameter, package, path);
+        match &*parameter.r#type {
+            "formal_parameter" => {}
+            _ => {}
+        }
     }
 
     params
