@@ -72,9 +72,7 @@ impl AST {
         // Do language specific AST parsing
         match lang {
             LANG::Cpp => (cpp::find_components(self, path, path), lang.into()),
-            LANG::Java => {
-                todo!();
-            }
+            LANG::Java => (java::find_components(self, path), lang.into())
             LANG::Python => {
                 todo!();
             }
