@@ -578,41 +578,25 @@ fn expression(node: &AST) -> Option<Expr> {
         | "reference_expression"
         | "identifier" => {
             let mut ptr_symbol = String::new();
-            let name = variable_ident(node, &mut ptr_symbol).map(|name| {
-                ptr_symbol.push_str(&name);
-                ptr_symbol
-            })?;
-            Some(Expr::Ident(Ident::new(name)))
+            let name = variable_ident(node, &mut ptr_symbol)?;
+            let mut ident: Expr = Ident::new(name).into();
+            ptr_symbol
+                .chars()
+                .map(|star| Op::from(&*star.to_string()))
+                .for_each(|star| ident = UnaryExpr::new(Box::new(ident.clone()), star).into());
+            Some(ident)
         }
-        "assignment_expression" => {
-            let name = match &*node.r#type {
-                "pointer_declarator"
-                | "reference_declarator"
-                | "pointer_expression"
-                | "reference_expression" => {
-                    let name = node
-                        .find_child_by_type(&["identifier", "field_identifier"])
-                        .map_or_else(|| "".to_string(), |identifier| identifier.value.clone());
-                    let ident = Ident::new(name);
-                    let stars: Vec<_> = node
-                        .children
-                        .iter()
-                        .filter(|child| match &*child.r#type {
-                            "identifier" | "field_identifier" => false,
-                            _ => true,
-                        }) // get either & or * type
-                        .map(|star| Op::from(&*star.value))
-                        .collect();
-                }
-                "identifier" | "field_identifier" => Some(Ident::new(ident.value.clone()).into()),
-                _ => None,
-            };
-            // variable_ident(node.iter().next(), variable_type)
-            None
-        }
+        "assignment_expression" => binary_expression(node),
         "call_expression" => None,
         _ => None,
     }
+}
+
+fn binary_expression(node: &AST) -> Option<Expr> {
+    let lhs = expression(node.children.iter().next()?)?;
+    let op = Op::from(&*node.children.iter().nth(1)?.value);
+    let rhs = expression(node.children.iter().next_back()?)?;
+    Some(BinaryExpr::new(Box::new(lhs), op, Box::new(rhs)).into())
 }
 
 #[cfg(test)]
