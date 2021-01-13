@@ -35,6 +35,19 @@ impl AST {
     pub fn find_child_by_value(&self, value: &str) -> Option<&AST> {
         self.children.iter().find(|child| child.value == value)
     }
+
+    pub fn find_all_children_by_type(&self, types: &[&str]) -> Option<Vec<&AST>> {
+        let children: Vec<&AST> = self
+            .children
+            .iter()
+            .filter(|child| types.iter().find(|t| &*child.r#type == **t).is_some())
+            .collect();
+        if !children.is_empty() {
+            Some(children)
+        } else {
+            None
+        }
+    }
 }
 
 /// Parse the given source code from the `AstPayload`
