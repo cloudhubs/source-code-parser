@@ -7,6 +7,7 @@ pub use context::*;
 mod model;
 pub use model::*;
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
@@ -64,6 +65,7 @@ mod tests {
                     line_count: 1,
                     line_begin: 1,
                     line_end: 2,
+                    body: None,
                 }],
                 line_count: 3,
             },
@@ -107,7 +109,7 @@ mod tests {
             }],
             interfaces: vec![],
         }];
-        let actual = json!(JSSAContext {
+        let _actual = json!(JSSAContext {
             component: ComponentInfo {
                 path: "/path".to_string(),
                 package_name: "repository".to_string(),

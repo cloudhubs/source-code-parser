@@ -6,3 +6,5 @@ pub use prophet::*;
 
 pub mod lang;
 pub use lang::*;
+
+pub mod ast;
