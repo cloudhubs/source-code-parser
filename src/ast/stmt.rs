@@ -65,7 +65,7 @@ pub struct DoWhileStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ReturnStmt {
-    pub expr: Expr,
+    pub expr: Option<Expr>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]

@@ -527,7 +527,14 @@ fn func_body_node(node: &AST) -> Option<Node> {
         }
         // TODO
         "using_declaration" => None,
-        "return_statement" => None,
+        "return_statement" => {
+            // If there isn't an expression and the 2nd child is of type ";",
+            // the expression function will return None anyways.
+            let expr = node.children.iter().nth(1)?;
+            let expr = expression(expr);
+            let ret: Stmt = ReturnStmt::new(expr).into();
+            Some(ret.into())
+        }
         // ...
         _ => None,
     }
