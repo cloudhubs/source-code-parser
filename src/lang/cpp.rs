@@ -506,8 +506,16 @@ fn func_body_node(node: &AST) -> Option<Node> {
             let decl = decl.into();
             Some(decl)
         }
-        // TODO
-        "while_statement" => None,
+        "while_statement" => {
+            let cond = node
+                .find_child_by_type(&["condition_clause"])
+                .map(|cond| expression(cond))??;
+            let nodes = node
+                .find_child_by_type(&["compound_statement"])
+                .map(|block| block_nodes(block))?;
+            let while_stmt: Stmt = WhileStmt::new(cond, Block::new(nodes)).into();
+            Some(while_stmt.into())
+        }
         "expression_statement" => {
             let expr = node
                 .children
@@ -517,6 +525,7 @@ fn func_body_node(node: &AST) -> Option<Node> {
             let stmt: Stmt = expr.into();
             Some(stmt.into())
         }
+        // TODO
         "using_declaration" => None,
         "return_statement" => None,
         // ...
