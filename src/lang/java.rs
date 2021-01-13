@@ -43,11 +43,7 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
 /// Take in the AST node containing the package declaration, and--if it is not malformed--return a string representing the package
 fn parse_package(ast: &AST) -> Option<String> {
     let result = ast.find_child_by_type(&["scoped_identifier"])?;
-    let mut package = String::new();
-    for member in result.children.iter() {
-        package.push_str(&*member.value);
-    }
-    Some(package)
+    Some(stringify_tree_children(result))
 }
 
 /// Parse a single class/interface/annotation/what have you's AST
@@ -74,6 +70,7 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
                     package,
                     path,
                     &*instance_name,
+                    &instance_type,
                     &mut constructors,
                     &mut methods,
                     &mut fields,
@@ -198,7 +195,13 @@ fn parse_annotations(ast: &AST, annotations: &mut Vec<AnnotationComponent>) {
 }
 
 /// Parse the AST for a specified method
-fn parse_method(ast: &AST, package: &str, path: &str, instance_name: &str) -> MethodComponent {
+fn parse_method(
+    ast: &AST,
+    package: &str,
+    path: &str,
+    instance_name: &str,
+    enclosing_type: &InstanceType,
+) -> MethodComponent {
     // Define fields
     let mut modifier = Modifier::new();
     let mut method_name = String::new();
@@ -214,7 +217,9 @@ fn parse_method(ast: &AST, package: &str, path: &str, instance_name: &str) -> Me
         match &*member.r#type {
             "identifier" | "static" => method_name = member.value.clone(),
             "modifiers" => modifier = parse_modifiers(member),
-            "formal_parameters" => parameters = parse_method_parameters(member, package, path),
+            "formal_parameters" => {
+                parameters = parse_method_parameters(member, package, path, enclosing_type)
+            }
             "constructor_body" | "block" => {
                 parse_method_body(member, package, path);
             }
@@ -247,18 +252,82 @@ fn parse_method(ast: &AST, package: &str, path: &str, instance_name: &str) -> Me
     }
 }
 
-fn parse_method_parameters(ast: &AST, package: &str, path: &str) -> Vec<MethodParamComponent> {
-    let params = vec![];
+fn parse_method_parameters(
+    ast: &AST,
+    package: &str,
+    path: &str,
+    enclosing_type: &InstanceType,
+) -> Vec<MethodParamComponent> {
+    let mut params = vec![];
 
     for parameter in ast.children.iter() {
-        parse_method_parameters(parameter, package, path);
+        //        parse_method_parameters(parameter, package, path, enclosing_type);
         match &*parameter.r#type {
-            "formal_parameter" => {}
+            "formal_parameter" | "spread_parameter" => {
+                params.push(parse_parameter(parameter, package, path, enclosing_type))
+            }
             _ => {}
         }
     }
 
     params
+}
+
+fn parse_parameter(
+    ast: &AST,
+    package: &str,
+    path: &str,
+    enclosing_type: &InstanceType,
+) -> MethodParamComponent {
+    let mut name = String::new();
+    let mut param_type = String::new();
+    let mut modifier = Modifier::new();
+    let mut is_spread = false;
+
+    // Parse the definition
+    for part_defn in ast.children.iter() {
+        match &*part_defn.r#type {
+            "identifier" => name = part_defn.value.clone(),
+            "modifiers" => modifier = parse_modifiers(part_defn),
+            "..." => is_spread = true,
+            _ => param_type = parse_type(part_defn),
+        }
+    }
+
+    // If this is varargs, add varargs symbol
+    if is_spread {
+        name.push_str("...");
+    }
+
+    MethodParamComponent {
+        component: ComponentInfo {
+            path: path.into(),
+            package_name: package.into(),
+            instance_name: name.clone().into(),
+            instance_type: enclosing_type.clone(),
+        },
+        annotation: fold_vec(modifier.annotations),
+        parameter_type: param_type.into(),
+        parameter_name: name.into(),
+    }
+}
+
+/// Provided an AST representing the type of a parameter/field, interprets it into a valid String representation
+fn parse_type(ast: &AST) -> String {
+    match &*ast.r#type {
+        "type_identifier" => ast.value.clone(),
+        "array_type" => {
+            let mut result_type = String::new();
+            for child in ast.children.iter() {
+                result_type.push_str(&*parse_type(child));
+            }
+            result_type
+        }
+        "integral_type" | "floating_point_type" => ast.children.get(0).unwrap().r#type.clone(),
+        "boolean_type" => ast.value.clone(),
+        "dimensions" => stringify_tree_children(ast),
+        unknown => String::from(unknown),
+    }
 }
 
 /// Parse the body of a method, static block, constructor, etc.
@@ -295,6 +364,7 @@ fn parse_class_body(
     package: &str,
     path: &str,
     class_name: &str,
+    instance_type: &InstanceType,
     constructors: &mut Vec<MethodComponent>,
     methods: &mut Vec<MethodComponent>,
     fields: &mut Vec<FieldComponent>,
@@ -305,10 +375,20 @@ fn parse_class_body(
     // Traverse body
     for member in ast.children.iter() {
         match &*member.r#type {
-            "constructor_declaration" | "static_initializer" => {
-                constructors.push(parse_method(member, package, path, class_name))
-            }
-            "method_declaration" => methods.push(parse_method(member, package, path, class_name)),
+            "constructor_declaration" | "static_initializer" => constructors.push(parse_method(
+                member,
+                package,
+                path,
+                class_name,
+                instance_type,
+            )),
+            "method_declaration" => methods.push(parse_method(
+                member,
+                package,
+                path,
+                class_name,
+                instance_type,
+            )),
             "{" => match member.span {
                 Some((line, _, _, _)) => start = line,
                 None => eprintln!("No span for open parenthesis! Cannot detect line number."),
@@ -340,4 +420,13 @@ fn fold_vec<T>(vector: Vec<T>) -> Option<Vec<T>> {
     } else {
         None
     }
+}
+
+/// Convert the children of a provided tree into a single, consecutive string
+fn stringify_tree_children(ast: &AST) -> String {
+    let mut buffer = String::new();
+    for member in ast.children.iter() {
+        buffer.push_str(&*member.value);
+    }
+    buffer
 }

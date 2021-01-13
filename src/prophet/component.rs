@@ -53,7 +53,8 @@ pub struct MethodParamComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
     // r#type: ??? -- this is Class<?> in prophet, not sure if used.
-    pub annotation: Option<AnnotationComponent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotation: Option<Vec<AnnotationComponent>>,
     pub parameter_type: String,
     pub parameter_name: String,
 }
