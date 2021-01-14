@@ -519,6 +519,10 @@ fn func_body_node(node: &AST) -> Option<Node> {
             let while_stmt: Stmt = WhileStmt::new(cond, Block::new(nodes)).into();
             Some(while_stmt.into())
         }
+        "for_statement" => {
+            let for_stmt: Stmt = for_statement(node)?.into();
+            Some(for_stmt.into())
+        }
         "if_statement" => {
             let if_stmt: Stmt = if_statement(node)?.into();
             Some(if_stmt.into())
@@ -721,6 +725,18 @@ fn switch_case(case_statement: &AST) -> Option<(Option<Expr>, Block)> {
     let nodes = block_nodes_iter(&case_statement.children[3..]);
     let block = Block::new(nodes);
     Some((expr, block))
+}
+
+fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
+    let block = for_stmt.find_child_by_type(&["compound_statement"])?;
+    let block = func_body(block)?;
+    // Need to get the init, condition, and update expressions.
+    // The issue here is that you can omit all 3 of these and the loop is still valid.
+    // This makes it sort of difficult to parse since all of these are in the same array,
+    // but they are still separated by ";" nodes.
+    let for_parts = for_stmt.children.chunks(2);
+    // .. Loop over non-overlapping chunks to try and figure out parts?
+    None
 }
 
 #[cfg(test)]
