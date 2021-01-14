@@ -516,6 +516,21 @@ fn func_body_node(node: &AST) -> Option<Node> {
             let while_stmt: Stmt = WhileStmt::new(cond, Block::new(nodes)).into();
             Some(while_stmt.into())
         }
+        "if_statement" => {
+            let cond = node
+                .find_child_by_type(&["condition_clause"])
+                .map(|cond| expression(cond))??;
+            let mut blocks = node
+                .children
+                .iter()
+                .filter(|node| &*node.r#type == "compound_statement")
+                .map(|block| Block::new(block_nodes(block)));
+            // Will need to recursively create if else blocks here because of the AST structure
+            let body = blocks.next()?;
+            let else_body = blocks.next()?;
+            let if_stmt: Stmt = IfStmt::new(cond, body, else_body).into();
+            Some(if_stmt.into())
+        }
         "expression_statement" => {
             let expr = node
                 .children

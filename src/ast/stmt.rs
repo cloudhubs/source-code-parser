@@ -17,6 +17,7 @@ pub enum Stmt {
     SwitchStmt(SwitchStmt),
     IncDecStmt(IncDecStmt),
     ImportStmt(ImportStmt),
+    BreakStmt(BreakStmt),
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -39,6 +40,7 @@ pub struct ExprStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct IfStmt {
+    pub cond: Expr,
     pub body: Block,
     pub else_body: Block,
 }
@@ -89,3 +91,6 @@ pub struct ImportStmt {
     pub use_direct: bool,
     pub value: String,
 }
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct BreakStmt;
