@@ -517,18 +517,7 @@ fn func_body_node(node: &AST) -> Option<Node> {
             Some(while_stmt.into())
         }
         "if_statement" => {
-            let cond = node
-                .find_child_by_type(&["condition_clause"])
-                .map(|cond| expression(cond))??;
-            let mut blocks = node
-                .children
-                .iter()
-                .filter(|node| &*node.r#type == "compound_statement")
-                .map(|block| Block::new(block_nodes(block)));
-            // Will need to recursively create if else blocks here because of the AST structure
-            let body = blocks.next()?;
-            let else_body = blocks.next()?;
-            let if_stmt: Stmt = IfStmt::new(cond, body, else_body).into();
+            let if_stmt: Stmt = if_statement(node)?.into();
             Some(if_stmt.into())
         }
         "expression_statement" => {
@@ -665,6 +654,34 @@ fn call_expression(node: &AST) -> Option<Expr> {
         .flat_map(|arg| arg)
         .collect();
     Some(CallExpr::new(Box::new(function_name), args).into())
+}
+
+fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
+    let cond = if_stmt
+        .find_child_by_type(&["condition_clause"])
+        .map(|cond| expression(cond))??;
+    let mut blocks = if_stmt
+        .children
+        .iter()
+        .filter(|node| &*node.r#type == "compound_statement")
+        .map(|block| Block::new(block_nodes(block)));
+    let body = blocks.next()?;
+    // Check for else block, if else block, or no else block.
+    let else_body = match blocks.next() {
+        Some(else_body) => Some(else_body),
+        None => {
+            let else_if = if_stmt
+                .find_child_by_type(&["if_statement"])
+                .map(|if_stmt| if_statement(if_stmt))
+                .flatten()
+                .map(|if_stmt| {
+                    let if_stmt: Stmt = if_stmt.into();
+                    Block::new(vec![if_stmt.into()])
+                });
+            else_if
+        }
+    };
+    Some(IfStmt::new(cond, body, else_body))
 }
 
 #[cfg(test)]

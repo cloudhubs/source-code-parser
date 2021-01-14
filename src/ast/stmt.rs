@@ -42,7 +42,7 @@ pub struct ExprStmt {
 pub struct IfStmt {
     pub cond: Expr,
     pub body: Block,
-    pub else_body: Block,
+    pub else_body: Option<Block>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
