@@ -525,8 +525,13 @@ fn func_body_node(node: &AST) -> Option<Node> {
             let stmt: Stmt = expr.into();
             Some(stmt.into())
         }
-        // TODO
-        "using_declaration" => None,
+        "using_declaration" => {
+            let ident =
+                node.find_child_by_type(&["namespace_identifier", "scoped_namespace_identifier"])?;
+            let using = type_ident(ident);
+            let using: Stmt = ImportStmt::new(false, false, using).into();
+            Some(using.into())
+        }
         "return_statement" => {
             // If there isn't an expression and the 2nd child is of type ";",
             // the expression function will return None anyways.
