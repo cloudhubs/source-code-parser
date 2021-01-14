@@ -47,10 +47,10 @@ pub struct IfStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ForStmt {
-    pub init: Expr, // Expr, BinExpr that is = ? or a new DeclExpr?
-    pub condition: Expr,
+    pub init: Option<Expr>, // Expr, BinExpr that is = ? or a new DeclExpr?
+    pub condition: Option<Expr>,
+    pub post: Option<Expr>,
     pub body: Block,
-    pub post: Expr,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]

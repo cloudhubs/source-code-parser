@@ -730,13 +730,33 @@ fn switch_case(case_statement: &AST) -> Option<(Option<Expr>, Block)> {
 fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
     let block = for_stmt.find_child_by_type(&["compound_statement"])?;
     let block = func_body(block)?;
-    // Need to get the init, condition, and update expressions.
-    // The issue here is that you can omit all 3 of these and the loop is still valid.
-    // This makes it sort of difficult to parse since all of these are in the same array,
-    // but they are still separated by ";" nodes.
-    let for_parts = for_stmt.children.chunks(2);
-    // .. Loop over non-overlapping chunks to try and figure out parts?
-    None
+
+    let mut init = None;
+    let mut cond = None;
+    let mut post = None;
+    let mut semicolons = 0u8;
+    for part in for_stmt
+        .children
+        .iter()
+        .filter(|child| match &*child.r#type {
+            "for" | "(" | ")" | "compound_statement" => false,
+            _ => true,
+        })
+    {
+        if &*part.r#type == ";" {
+            semicolons += 1;
+        } else {
+            match semicolons {
+                0 => init = expression(part), // Need to consider declarations here instead of just assignment_expr, etc
+                1 => cond = expression(part),
+                2 => post = expression(part),
+                _ => {}
+            }
+        }
+    }
+
+    let for_stmt = ForStmt::new(init, cond, post, block);
+    Some(for_stmt)
 }
 
 #[cfg(test)]
