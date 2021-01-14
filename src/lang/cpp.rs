@@ -555,6 +555,11 @@ fn func_body_node(node: &AST) -> Option<Node> {
             let brk: Stmt = BreakStmt::new().into();
             Some(brk.into())
         }
+        "compound_statement" => {
+            let nodes = block_nodes(node);
+            let block = Block::new(nodes);
+            Some(block.into())
+        }
         // ...
         _ => None,
     }
