@@ -73,7 +73,7 @@ pub struct ReturnStmt {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct SwitchStmt {
     pub condition: Expr,
-    pub cases: Vec<(Expr, Block)>,
+    pub cases: Vec<(Option<Expr>, Block)>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]

@@ -490,8 +490,11 @@ fn func_body(body: &AST) -> Option<Block> {
 }
 
 fn block_nodes(compound_statement: &AST) -> Vec<Node> {
-    compound_statement
-        .children
+    block_nodes_iter(&compound_statement.children)
+}
+
+fn block_nodes_iter(children: &[AST]) -> Vec<Node> {
+    children
         .iter()
         .map(|child| func_body_node(child))
         .flat_map(|node| node)
@@ -519,6 +522,10 @@ fn func_body_node(node: &AST) -> Option<Node> {
         "if_statement" => {
             let if_stmt: Stmt = if_statement(node)?.into();
             Some(if_stmt.into())
+        }
+        "switch_statement" => {
+            let switch_stmt: Stmt = switch_statement(node)?.into();
+            Some(switch_stmt.into())
         }
         "expression_statement" => {
             let expr = node
@@ -682,6 +689,33 @@ fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
         }
     };
     Some(IfStmt::new(cond, body, else_body))
+}
+
+fn switch_statement(switch_stmt: &AST) -> Option<SwitchStmt> {
+    let cond = switch_stmt
+        .find_child_by_type(&["condition_clause"])
+        .map(|cond| expression(cond))??;
+    let cases = switch_stmt
+        .find_child_by_type(&["compound_statement"])
+        .map(|switch_stmt| switch_stmt.children.iter())?
+        .map(|case| switch_case(case))
+        .flat_map(|case| case)
+        .collect();
+
+    let switch_stmt = SwitchStmt::new(cond, cases);
+    Some(switch_stmt)
+}
+
+fn switch_case(case_statement: &AST) -> Option<(Option<Expr>, Block)> {
+    let expr = case_statement.find_child_by_type(&["case", "default"])?;
+    // todo: add literals to expression function
+    let expr = match &*expr.r#type {
+        "case" => expression(case_statement.children.iter().nth(1)?),
+        "default" | _ => None,
+    };
+    let nodes = block_nodes_iter(&case_statement.children[3..]);
+    let block = Block::new(nodes);
+    Some((expr, block))
 }
 
 #[cfg(test)]
