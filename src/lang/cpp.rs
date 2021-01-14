@@ -555,6 +555,10 @@ fn func_body_node(node: &AST) -> Option<Node> {
             let ret: Stmt = ReturnStmt::new(expr).into();
             Some(ret.into())
         }
+        "break_statement" => {
+            let brk: Stmt = BreakStmt::new().into();
+            Some(brk.into())
+        }
         // ...
         _ => None,
     }
