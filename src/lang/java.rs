@@ -46,6 +46,7 @@ fn parse_package(ast: &AST) -> Option<String> {
     Some(stringify_tree_children(result))
 }
 
+/// Take the AST node containing an import statement, and return back the String describing the package imported
 fn parse_import(ast: &AST) -> String {
     let mut buffer = String::new();
     for child in ast.children.iter() {
@@ -113,7 +114,7 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
             accessor: modifier.accessor,
             stereotype: stereotype,
             methods,
-            container_name: instance_name,
+            container_name: instance_name.clone(),
             line_count: end - start,
         },
         declaration_type: ContainerType::Class,
@@ -122,6 +123,63 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
         constructors: fold_vec(constructors),
         field_components: fold_vec(fields),
     })
+}
+
+/// Parse the AST for a specified method
+fn parse_method(
+    ast: &AST,
+    package: &str,
+    path: &str,
+    instance_name: &str,
+    enclosing_type: &InstanceType,
+) -> MethodComponent {
+    // Define fields
+    let mut modifier = Modifier::new();
+    let mut method_name = String::new();
+    let mut parameters = vec![];
+    let mut return_type = String::new();
+    let line_begin = ast.span.expect("No span for a method! AST malformed!").0 as i32;
+    let line_end = ast.span.expect("No span for a method! AST malformed!").2 as i32;
+
+    // Parse method
+    println!("{}:", instance_name);
+    for member in ast.children.iter() {
+        match &*member.r#type {
+            "identifier" | "static" => method_name = member.value.clone(),
+            "modifiers" => modifier = parse_modifiers(member),
+            "formal_parameters" => {
+                parameters = parse_method_parameters(member, package, path, enclosing_type)
+            }
+            "constructor_body" | "block" => {
+                parse_method_body(member, package, path);
+            }
+            unknown => eprintln!("Unknown tag {} encountered while parsing a method", unknown),
+        }
+    }
+    println!("");
+
+    // Return the method component
+    MethodComponent {
+        component: ComponentInfo {
+            path: path.clone().into(),
+            package_name: package.clone().into(),
+            instance_name: instance_name.into(),
+            instance_type: InstanceType::MethodComponent,
+        },
+        accessor: modifier.accessor,
+        method_name,
+        return_type,
+        parameters,
+        is_static: modifier.is_static,
+        is_abstract: modifier.is_abstract,
+        is_final: modifier.is_final,
+        sub_methods: vec![],
+        annotations: modifier.annotations,
+        line_count: line_end - line_begin,
+        line_begin,
+        line_end,
+        body: None,
+    }
 }
 
 /// Struct to hold return data from parse_modifiers
@@ -205,63 +263,7 @@ fn parse_annotations(ast: &AST, annotations: &mut Vec<AnnotationComponent>) {
     }
 }
 
-/// Parse the AST for a specified method
-fn parse_method(
-    ast: &AST,
-    package: &str,
-    path: &str,
-    instance_name: &str,
-    enclosing_type: &InstanceType,
-) -> MethodComponent {
-    // Define fields
-    let mut modifier = Modifier::new();
-    let mut method_name = String::new();
-    let mut parameters = vec![];
-    let mut return_type = String::new();
-    let line_begin = ast.span.expect("No span for a method! AST malformed!").0 as i32;
-    let line_end = ast.span.expect("No span for a method! AST malformed!").2 as i32;
-
-    // Parse method
-    println!("{}:", instance_name);
-    for member in ast.children.iter() {
-        match &*member.r#type {
-            "identifier" | "static" => method_name = member.value.clone(),
-            "modifiers" => modifier = parse_modifiers(member),
-            "formal_parameters" => {
-                parameters = parse_method_parameters(member, package, path, enclosing_type)
-            }
-            "constructor_body" | "block" => {
-                parse_method_body(member, package, path);
-            }
-            unknown => eprintln!("Unknown tag {} encountered while parsing a method", unknown),
-        }
-    }
-    println!("");
-
-    // Return the method component
-    MethodComponent {
-        component: ComponentInfo {
-            path: path.clone().into(),
-            package_name: package.clone().into(),
-            instance_name: instance_name.into(),
-            instance_type: InstanceType::MethodComponent,
-        },
-        accessor: modifier.accessor,
-        method_name,
-        return_type,
-        parameters,
-        is_static: modifier.is_static,
-        is_abstract: modifier.is_abstract,
-        is_final: modifier.is_final,
-        sub_methods: vec![],
-        annotations: modifier.annotations,
-        line_count: line_end - line_begin,
-        line_begin,
-        line_end,
-        body: None,
-    }
-}
-
+/// Parse the AST of the parameters passed in to a method
 fn parse_method_parameters(
     ast: &AST,
     package: &str,
@@ -283,6 +285,7 @@ fn parse_method_parameters(
     params
 }
 
+/// Parse the AST containing a single parameter to a method
 fn parse_parameter(
     ast: &AST,
     package: &str,
