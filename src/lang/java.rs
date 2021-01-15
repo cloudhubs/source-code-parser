@@ -10,6 +10,7 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
 
     for node in ast
         .find_all_children_by_type(&[
+            "import_declaration",
             "package_declaration",
             "class_declaration",
             "interface_declaration",
@@ -20,6 +21,7 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         .iter()
     {
         match &*node.r#type {
+            "import_declaration" => println!("{}", parse_import(&node)),
             "package_declaration" => {
                 package = parse_package(&node)
                     .expect(&*format!("Malformed package declaration {:#?}!", node));
@@ -31,9 +33,7 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
                 Some(class) => components.push(ComponentType::ClassOrInterfaceComponent(class)),
                 None => {}
             },
-            tag => {
-                todo!("Cannot identify provided tag {:#?}", tag);
-            }
+            tag => todo!("Cannot identify provided tag {:#?}", tag),
         };
     }
 
@@ -44,6 +44,17 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
 fn parse_package(ast: &AST) -> Option<String> {
     let result = ast.find_child_by_type(&["scoped_identifier"])?;
     Some(stringify_tree_children(result))
+}
+
+fn parse_import(ast: &AST) -> String {
+    let mut buffer = String::new();
+    for child in ast.children.iter() {
+        match &*child.r#type {
+            "identifier" | "." | "*" => buffer.push_str(&*child.value),
+            _ => buffer.push_str(&*parse_import(child)),
+        };
+    }
+    buffer
 }
 
 /// Parse a single class/interface/annotation/what have you's AST
@@ -207,7 +218,6 @@ fn parse_method(
     let mut method_name = String::new();
     let mut parameters = vec![];
     let mut return_type = String::new();
-    let mut sub_methods = vec![];
     let line_begin = ast.span.expect("No span for a method! AST malformed!").0 as i32;
     let line_end = ast.span.expect("No span for a method! AST malformed!").2 as i32;
 
@@ -243,7 +253,7 @@ fn parse_method(
         is_static: modifier.is_static,
         is_abstract: modifier.is_abstract,
         is_final: modifier.is_final,
-        sub_methods,
+        sub_methods: vec![],
         annotations: modifier.annotations,
         line_count: line_end - line_begin,
         line_begin,
