@@ -1,5 +1,5 @@
-use crate::parse::AST;
 use crate::prophet::*;
+use crate::{ast::*, parse::AST};
 
 pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
     find_components_internal(ast, String::new(), path)
@@ -134,15 +134,15 @@ fn parse_method(
     enclosing_type: &InstanceType,
 ) -> MethodComponent {
     // Define fields
+    let mut body = None;
     let mut modifier = Modifier::new();
     let mut method_name = String::new();
     let mut parameters = vec![];
-    let mut return_type = String::new();
+    let return_type = find_type(ast);
     let line_begin = ast.span.expect("No span for a method! AST malformed!").0 as i32;
     let line_end = ast.span.expect("No span for a method! AST malformed!").2 as i32;
 
     // Parse method
-    println!("{}:", instance_name);
     for member in ast.children.iter() {
         match &*member.r#type {
             "identifier" | "static" => method_name = member.value.clone(),
@@ -151,12 +151,11 @@ fn parse_method(
                 parameters = parse_method_parameters(member, package, path, enclosing_type)
             }
             "constructor_body" | "block" => {
-                parse_method_body(member, package, path);
+                // body = Some(parse_method_body(member, package, path));
             }
-            unknown => eprintln!("Unknown tag {} encountered while parsing a method", unknown),
+            unknown => println!("{} unknown", unknown),
         }
     }
-    println!("");
 
     // Return the method component
     MethodComponent {
@@ -178,7 +177,7 @@ fn parse_method(
         line_count: line_end - line_begin,
         line_begin,
         line_end,
-        body: None,
+        body,
     }
 }
 
@@ -342,18 +341,37 @@ fn parse_type(ast: &AST) -> String {
         unknown => String::from(unknown),
     }
 }
-
-/// Parse the body of a method, static block, constructor, etc.
-fn parse_method_body(ast: &AST, package: &str, path: &str) {
-    for member in ast.children.iter() {
-        match &*member.r#type {
-            "" => {}
-            unknown => eprintln!("{} unknown tag in parsing method body!", unknown),
-        }
+fn find_type(ast: &AST) -> String {
+    match ast.find_child_by_type(&[
+        "type_identifier",
+        "array_type",
+        "integral_type",
+        "floating_point_type",
+        "boolean_type",
+        "dimensions",
+    ]) {
+        Some(child) => parse_type(child),
+        None => "void".into(),
     }
 }
 
 fn parse_field(ast: &AST, package: &str, path: &str) -> FieldComponent {
+    // Get field name
+    let variables = ast
+        .find_all_children_by_type(&["identifier"])
+        .unwrap_or_default()
+        .into_iter()
+        .map(|ast| ast.value.clone())
+        .collect();
+
+    // Get field modifiers
+    let modifier = match ast.find_child_by_type(&["modifiers"]) {
+        Some(modifier_block) => parse_modifiers(modifier_block),
+        None => Modifier::new(),
+    };
+
+    let r#type = find_type(ast);
+
     FieldComponent {
         component: ComponentInfo {
             path: path.into(),
@@ -361,14 +379,14 @@ fn parse_field(ast: &AST, package: &str, path: &str) -> FieldComponent {
             instance_name: "".into(),
             instance_type: InstanceType::FieldComponent,
         },
-        annotations: vec![],
-        variables: vec![],
+        annotations: modifier.annotations,
+        variables,
         field_name: String::new(),
-        accessor: AccessorType::Default,
-        is_static: false,
-        is_final: false,
+        accessor: modifier.accessor,
+        is_static: modifier.is_static,
+        is_final: modifier.is_final,
         default_value: String::new(),
-        r#type: String::new(),
+        r#type,
     }
 }
 
