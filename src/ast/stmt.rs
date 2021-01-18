@@ -18,6 +18,7 @@ pub enum Stmt {
     IncDecStmt(IncDecStmt),
     ImportStmt(ImportStmt),
     BreakStmt(BreakStmt),
+    ContinueStmt(ContinueStmt),
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -94,3 +95,6 @@ pub struct ImportStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct BreakStmt;
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct ContinueStmt;
