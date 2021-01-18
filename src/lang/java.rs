@@ -151,7 +151,7 @@ fn parse_method(
                 parameters = parse_method_parameters(member, package, path, enclosing_type)
             }
             "constructor_body" | "block" => {
-                // body = Some(parse_method_body(member, package, path));
+                body = Some(parse_block(member, package, path));
             }
             unknown => println!("{} unknown", unknown),
         }
@@ -342,16 +342,75 @@ fn parse_type(ast: &AST) -> String {
     }
 }
 fn find_type(ast: &AST) -> String {
-    match ast.find_child_by_type(&[
+    find_type_or_none(ast).get_or_insert("void".into()).clone()
+}
+fn find_type_or_none(ast: &AST) -> Option<String> {
+    let child = ast.find_child_by_type(&[
         "type_identifier",
         "array_type",
         "integral_type",
         "floating_point_type",
         "boolean_type",
         "dimensions",
-    ]) {
-        Some(child) => parse_type(child),
-        None => "void".into(),
+    ])?;
+
+    Some(parse_type(child))
+}
+
+/// Parse the body of a method, static block, constructor, etc.
+fn parse_block(ast: &AST, package: &str, path: &str) -> Block {
+    Block {
+        nodes: parse_child_nodes(ast, package, path),
+    }
+}
+
+fn parse_child_nodes(ast: &AST, package: &str, path: &str) -> Vec<Node> {
+    ast.children
+        .iter()
+        .map(|member| parse_node(member, package, path))
+        .filter(|option| option.is_some())
+        .map(|some| some.unwrap())
+        .collect()
+}
+
+fn parse_node(ast: &AST, package: &str, path: &str) -> Option<Node> {
+    match &*ast.r#type {
+        "local_variable_declaration" | "field_declaration" => {
+            // Extract informtion about the variable
+            let r#type = find_type_or_none(ast);
+            let modifier = match ast.find_child_by_type(&["modifiers"]) {
+                Some(modifier) => parse_modifiers(modifier),
+                None => Modifier::new(),
+            };
+            let body = ast.find_child_by_type(&["variable_declarator"]).unwrap();
+            let name = &*body.find_child_by_type(&["identifier"]).unwrap().value;
+
+            // Determine the value it was set to
+            let rhs = parse_child_nodes(ast, package, path)
+                .iter()
+                .map(|node| match node {
+                    Expr => Some(node as Node::Expr),
+                    _ => None,
+                })
+                .filter(|node| node.is_some())
+                .map(|expr| expr as Node::Expr)
+                .collect();
+
+            //
+            Some(Node::Stmt(Stmt::DeclStmt(DeclStmt {
+                lhs: Ident {
+                    name: name.into(),
+                    r#type,
+                    is_final: Some(modifier.is_final),
+                    is_static: None,
+                },
+                rhs,
+            })))
+        }
+        unknown => {
+            eprintln!("{} unknown tag in parsing method body!", unknown);
+            None
+        }
     }
 }
 
