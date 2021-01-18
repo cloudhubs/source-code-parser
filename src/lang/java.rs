@@ -119,7 +119,6 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
         },
         declaration_type: ContainerType::Class,
         annotations: modifier.annotations,
-        stereotype: ContainerStereotype::Entity,
         constructors: fold_vec(constructors),
         field_components: fold_vec(fields),
     })
@@ -387,13 +386,12 @@ fn parse_node(ast: &AST, package: &str, path: &str) -> Option<Node> {
 
             // Determine the value it was set to
             let rhs = parse_child_nodes(ast, package, path)
-                .iter()
+                .into_iter()
                 .map(|node| match node {
-                    Expr => Some(node as Node::Expr),
-                    _ => None,
+                    Node::Expr(expr) => Some(expr),
+                    _ => None
                 })
-                .filter(|node| node.is_some())
-                .map(|expr| expr as Node::Expr)
+                .flat_map(|expr| expr)
                 .collect();
 
             //

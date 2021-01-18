@@ -407,7 +407,6 @@ fn transform_into_class(
         },
         declaration_type: ContainerType::Class,
         annotations: vec![],
-        stereotype: ContainerStereotype::Entity,
         constructors: None,
         field_components: Some(fields),
     })

@@ -89,7 +89,6 @@ mod tests {
                 },
                 declaration_type: ContainerType::Class,
                 annotations: vec![],
-                stereotype: ContainerStereotype::Service,
                 constructors: None,
                 field_components: Some(vec![FieldComponent {
                     component: ComponentInfo {

@@ -125,7 +125,6 @@ pub struct ClassOrInterfaceComponent {
     pub component: ContainerComponent,
     pub declaration_type: ContainerType,
     pub annotations: Vec<AnnotationComponent>,
-    pub stereotype: ContainerStereotype,
 
     // Class-specific fields
     #[serde(skip_serializing_if = "Option::is_none")]
