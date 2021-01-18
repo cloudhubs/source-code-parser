@@ -17,6 +17,7 @@ pub enum Stmt {
     SwitchStmt(SwitchStmt),
     IncDecStmt(IncDecStmt),
     ImportStmt(ImportStmt),
+    BreakStmt(BreakStmt),
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -39,16 +40,17 @@ pub struct ExprStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct IfStmt {
+    pub cond: Expr,
     pub body: Block,
-    pub else_body: Block,
+    pub else_body: Option<Block>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ForStmt {
-    pub init: Expr, // Expr, BinExpr that is = ? or a new DeclExpr?
-    pub condition: Expr,
+    pub init: Option<Expr>, // Expr, BinExpr that is = ? or a new DeclExpr?
+    pub condition: Option<Expr>,
+    pub post: Option<Expr>,
     pub body: Block,
-    pub post: Expr,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -65,13 +67,13 @@ pub struct DoWhileStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ReturnStmt {
-    pub expr: Expr,
+    pub expr: Option<Expr>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct SwitchStmt {
     pub condition: Expr,
-    pub cases: Vec<(Expr, Block)>,
+    pub cases: Vec<(Option<Expr>, Block)>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -89,3 +91,6 @@ pub struct ImportStmt {
     pub use_direct: bool,
     pub value: String,
 }
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct BreakStmt;

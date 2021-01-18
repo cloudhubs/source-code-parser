@@ -1,3 +1,4 @@
+use crate::ast::*;
 use crate::parse::AST;
 use crate::prophet::*;
 
@@ -177,6 +178,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         },
         None => (0, 0),
     };
+    let body = body.map_or_else(|| None, |body| func_body(body));
 
     let method = MethodComponent {
         component: ComponentInfo {
@@ -197,7 +199,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         line_count: line_end - line_begin + 1,
         line_begin,
         line_end,
-        body: None,
+        body,
     };
 
     Some(method)
@@ -312,13 +314,18 @@ fn variable_type(ast: &AST) -> Option<String> {
 fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
     let ident = ast.find_child_by_type(&[
         "pointer_declarator",
+        "pointer_expression",
         "reference_declarator",
+        "reference_expression",
         "identifier",
         "field_identifier",
     ])?;
 
     Some(match &*ident.r#type {
-        "pointer_declarator" | "reference_declarator" => {
+        "pointer_declarator"
+        | "reference_declarator"
+        | "pointer_expression"
+        | "reference_expression" => {
             ident
                 .children
                 .iter()
@@ -474,6 +481,283 @@ fn field_is_abstract_method(field: &AST) -> bool {
     let eq = field.find_child_by_type(&["="]).is_some();
     let zero = field.find_child_by_value("0").is_some();
     virtual_specifier && eq && zero
+}
+
+// Takes in an AST with type field "compound_statement"
+fn func_body(body: &AST) -> Option<Block> {
+    let nodes = block_nodes(body);
+
+    Some(Block::new(nodes))
+}
+
+fn block_nodes(compound_statement: &AST) -> Vec<Node> {
+    block_nodes_iter(&compound_statement.children)
+}
+
+fn block_nodes_iter(children: &[AST]) -> Vec<Node> {
+    children
+        .iter()
+        .map(|child| func_body_node(child))
+        .flat_map(|node| node)
+        .collect()
+}
+
+// Takes child of compound_statement
+fn func_body_node(node: &AST) -> Option<Node> {
+    match &*node.r#type {
+        "declaration" => {
+            let decl: Stmt = variable_declaration(node).into();
+            let decl = decl.into();
+            Some(decl)
+        }
+        "while_statement" => {
+            let cond = node
+                .find_child_by_type(&["condition_clause"])
+                .map(|cond| expression(cond))??;
+            let nodes = node
+                .find_child_by_type(&["compound_statement"])
+                .map(|block| block_nodes(block))?;
+            let while_stmt: Stmt = WhileStmt::new(cond, Block::new(nodes)).into();
+            Some(while_stmt.into())
+        }
+        "for_statement" => {
+            let for_stmt: Stmt = for_statement(node)?.into();
+            Some(for_stmt.into())
+        }
+        "if_statement" => {
+            let if_stmt: Stmt = if_statement(node)?.into();
+            Some(if_stmt.into())
+        }
+        "switch_statement" => {
+            let switch_stmt: Stmt = switch_statement(node)?.into();
+            Some(switch_stmt.into())
+        }
+        "expression_statement" => {
+            let expr = node
+                .children
+                .iter()
+                .next()
+                .map_or_else(|| None, |node| expression(node))?;
+            let stmt: Stmt = expr.into();
+            Some(stmt.into())
+        }
+        "using_declaration" => {
+            let ident =
+                node.find_child_by_type(&["namespace_identifier", "scoped_namespace_identifier"])?;
+            let using = type_ident(ident);
+            let using: Stmt = ImportStmt::new(false, false, using).into();
+            Some(using.into())
+        }
+        "return_statement" => {
+            // If there isn't an expression and the 2nd child is of type ";",
+            // the expression function will return None anyways.
+            let expr = node.children.iter().nth(1)?;
+            let expr = expression(expr);
+            let ret: Stmt = ReturnStmt::new(expr).into();
+            Some(ret.into())
+        }
+        "break_statement" => {
+            let brk: Stmt = BreakStmt::new().into();
+            Some(brk.into())
+        }
+        "compound_statement" => {
+            let nodes = block_nodes(node);
+            let block = Block::new(nodes);
+            Some(block.into())
+        }
+        // ...
+        _ => None,
+    }
+}
+
+// Takes in node type "declaration"
+fn variable_declaration(node: &AST) -> DeclStmt {
+    let mut variable_type = node
+        .find_child_by_type(&[
+            "primitive_type",
+            "scoped_identifier_type",
+            "type_identifier",
+        ])
+        .map_or_else(|| "".into(), |node| type_ident(node));
+
+    let init_declarator = node.find_child_by_type(&["init_declarator"]);
+    match init_declarator {
+        Some(init_declarator) => variable_init_declaration(init_declarator, &mut variable_type),
+        None => {
+            let name = variable_ident(node, &mut variable_type)
+                .expect("No variable name for declaration with no init");
+            let ident = Ident::new(name);
+            DeclStmt::new(ident, vec![])
+        }
+    }
+}
+
+fn variable_init_declaration(init_declarator: &AST, variable_type: &mut String) -> DeclStmt {
+    let name =
+        variable_ident(init_declarator, variable_type).expect("No identifier for init declarator");
+    let decl_type = init_declarator.find_child_by_type(&["=", "argument_list"]);
+    let rhs = match decl_type {
+        Some(decl_type) => match &*decl_type.r#type {
+            "=" => {
+                let value = init_declarator.children.iter().next_back();
+                value.map_or_else(|| None, |value| expression(value))
+            }
+            "argument_list" => {
+                let argument_list = decl_type;
+                let args: Vec<Expr> = argument_list
+                    .children
+                    .iter()
+                    .map(|arg| expression(arg))
+                    .flat_map(|arg| arg)
+                    .collect();
+                let init = CallExpr::new(Box::new("new".to_string().into()), args).into();
+                Some(init)
+            }
+            _ => None,
+        },
+        None => None,
+    };
+    let ident = Ident::new(name);
+    DeclStmt::new(ident, rhs.map_or_else(|| vec![], |rhs| vec![rhs]))
+}
+
+fn expression(node: &AST) -> Option<Expr> {
+    match &*node.r#type {
+        "pointer_declarator"
+        | "pointer_expression"
+        | "reference_declarator"
+        | "reference_expression"
+        | "identifier"
+        | "field_identifier" => {
+            let mut ptr_symbol = String::new();
+            let name = variable_ident(node, &mut ptr_symbol)?;
+            let mut ident: Expr = Ident::new(name).into();
+            ptr_symbol
+                .chars()
+                .map(|star| Op::from(&*star.to_string()))
+                .for_each(|star| ident = UnaryExpr::new(Box::new(ident.clone()), star).into());
+            Some(ident)
+        }
+        "assignment_expression" => binary_expression(node), //| "field_expression"
+        "call_expression" => call_expression(node),
+        "field_expression" => {
+            let mut nodes = node.children.iter();
+            let lhs = expression(nodes.next()?)?;
+            let rhs = expression(nodes.next()?)?;
+            Some(DotExpr::new(Box::new(lhs), Box::new(rhs)).into())
+        }
+        _ => None,
+    }
+}
+
+fn binary_expression(node: &AST) -> Option<Expr> {
+    let mut nodes = node.children.iter();
+    let lhs = expression(nodes.next()?)?;
+    let op = Op::from(&*nodes.next()?.value);
+    let rhs = expression(nodes.next()?)?;
+    Some(BinaryExpr::new(Box::new(lhs), op, Box::new(rhs)).into())
+}
+
+// Takes AST node type "call_expression"
+fn call_expression(node: &AST) -> Option<Expr> {
+    let mut nodes = node.children.iter();
+    // field_expression, identifier
+    let function_name = expression(nodes.next()?)?;
+    let argument_list = nodes.next_back()?;
+    let args: Vec<Expr> = argument_list
+        .children
+        .iter()
+        .map(|arg| expression(arg))
+        .flat_map(|arg| arg)
+        .collect();
+    Some(CallExpr::new(Box::new(function_name), args).into())
+}
+
+fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
+    let cond = if_stmt
+        .find_child_by_type(&["condition_clause"])
+        .map(|cond| expression(cond))??;
+    let mut blocks = if_stmt
+        .children
+        .iter()
+        .filter(|node| &*node.r#type == "compound_statement")
+        .map(|block| Block::new(block_nodes(block)));
+    let body = blocks.next()?;
+    // Check for else block, if else block, or no else block.
+    let else_body = match blocks.next() {
+        Some(else_body) => Some(else_body),
+        None => {
+            let else_if = if_stmt
+                .find_child_by_type(&["if_statement"])
+                .map(|if_stmt| if_statement(if_stmt))
+                .flatten()
+                .map(|if_stmt| {
+                    let if_stmt: Stmt = if_stmt.into();
+                    Block::new(vec![if_stmt.into()])
+                });
+            else_if
+        }
+    };
+    Some(IfStmt::new(cond, body, else_body))
+}
+
+fn switch_statement(switch_stmt: &AST) -> Option<SwitchStmt> {
+    let cond = switch_stmt
+        .find_child_by_type(&["condition_clause"])
+        .map(|cond| expression(cond))??;
+    let cases = switch_stmt
+        .find_child_by_type(&["compound_statement"])
+        .map(|switch_stmt| switch_stmt.children.iter())?
+        .map(|case| switch_case(case))
+        .flat_map(|case| case)
+        .collect();
+
+    let switch_stmt = SwitchStmt::new(cond, cases);
+    Some(switch_stmt)
+}
+
+fn switch_case(case_statement: &AST) -> Option<(Option<Expr>, Block)> {
+    let expr = case_statement.find_child_by_type(&["case", "default"])?;
+    // todo: add literals to expression function
+    let expr = match &*expr.r#type {
+        "case" => expression(case_statement.children.iter().nth(1)?),
+        "default" | _ => None,
+    };
+    let nodes = block_nodes_iter(&case_statement.children[3..]);
+    let block = Block::new(nodes);
+    Some((expr, block))
+}
+
+fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
+    let block = for_stmt.find_child_by_type(&["compound_statement"])?;
+    let block = func_body(block)?;
+
+    let mut init = None;
+    let mut cond = None;
+    let mut post = None;
+    let mut semicolons = 0u8;
+    for part in for_stmt
+        .children
+        .iter()
+        .filter(|child| match &*child.r#type {
+            "for" | "(" | ")" | "compound_statement" => false,
+            _ => true,
+        })
+    {
+        if &*part.r#type == ";" {
+            semicolons += 1;
+        } else {
+            match semicolons {
+                0 => init = expression(part), // Need to consider declarations here instead of just assignment_expr, etc
+                1 => cond = expression(part),
+                2 => post = expression(part),
+                _ => {}
+            }
+        }
+    }
+
+    let for_stmt = ForStmt::new(init, cond, post, block);
+    Some(for_stmt)
 }
 
 #[cfg(test)]
