@@ -17,7 +17,7 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
             "enum_declaration",
             "annotation_declaration",
         ])
-        .unwrap()
+        .expect("Provided an invalid Java file, no class, interface, annotation, enum, packages, or imports found!")
         .iter()
     {
         match &*node.r#type {
@@ -334,7 +334,12 @@ fn parse_type(ast: &AST) -> String {
             }
             result_type
         }
-        "integral_type" | "floating_point_type" => ast.children.get(0).unwrap().r#type.clone(),
+        "integral_type" | "floating_point_type" => ast
+            .children
+            .get(0)
+            .expect("Cannot detect the type of a numeric primitive! The AST appears malformed!")
+            .r#type
+            .clone(),
         "boolean_type" => ast.value.clone(),
         "dimensions" => stringify_tree_children(ast),
         unknown => String::from(unknown),
@@ -368,7 +373,7 @@ fn parse_child_nodes(ast: &AST, package: &str, path: &str) -> Vec<Node> {
         .iter()
         .map(|member| parse_node(member, package, path))
         .filter(|option| option.is_some())
-        .map(|some| some.unwrap())
+        .flat_map(|some| some)
         .collect()
 }
 
@@ -381,15 +386,13 @@ fn parse_node(ast: &AST, package: &str, path: &str) -> Option<Node> {
                 Some(modifier) => parse_modifiers(modifier),
                 None => Modifier::new(),
             };
-            let body = ast.find_child_by_type(&["variable_declarator"]).unwrap();
-            let name = &*body.find_child_by_type(&["identifier"]).unwrap().value;
 
             // Determine the value it was set to
             let rhs = parse_child_nodes(ast, package, path)
                 .into_iter()
                 .map(|node| match node {
                     Node::Expr(expr) => Some(expr),
-                    _ => None
+                    _ => None,
                 })
                 .flat_map(|expr| expr)
                 .collect();
@@ -397,7 +400,7 @@ fn parse_node(ast: &AST, package: &str, path: &str) -> Option<Node> {
             //
             Some(Node::Stmt(Stmt::DeclStmt(DeclStmt {
                 lhs: Ident {
-                    name: name.into(),
+                    name: "".into(),
                     r#type,
                     is_final: Some(modifier.is_final),
                     is_static: None,
