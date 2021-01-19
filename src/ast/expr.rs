@@ -63,10 +63,4 @@ pub struct DotExpr {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct Ident {
     pub name: String,
-    #[new(default)]
-    pub is_static: Option<bool>,
-    #[new(default)]
-    pub is_final: Option<bool>,
-    #[new(default)]
-    pub r#type: Option<String>,
 }

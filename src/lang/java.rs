@@ -398,16 +398,10 @@ fn parse_node(ast: &AST, package: &str, path: &str) -> Option<Node> {
                 .flat_map(|expr| expr)
                 .collect();
 
-            //
-            Some(Node::Stmt(Stmt::DeclStmt(DeclStmt {
-                lhs: Ident {
-                    name: "".into(),
-                    r#type,
-                    is_final: Some(modifier.is_final),
-                    is_static: None,
-                },
-                rhs,
-            })))
+            // TODO: Use name
+            let _name: Expr = Ident::new(name.into()).into();
+            let decl: Stmt = DeclStmt::new(r#type, rhs).into();
+            Some(decl.into())
         }
 
         "variable_declarator" => {

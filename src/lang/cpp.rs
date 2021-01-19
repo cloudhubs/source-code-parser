@@ -586,7 +586,7 @@ fn variable_declaration(node: &AST) -> DeclStmt {
             let name = variable_ident(node, &mut variable_type)
                 .expect("No variable name for declaration with no init");
             let ident = Ident::new(name);
-            DeclStmt::new(ident, vec![])
+            DeclStmt::new(None, vec![ident.into()]) // TODO: add type instead of None
         }
     }
 }
@@ -616,8 +616,9 @@ fn variable_init_declaration(init_declarator: &AST, variable_type: &mut String) 
         },
         None => None,
     };
-    let ident = Ident::new(name);
-    DeclStmt::new(ident, rhs.map_or_else(|| vec![], |rhs| vec![rhs]))
+    // TODO: Specify type
+    let _ident = Ident::new(name);
+    DeclStmt::new(None, rhs.map_or_else(|| vec![], |rhs| vec![rhs]))
 }
 
 fn expression(node: &AST) -> Option<Expr> {
