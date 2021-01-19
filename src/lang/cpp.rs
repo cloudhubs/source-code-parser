@@ -579,12 +579,14 @@ fn variable_declaration(node: &AST) -> DeclStmt {
         ])
         .map_or_else(|| "".into(), |node| type_ident(node));
 
-    let init_declarator = node.find_child_by_type(&["init_declarator"]);
+    let init_declarator = node.find_child_by_type(&["init_declarator", "function_declarator"]);
     match init_declarator {
         Some(init_declarator) => variable_init_declaration(init_declarator, &mut variable_type),
         None => {
-            let name = variable_ident(node, &mut variable_type)
-                .expect("No variable name for declaration with no init");
+            let name = variable_ident(node, &mut variable_type).expect(&*format!(
+                "No variable name for declaration with no init {:#?}",
+                node,
+            ));
             let ident = Ident::new(name);
             DeclStmt::new(None, vec![ident.into()]) // TODO: add type instead of None
         }
@@ -594,14 +596,14 @@ fn variable_declaration(node: &AST) -> DeclStmt {
 fn variable_init_declaration(init_declarator: &AST, variable_type: &mut String) -> DeclStmt {
     let name =
         variable_ident(init_declarator, variable_type).expect("No identifier for init declarator");
-    let decl_type = init_declarator.find_child_by_type(&["=", "argument_list"]);
+    let decl_type = init_declarator.find_child_by_type(&["=", "argument_list", "parameter_list"]);
     let rhs = match decl_type {
         Some(decl_type) => match &*decl_type.r#type {
             "=" => {
                 let value = init_declarator.children.iter().next_back();
                 value.map_or_else(|| None, |value| expression(value))
             }
-            "argument_list" => {
+            "argument_list" | "parameter_list" => {
                 let argument_list = decl_type;
                 let args: Vec<Expr> = argument_list
                     .children
@@ -645,6 +647,10 @@ fn expression(node: &AST) -> Option<Expr> {
             let lhs = expression(nodes.next()?)?;
             let rhs = expression(nodes.next()?)?;
             Some(DotExpr::new(Box::new(lhs), Box::new(rhs)).into())
+        }
+        "parameter_declaration" => {
+            let ident = node.children.iter().next()?;
+            expression(ident)
         }
         _ => None,
     }
