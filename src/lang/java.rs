@@ -394,6 +394,7 @@ fn parse_node(ast: &AST, package: &str, path: &str) -> Option<Node> {
                     Node::Expr(expr) => Some(expr),
                     _ => None,
                 })
+                .filter(|expr| expr.is_some())
                 .flat_map(|expr| expr)
                 .collect();
 
@@ -408,6 +409,27 @@ fn parse_node(ast: &AST, package: &str, path: &str) -> Option<Node> {
                 rhs,
             })))
         }
+
+        "variable_declarator" => {
+            // Define attributes
+            let mut name = "";
+            let mut rhs;
+
+            // Find values
+            for node in ast.children.iter() {
+                match &*node.r#type {
+                    "identifier" => name = &*node.value,
+                    "=" => {}
+                    _ => rhs = parse_node(node, package, path),
+                }
+            }
+
+            // Assemble
+            let bin = BinaryExpr::new(Box::new(Ident::new())).into();
+
+            return Ident().into();
+        }
+
         unknown => {
             eprintln!("{} unknown tag in parsing method body!", unknown);
             None
