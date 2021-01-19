@@ -581,21 +581,21 @@ fn variable_declaration(node: &AST) -> DeclStmt {
 
     let init_declarator = node.find_child_by_type(&["init_declarator", "function_declarator"]);
     match init_declarator {
-        Some(init_declarator) => variable_init_declaration(init_declarator, &mut variable_type),
+        Some(init_declarator) => variable_init_declaration(init_declarator, variable_type),
         None => {
             let name = variable_ident(node, &mut variable_type).expect(&*format!(
                 "No variable name for declaration with no init {:#?}",
                 node,
             ));
             let ident = Ident::new(name);
-            DeclStmt::new(None, vec![ident.into()]) // TODO: add type instead of None
+            DeclStmt::new(Some(variable_type), vec![ident.into()])
         }
     }
 }
 
-fn variable_init_declaration(init_declarator: &AST, variable_type: &mut String) -> DeclStmt {
-    let name =
-        variable_ident(init_declarator, variable_type).expect("No identifier for init declarator");
+fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -> DeclStmt {
+    let name = variable_ident(init_declarator, &mut variable_type)
+        .expect("No identifier for init declarator");
     let decl_type = init_declarator.find_child_by_type(&["=", "argument_list", "parameter_list"]);
     let rhs = match decl_type {
         Some(decl_type) => match &*decl_type.r#type {
@@ -620,7 +620,10 @@ fn variable_init_declaration(init_declarator: &AST, variable_type: &mut String) 
     };
     // TODO: Specify type
     let _ident = Ident::new(name);
-    DeclStmt::new(None, rhs.map_or_else(|| vec![], |rhs| vec![rhs]))
+    DeclStmt::new(
+        Some(variable_type),
+        rhs.map_or_else(|| vec![], |rhs| vec![rhs]),
+    )
 }
 
 fn expression(node: &AST) -> Option<Expr> {
