@@ -618,12 +618,16 @@ fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -
         },
         None => None,
     };
-    // TODO: Specify type
-    let _ident = Ident::new(name);
-    DeclStmt::new(
-        Some(variable_type),
-        rhs.map_or_else(|| vec![], |rhs| vec![rhs]),
-    )
+    let ident = Ident::new(name);
+    let rhs = match rhs {
+        Some(rhs) => {
+            let init: Expr =
+                BinaryExpr::new(Box::new(ident.into()), Op::Equal, Box::new(rhs)).into();
+            vec![init]
+        }
+        None => vec![ident.into()],
+    };
+    DeclStmt::new(Some(variable_type), rhs)
 }
 
 fn expression(node: &AST) -> Option<Expr> {
