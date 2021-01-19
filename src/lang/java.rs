@@ -389,21 +389,15 @@ fn parse_node(ast: &AST, package: &str, path: &str) -> Option<Node> {
                 .into_iter()
                 .map(|node| match node {
                     Node::Expr(expr) => Some(expr),
-                    _ => None
+                    _ => None,
                 })
                 .flat_map(|expr| expr)
                 .collect();
 
-            //
-            Some(Node::Stmt(Stmt::DeclStmt(DeclStmt {
-                lhs: Ident {
-                    name: name.into(),
-                    r#type,
-                    is_final: Some(modifier.is_final),
-                    is_static: None,
-                },
-                rhs,
-            })))
+            // TODO: Use name
+            let _name: Expr = Ident::new(name.into()).into();
+            let decl: Stmt = DeclStmt::new(r#type, rhs).into();
+            Some(decl.into())
         }
         unknown => {
             eprintln!("{} unknown tag in parsing method body!", unknown);

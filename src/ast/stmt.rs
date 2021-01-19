@@ -30,8 +30,14 @@ pub struct AssignStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct DeclStmt {
-    pub lhs: Ident,
-    pub rhs: Vec<Expr>, // Vec since FieldComponent could declare multiple variables
+    /// The type of the declared variable(s).
+    pub r#type: Option<String>,
+    /// The variable(s). These could be Idents (x, y, z), BinExprs (x = y = 32) etc.
+    pub rhs: Vec<Expr>,
+    #[new(default)]
+    pub is_static: Option<bool>,
+    #[new(default)]
+    pub is_final: Option<bool>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, From, new)]
