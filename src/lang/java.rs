@@ -410,10 +410,13 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
                             unknown
                         )) {
                             Node::Expr(expr) => Some(expr),
-                            _ => panic!(format!(
-                                "Encountered unknown tag {} while parsing variable declarator",
-                                unknown
-                            )),
+                            _ => {
+                                eprintln!(
+                                    "Encountered unknown tag {} while parsing variable assignment",
+                                    unknown
+                                );
+                                None
+                            }
                         }
                     }
                 }
@@ -438,11 +441,13 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             let ident: Expr = Ident::new(ast.value.clone()).into();
             Some(ident.into())
         }
-        "decimal_integer_literal" => Some(Node::Expr(Expr::Literal(ast.value.clone()))),
-        // {
-        //     let ident: Expr = Ident::new(ast.value.clone()).into();
-        //     Some(ident.into())
-        // }
+
+        "decimal_integer_literal"
+        | "decimal_floating_point_literal"
+        | "string_literal"
+        | "false"
+        | "true" => Some(Node::Expr(Expr::Literal(ast.value.clone()))),
+
         "object_creation_expression" => {
             let mut name = String::new();
             let mut arg_list = vec![];
@@ -464,9 +469,7 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             }
 
             // Create ident
-            let ident: Expr = CallExpr::new(Box::new(Ident::new(name).into()), arg_list)
-                // arg_list.into_iter().map(|expr| Expr(expr)).collect(),
-                .into();
+            let ident: Expr = CallExpr::new(Box::new(Ident::new(name).into()), arg_list).into();
             Some(ident.into())
         }
 
