@@ -478,22 +478,18 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
 }
 
 fn parse_field(ast: &AST, component: &ComponentInfo) -> FieldComponent {
-    // Get field name
     let variables = ast
-        .find_all_children_by_type(&["identifier"])
-        .unwrap_or_default()
-        .into_iter()
-        .map(|ast| ast.value.clone())
+        .find_all_children_by_type(&["variable_declarator"])
+        .get_or_insert(vec![])
+        .iter()
+        .map(|var_decl| var_decl.find_child_by_type(&["identifier"]))
+        .filter(|var_ident| var_ident.is_some())
+        .map(|identifier| identifier.unwrap().value.clone())
         .collect();
-
-    // Get field modifiers
-    let modifier = match ast.find_child_by_type(&["modifiers"]) {
-        Some(modifier_block) => parse_modifiers(modifier_block),
-        None => Modifier::new(),
-    };
-
+    let modifier = find_modifier(ast);
     let r#type = find_type(ast);
 
+    // TODO: How to handle field_name, default_value?
     FieldComponent {
         component: component.clone(),
         annotations: modifier.annotations,
