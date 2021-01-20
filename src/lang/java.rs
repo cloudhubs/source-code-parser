@@ -60,10 +60,30 @@ fn parse_import(ast: &AST) -> String {
 
 /// Parse a single class/interface/annotation/what have you's AST
 fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceComponent> {
+    // Get container info
+    let instance_type = match ast.find_child_by_type(&["class", "interface", "enum", "annotation"])
+    {
+        Some(r#type) => match &*r#type.value {
+            "class" | "enum" => InstanceType::ClassComponent,
+            "interface" => InstanceType::InterfaceComponent,
+            "annotation" => InstanceType::AnnotationComponent,
+            _ => InstanceType::ClassComponent,
+        },
+        None => InstanceType::ClassComponent,
+    };
+    let instance_name = match ast.find_child_by_type(&["identifier"]) {
+        Some(identifier) => identifier.value.clone(),
+        None => "".into(),
+    };
+    let component = ComponentInfo {
+        path: path.into(),
+        package_name: package.into(),
+        instance_name: instance_name.clone(),
+        instance_type: instance_type,
+    };
+
     // Define default values
-    let mut instance_name = String::new();
     let mut stereotype = ContainerStereotype::Entity;
-    let mut instance_type = InstanceType::ClassComponent;
     let mut fields = vec![];
     let mut constructors = vec![];
     let mut methods = vec![];
@@ -75,14 +95,10 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
     for member in ast.children.iter() {
         match &*member.r#type {
             "modifiers" => modifier = parse_modifiers(member),
-            "identifier" => instance_name = member.value.clone(),
             "class_body" | "interface_body" | "enum_body" | "annotation_body" => {
                 let (_start, _end) = parse_class_body(
                     member,
-                    package,
-                    path,
-                    &*instance_name,
-                    &instance_type,
+                    &component,
                     &mut constructors,
                     &mut methods,
                     &mut fields,
@@ -90,9 +106,6 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
                 start = _start as i32;
                 end = _end as i32;
             }
-            "class" | "enum" => instance_type = InstanceType::ClassComponent,
-            "interface" => instance_type = InstanceType::InterfaceComponent,
-            "annotation" => instance_type = InstanceType::AnnotationComponent,
             unknown_type => {
                 eprintln!(
                     "{} tag unhandled. This may or may not be an issue.",
@@ -105,16 +118,11 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
     // Assemble the return value from what was extracted from the tree
     Some(ClassOrInterfaceComponent {
         component: ContainerComponent {
-            component: ComponentInfo {
-                path: path.into(),
-                package_name: package.into(),
-                instance_name: instance_name.clone(),
-                instance_type,
-            },
+            component,
             accessor: modifier.accessor,
             stereotype: stereotype,
             methods,
-            container_name: instance_name.clone(),
+            container_name: instance_name,
             line_count: end - start,
         },
         declaration_type: ContainerType::Class,
@@ -125,13 +133,7 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
 }
 
 /// Parse the AST for a specified method
-fn parse_method(
-    ast: &AST,
-    package: &str,
-    path: &str,
-    instance_name: &str,
-    enclosing_type: &InstanceType,
-) -> MethodComponent {
+fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
     // Define fields
     let mut body = None;
     let mut modifier = Modifier::new();
@@ -146,11 +148,9 @@ fn parse_method(
         match &*member.r#type {
             "identifier" | "static" => method_name = member.value.clone(),
             "modifiers" => modifier = parse_modifiers(member),
-            "formal_parameters" => {
-                parameters = parse_method_parameters(member, package, path, enclosing_type)
-            }
+            "formal_parameters" => parameters = parse_method_parameters(member, component),
             "constructor_body" | "block" => {
-                body = Some(parse_block(member, package, path));
+                body = Some(parse_block(member, component));
             }
             unknown => println!("{} unknown", unknown),
         }
@@ -158,12 +158,7 @@ fn parse_method(
 
     // Return the method component
     MethodComponent {
-        component: ComponentInfo {
-            path: path.clone().into(),
-            package_name: package.clone().into(),
-            instance_name: instance_name.into(),
-            instance_type: InstanceType::MethodComponent,
-        },
+        component: component.clone(),
         accessor: modifier.accessor,
         method_name,
         return_type,
@@ -239,6 +234,14 @@ fn parse_modifiers(ast: &AST) -> Modifier {
     }
 }
 
+/// Find the modifier child of a tree, and return it to the caller
+fn find_modifier(ast: &AST) -> Modifier {
+    match ast.find_child_by_type(&["modifiers"]) {
+        Some(modifier) => parse_modifiers(modifier),
+        None => Modifier::new(),
+    }
+}
+
 /// Recursively parse the annotations on a field
 fn parse_annotations(ast: &AST, annotations: &mut Vec<AnnotationComponent>) {
     for item in ast.children.iter() {
@@ -262,19 +265,14 @@ fn parse_annotations(ast: &AST, annotations: &mut Vec<AnnotationComponent>) {
 }
 
 /// Parse the AST of the parameters passed in to a method
-fn parse_method_parameters(
-    ast: &AST,
-    package: &str,
-    path: &str,
-    enclosing_type: &InstanceType,
-) -> Vec<MethodParamComponent> {
+fn parse_method_parameters(ast: &AST, component: &ComponentInfo) -> Vec<MethodParamComponent> {
     let mut params = vec![];
 
     for parameter in ast.children.iter() {
         //        parse_method_parameters(parameter, package, path, enclosing_type);
         match &*parameter.r#type {
             "formal_parameter" | "spread_parameter" => {
-                params.push(parse_parameter(parameter, package, path, enclosing_type))
+                params.push(parse_parameter(parameter, component))
             }
             _ => {}
         }
@@ -284,12 +282,7 @@ fn parse_method_parameters(
 }
 
 /// Parse the AST containing a single parameter to a method
-fn parse_parameter(
-    ast: &AST,
-    package: &str,
-    path: &str,
-    enclosing_type: &InstanceType,
-) -> MethodParamComponent {
+fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent {
     let mut name = String::new();
     let mut param_type = String::new();
     let mut modifier = Modifier::new();
@@ -311,12 +304,7 @@ fn parse_parameter(
     }
 
     MethodParamComponent {
-        component: ComponentInfo {
-            path: path.into(),
-            package_name: package.into(),
-            instance_name: name.clone().into(),
-            instance_type: enclosing_type.clone(),
-        },
+        component: component.clone(),
         annotation: fold_vec(modifier.annotations),
         parameter_type: param_type.into(),
         parameter_name: name.into(),
@@ -362,33 +350,30 @@ fn find_type_or_none(ast: &AST) -> Option<String> {
 }
 
 /// Parse the body of a method, static block, constructor, etc.
-fn parse_block(ast: &AST, package: &str, path: &str) -> Block {
+fn parse_block(ast: &AST, component: &ComponentInfo) -> Block {
     Block {
-        nodes: parse_child_nodes(ast, package, path),
+        nodes: parse_child_nodes(ast, component),
     }
 }
 
-fn parse_child_nodes(ast: &AST, package: &str, path: &str) -> Vec<Node> {
+fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Node> {
     ast.children
         .iter()
-        .map(|member| parse_node(member, package, path))
+        .map(|member| parse_node(member, component))
         .filter(|option| option.is_some())
         .flat_map(|some| some)
         .collect()
 }
 
-fn parse_node(ast: &AST, package: &str, path: &str) -> Option<Node> {
+fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     match &*ast.r#type {
         "local_variable_declaration" | "field_declaration" => {
             // Extract informtion about the variable
             let r#type = find_type_or_none(ast);
-            let modifier = match ast.find_child_by_type(&["modifiers"]) {
-                Some(modifier) => parse_modifiers(modifier),
-                None => Modifier::new(),
-            };
+            let modifier = find_modifier(ast);
 
             // Determine the value it was set to
-            let rhs = parse_child_nodes(ast, package, path)
+            let rhs = parse_child_nodes(ast, component)
                 .into_iter()
                 .map(|node| match node {
                     Node::Expr(expr) => Some(expr),
@@ -399,29 +384,90 @@ fn parse_node(ast: &AST, package: &str, path: &str) -> Option<Node> {
                 .collect();
 
             // TODO: Use name
-            let _name: Expr = Ident::new(name.into()).into();
-            let decl: Stmt = DeclStmt::new(r#type, rhs).into();
+            let decl: Stmt = DeclStmt {
+                r#type,
+                rhs,
+                is_static: Some(modifier.is_static),
+                is_final: Some(modifier.is_final),
+            }
+            .into();
             Some(decl.into())
         }
 
-        "variable_declarator" => {
+        "variable_declarator" | "assignment_expression" => {
             // Define attributes
             let mut name = "";
-            let mut rhs;
+            let mut rhs = None;
 
             // Find values
             for node in ast.children.iter() {
                 match &*node.r#type {
                     "identifier" => name = &*node.value,
                     "=" => {}
-                    _ => rhs = parse_node(node, package, path),
+                    unknown => {
+                        rhs = match parse_node(node, component).expect(&*format!(
+                            "Encountered unknown tag {} while parsing variable declarator",
+                            unknown
+                        )) {
+                            Node::Expr(expr) => Some(expr),
+                            _ => panic!(format!(
+                                "Encountered unknown tag {} while parsing variable declarator",
+                                unknown
+                            )),
+                        }
+                    }
                 }
             }
 
             // Assemble
-            let bin = BinaryExpr::new(Box::new(Ident::new())).into();
+            if let Some(rhs) = rhs {
+                let bin: Expr = BinaryExpr::new(
+                    Box::new(Ident::new(name.into()).into()),
+                    "=".into(),
+                    Box::new(rhs),
+                )
+                .into();
+                Some(bin.into())
+            } else {
+                let expr: Expr = Ident::new(name.into()).into();
+                Some(expr.into())
+            }
+        }
 
-            return Ident().into();
+        "identifier" => {
+            let ident: Expr = Ident::new(ast.value.clone()).into();
+            Some(ident.into())
+        }
+        "decimal_integer_literal" => Some(Node::Expr(Expr::Literal(ast.value.clone()))),
+        // {
+        //     let ident: Expr = Ident::new(ast.value.clone()).into();
+        //     Some(ident.into())
+        // }
+        "object_creation_expression" => {
+            let mut name = String::new();
+            let mut arg_list = vec![];
+            for child in ast.children.iter() {
+                match &*child.r#type {
+                    "type_identifier" => name = child.value.clone(),
+                    "argument_list" => {
+                        arg_list = parse_child_nodes(child, component)
+                            .into_iter()
+                            .map(|node| match node {
+                                Node::Expr(expr) => Some(expr),
+                                _ => None,
+                            })
+                            .flat_map(|expr| expr)
+                            .collect()
+                    }
+                    _ => {}
+                }
+            }
+
+            // Create ident
+            let ident: Expr = CallExpr::new(Box::new(Ident::new(name).into()), arg_list)
+                // arg_list.into_iter().map(|expr| Expr(expr)).collect(),
+                .into();
+            Some(ident.into())
         }
 
         unknown => {
@@ -431,7 +477,7 @@ fn parse_node(ast: &AST, package: &str, path: &str) -> Option<Node> {
     }
 }
 
-fn parse_field(ast: &AST, package: &str, path: &str) -> FieldComponent {
+fn parse_field(ast: &AST, component: &ComponentInfo) -> FieldComponent {
     // Get field name
     let variables = ast
         .find_all_children_by_type(&["identifier"])
@@ -449,12 +495,7 @@ fn parse_field(ast: &AST, package: &str, path: &str) -> FieldComponent {
     let r#type = find_type(ast);
 
     FieldComponent {
-        component: ComponentInfo {
-            path: path.into(),
-            package_name: package.into(),
-            instance_name: "".into(),
-            instance_type: InstanceType::FieldComponent,
-        },
+        component: component.clone(),
         annotations: modifier.annotations,
         variables,
         field_name: String::new(),
@@ -468,10 +509,7 @@ fn parse_field(ast: &AST, package: &str, path: &str) -> FieldComponent {
 
 fn parse_class_body(
     ast: &AST,
-    package: &str,
-    path: &str,
-    class_name: &str,
-    instance_type: &InstanceType,
+    component: &ComponentInfo,
     constructors: &mut Vec<MethodComponent>,
     methods: &mut Vec<MethodComponent>,
     fields: &mut Vec<FieldComponent>,
@@ -482,20 +520,10 @@ fn parse_class_body(
     // Traverse body
     for member in ast.children.iter() {
         match &*member.r#type {
-            "constructor_declaration" | "static_initializer" => constructors.push(parse_method(
-                member,
-                package,
-                path,
-                class_name,
-                instance_type,
-            )),
-            "method_declaration" => methods.push(parse_method(
-                member,
-                package,
-                path,
-                class_name,
-                instance_type,
-            )),
+            "constructor_declaration" | "static_initializer" => {
+                constructors.push(parse_method(member, component))
+            }
+            "method_declaration" => methods.push(parse_method(member, component)),
             "{" => match member.span {
                 Some((line, _, _, _)) => start = line,
                 None => eprintln!("No span for open parenthesis! Cannot detect line number."),
@@ -504,7 +532,7 @@ fn parse_class_body(
                 Some((line, _, _, _)) => end = line,
                 None => eprintln!("No span for close parenthesis! Cannot detect line number."),
             },
-            "field_declaration" => fields.push(parse_field(member, package, path)),
+            "field_declaration" => fields.push(parse_field(member, component)),
             "class_declaration"
             | "interface_declaration"
             | "enum_declaration"
