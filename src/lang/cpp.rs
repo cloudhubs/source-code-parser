@@ -30,19 +30,20 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
                     .component
                     .methods
                     .iter_mut()
+                    // Issue with merging... Trying to merge CastInfoServiceProcessor and CastInfoServiceProcessorFactory
                     .filter(|m| m.method_name.starts_with(&class.component.container_name))
                     .collect();
                 for function in functions {
                     let class_method = class.component.methods.iter_mut().find(|m| {
-                        function.method_name.ends_with(&m.method_name)
+                        m.method_name.ends_with(&function.method_name)
                             && m.parameters == function.parameters
                     });
 
                     if let Some(class_method) = class_method {
-                        // TODO: add the body from method into class_method
                         class_method.line_begin = function.line_begin;
                         class_method.line_end = function.line_end;
                         class_method.line_count = function.line_count;
+                        class_method.body = function.body.clone();
                     }
                 }
             }
@@ -178,7 +179,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         },
         None => (0, 0),
     };
-    let body = body.map_or_else(|| None, |body| func_body(body));
+    let body = body.map_or_else(|| None, |body| Some(func_body(body)));
 
     let method = MethodComponent {
         component: ComponentInfo {
@@ -319,6 +320,7 @@ fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
         "reference_expression",
         "identifier",
         "field_identifier",
+        "type_identifier",
     ])?;
 
     Some(match &*ident.r#type {
@@ -338,7 +340,7 @@ fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
                 .find_child_by_type(&["identifier", "field_identifier"])
                 .map_or_else(|| "".to_string(), |identifier| identifier.value.clone())
         }
-        "identifier" | "field_identifier" => ident.value.clone(),
+        "identifier" | "field_identifier" | "type_identifier" => ident.value.clone(),
         _ => "".to_string(),
     })
 }
@@ -483,10 +485,9 @@ fn field_is_abstract_method(field: &AST) -> bool {
 }
 
 // Takes in an AST with type field "compound_statement"
-fn func_body(body: &AST) -> Option<Block> {
+fn func_body(body: &AST) -> Block {
     let nodes = block_nodes(body);
-
-    Some(Block::new(nodes))
+    Block::new(nodes)
 }
 
 fn block_nodes(compound_statement: &AST) -> Vec<Node> {
@@ -641,7 +642,9 @@ fn expression(node: &AST) -> Option<Expr> {
         | "reference_declarator"
         | "reference_expression"
         | "identifier"
-        | "field_identifier" => {
+        | "field_identifier"
+        | "type_identifier"
+        | "parameter_declaration" => {
             let mut ptr_symbol = String::new();
             let name = variable_ident(node, &mut ptr_symbol)?;
             let mut ident: Expr = Ident::new(name).into();
@@ -658,10 +661,6 @@ fn expression(node: &AST) -> Option<Expr> {
             let lhs = expression(nodes.next()?)?;
             let rhs = expression(nodes.next()?)?;
             Some(DotExpr::new(Box::new(lhs), Box::new(rhs)).into())
-        }
-        "parameter_declaration" => {
-            let ident = node.children.iter().next()?;
-            expression(ident)
         }
         _ => None,
     }
@@ -747,7 +746,7 @@ fn switch_case(case_statement: &AST) -> Option<(Option<Expr>, Block)> {
 
 fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
     let block = for_stmt.find_child_by_type(&["compound_statement"])?;
-    let block = func_body(block)?;
+    let block = func_body(block);
 
     let mut init = None;
     let mut cond = None;
