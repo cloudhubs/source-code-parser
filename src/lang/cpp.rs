@@ -170,6 +170,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
     let params = func_parameters(parameter_list, module_name, path);
 
     let body = ast.find_child_by_type(&["compound_statement"]);
+    // println!("p{} {} body? {}", path, fn_ident, body.is_some());
     let (line_begin, line_end) = match body {
         Some(body) => match body.span {
             Some((line_start, _col_start, line_end, _col_end)) => {
@@ -641,9 +642,6 @@ fn expression(node: &AST) -> Option<Expr> {
         | "pointer_expression"
         | "reference_declarator"
         | "reference_expression"
-        | "identifier"
-        | "field_identifier"
-        | "type_identifier"
         | "parameter_declaration" => {
             let mut ptr_symbol = String::new();
             let name = variable_ident(node, &mut ptr_symbol)?;
@@ -652,6 +650,11 @@ fn expression(node: &AST) -> Option<Expr> {
                 .chars()
                 .map(|star| Op::from(&*star.to_string()))
                 .for_each(|star| ident = UnaryExpr::new(Box::new(ident.clone()), star).into());
+            Some(ident)
+        }
+        "identifier" | "field_identifier" | "type_identifier" => {
+            let name = node.value.clone();
+            let ident: Expr = Ident::new(name).into();
             Some(ident)
         }
         "assignment_expression" => binary_expression(node), //| "field_expression"
