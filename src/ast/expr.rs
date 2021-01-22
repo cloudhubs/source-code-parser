@@ -57,7 +57,7 @@ pub struct ParenExpr {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct DotExpr {
     pub expr: Box<Expr>,
-    pub rhs: Box<Expr>,
+    pub selected: Box<Expr>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]

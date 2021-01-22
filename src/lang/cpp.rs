@@ -552,8 +552,12 @@ fn func_body_node(node: &AST) -> Option<Node> {
         "return_statement" => {
             // If there isn't an expression and the 2nd child is of type ";",
             // the expression function will return None anyways.
-            let expr = node.children.iter().nth(1)?;
-            let expr = expression(expr);
+            let expr = node
+                .children
+                .iter()
+                .nth(1)
+                .map(|expr| expression(expr))
+                .flatten();
             let ret: Stmt = ReturnStmt::new(expr).into();
             Some(ret.into())
         }
@@ -662,8 +666,29 @@ fn expression(node: &AST) -> Option<Expr> {
         "field_expression" => {
             let mut nodes = node.children.iter();
             let lhs = expression(nodes.next()?)?;
-            let rhs = expression(nodes.next()?)?;
+            let rhs = expression(nodes.last()?)?;
             Some(DotExpr::new(Box::new(lhs), Box::new(rhs)).into())
+        }
+        "unary_expression" => {
+            let op = Op::from(&*node.children.iter().next()?.value);
+            let expr = expression(node.children.iter().last()?)?;
+            Some(UnaryExpr::new(Box::new(expr), op).into())
+        }
+        "binary_expression" => {
+            let mut it = node.children.iter();
+            let lhs = expression(it.next()?)?;
+            let op = Op::from(&*it.next()?.value);
+            let rhs = expression(it.next()?)?;
+            Some(BinaryExpr::new(Box::new(lhs), op, Box::new(rhs)).into())
+        }
+        "parenthesized_expression" => {
+            let expr = node.children.iter().nth(1)?;
+            Some(ParenExpr::new(Box::new(expression(expr)?)).into())
+        }
+        "true" | "false" => Some(Expr::Literal(node.value.clone())),
+        "condition_clause" => {
+            let cond = node.children.iter().nth(1)?;
+            expression(cond)
         }
         _ => None,
     }
@@ -701,7 +726,14 @@ fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
         .iter()
         .filter(|node| &*node.r#type == "compound_statement")
         .map(|block| Block::new(block_nodes(block)));
-    let body = blocks.next()?;
+    let body = match blocks.next() {
+        Some(block) => block,
+        None => {
+            let stmt = if_stmt.children.iter().last()?;
+            let stmt = func_body_node(stmt)?;
+            Block::new(vec![stmt])
+        }
+    };
     // Check for else block, if else block, or no else block.
     let else_body = match blocks.next() {
         Some(else_body) => Some(else_body),
