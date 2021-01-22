@@ -149,9 +149,9 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
             "identifier" | "static" => method_name = member.value.clone(),
             "modifiers" => modifier = parse_modifiers(member),
             "formal_parameters" => parameters = parse_method_parameters(member, component),
-            "constructor_body" | "block" => {
-                body = Some(parse_block(member, component));
-            }
+            // "constructor_body" | "block" => {
+            //     body = Some(parse_block(member, component));
+            // }
             unknown => println!("{} unknown", unknown),
         }
     }
@@ -405,18 +405,14 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
                     "identifier" => name = &*node.value,
                     "=" => {}
                     unknown => {
-                        rhs = match parse_node(node, component).expect(&*format!(
-                            "Encountered unknown tag {} while parsing variable declarator",
-                            unknown
-                        )) {
-                            Node::Expr(expr) => Some(expr),
-                            _ => {
-                                eprintln!(
-                                    "Encountered unknown tag {} while parsing variable assignment",
-                                    unknown
-                                );
-                                None
-                            }
+                        if let Some(Node::Expr(parsed_rhs)) = parse_node(node, component) {
+                            rhs = Some(parsed_rhs);
+                        } else {
+                            eprintln!(
+                                "Encountered unknown tag {} while parsing variable assignment",
+                                unknown
+                            );
+                            rhs = None;
                         }
                     }
                 }
@@ -473,8 +469,14 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             Some(ident.into())
         }
 
+        "array_creation_expression" => {
+            let ident: Expr = Ident::new("AN_ARRAY_HANDLE".into()).into();
+            Some(ident.into())
+        }
+
         unknown => {
             eprintln!("{} unknown tag in parsing method body!", unknown);
+            eprintln!("{:#?}", ast);
             None
         }
     }
