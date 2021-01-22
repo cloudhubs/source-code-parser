@@ -358,9 +358,7 @@ fn find_type_or_none(ast: &AST) -> Option<String> {
 
 /// Parse the body of a method, static block, constructor, etc.
 fn parse_block(ast: &AST, package: &str, path: &str) -> Block {
-    Block {
-        nodes: parse_child_nodes(ast, package, path),
-    }
+    Block::new(parse_child_nodes(ast, package, path))
 }
 
 fn parse_child_nodes(ast: &AST, package: &str, path: &str) -> Vec<Node> {
