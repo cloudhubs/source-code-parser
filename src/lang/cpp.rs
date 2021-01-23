@@ -222,6 +222,9 @@ fn type_ident(ast: &AST) -> String {
                 .collect();
             ret
         }
+        "scoped_identifier" => {
+            ast.children.iter().map(|child| type_ident(child)).collect()
+        }
         "template_type" => {
             let outer_type: String = ast
                 .children
@@ -690,6 +693,11 @@ fn expression(node: &AST) -> Option<Expr> {
             let cond = node.children.iter().nth(1)?;
             expression(cond)
         }
+        // Handle scoped identifiers
+        "scoped_identifier" => {
+            let s = type_ident(node);
+            Some(Ident::new(s).into())
+        },
         _ => None,
     }
 }
