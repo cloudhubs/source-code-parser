@@ -33,9 +33,10 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
                     // Issue with merging... Trying to merge CastInfoServiceProcessor and CastInfoServiceProcessorFactory
                     .filter(|m| m.method_name.starts_with(&class.component.container_name))
                     .collect();
+
                 for function in functions {
                     let class_method = class.component.methods.iter_mut().find(|m| {
-                        m.method_name.ends_with(&function.method_name)
+                        function.method_name.ends_with(&m.method_name)
                             && m.parameters == function.parameters
                     });
 
@@ -222,9 +223,7 @@ fn type_ident(ast: &AST) -> String {
                 .collect();
             ret
         }
-        "scoped_identifier" => {
-            ast.children.iter().map(|child| type_ident(child)).collect()
-        }
+        "scoped_identifier" => ast.children.iter().map(|child| type_ident(child)).collect(),
         "template_type" => {
             let outer_type: String = ast
                 .children
@@ -697,7 +696,7 @@ fn expression(node: &AST) -> Option<Expr> {
         "scoped_identifier" => {
             let s = type_ident(node);
             Some(Ident::new(s).into())
-        },
+        }
         _ => None,
     }
 }
