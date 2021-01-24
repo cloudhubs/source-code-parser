@@ -3,6 +3,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
+use itertools::Itertools;
+
 use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span, LANG,
 };
@@ -144,11 +146,21 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
         let dirs = flatten_dirs(dir)?;
 
         for dir in dirs {
+            // Generate module constants
             let path = dir.as_path().to_str().unwrap_or("").to_string();
-            let path_clone = path.clone();
-            let module_name: Vec<&str> = path_clone.split("/").into_iter().collect();
-            let module_name = module_name.get(module_name.len() - 1).unwrap_or(&"");
 
+            // Generate module identifier
+            let p = std::path::PathBuf::from(path.clone());
+            let mod_path;
+            if p.is_file() {
+                let p: PathBuf = p.into_iter().dropping_back(1).collect();
+                mod_path = p.into_os_string().into_string().unwrap()
+            } else {
+                mod_path = String::from(path.clone());
+            }
+            let module_name = format!("{}::ModuleComponent", mod_path);
+
+            // Get directory
             let read_dir = std::fs::read_dir(dir.clone())?;
             let mut module = ModuleComponent::new(module_name.to_string(), path);
 
@@ -196,6 +208,7 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
 fn merge_modules(modules: Vec<ModuleComponent>, lang: Language) -> Vec<ModuleComponent> {
     match lang {
         Language::Cpp => cpp::merge_modules(modules),
+        Language::Java => java::merge_modules(modules),
         _ => modules,
     }
 }
