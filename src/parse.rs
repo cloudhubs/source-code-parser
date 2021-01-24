@@ -116,7 +116,10 @@ fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
 
         for path in dirs.clone() {
             let sub_dirs = flatten_dirs(path.as_path())?;
-            sub_dirs.into_iter().for_each(|dir| dirs.push(dir));
+            sub_dirs
+                .into_iter()
+                .filter(|entry| entry != dir)
+                .for_each(|dir| dirs.push(dir));
         }
 
         dirs.push(dir.to_path_buf());
