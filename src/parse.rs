@@ -1,9 +1,8 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
-
-use itertools::Itertools;
 
 use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span, LANG,
