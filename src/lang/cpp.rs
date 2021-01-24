@@ -147,7 +147,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
     // TODO: child type "compound_statement" for function block
     let ret = ast.find_child_by_type(&[
         "primitive_type",
-        "scoped_identifier_type",
+        "scoped_type_identifier",
         "type_identifier",
     ]);
     let mut ret_type = match ret {
@@ -586,7 +586,7 @@ fn variable_declaration(node: &AST) -> DeclStmt {
     let mut variable_type = node
         .find_child_by_type(&[
             "primitive_type",
-            "scoped_identifier_type",
+            "scoped_type_identifier",
             "type_identifier",
         ])
         .map_or_else(|| "".into(), |node| type_ident(node));
