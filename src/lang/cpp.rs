@@ -713,6 +713,28 @@ fn expression(node: &AST) -> Option<Expr> {
             let s = type_ident(node);
             Some(Ident::new(s).into())
         }
+        "update_expression" => {
+            let mut it = node.children.iter();
+            let first = it.next()?;
+            let second = it.next()?;
+            let update_expr_info = |node: &AST| match &*node.r#type {
+                "++" => (Some(true), Some(true)),
+                "--" => (Some(true), Some(false)),
+                _ => (None, None),
+            };
+            let (is_pre, is_inc) = update_expr_info(first);
+            match is_pre {
+                Some(_) => {
+                    let expr = expression(second)?;
+                    Some(IncDecExpr::new(is_pre?, is_inc?, Box::new(expr)).into())
+                }
+                None => {
+                    let expr = expression(first)?;
+                    let (is_pre, is_inc) = update_expr_info(second);
+                    Some(IncDecExpr::new(is_pre?, is_inc?, Box::new(expr)).into())
+                }
+            }
+        }
         _ => None,
     }
 }
@@ -1463,6 +1485,149 @@ mod tests {
                 Box::new(Expr::Literal("0".into())),
             )
             .into()],
+        )
+        .into();
+        let expected: Node = expected.into();
+
+        let actual = func_body_node(&ast).unwrap();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn empty_for_loop_test() {
+        let ast = AST {
+            children: vec![
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: "for".to_string(),
+                    value: "for".to_string(),
+                },
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: "(".to_string(),
+                    value: ")".to_string(),
+                },
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "identifier".to_string(),
+                            value: "_i284".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "=".to_string(),
+                            value: "=".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "number_literal".to_string(),
+                            value: "0".to_string(),
+                        },
+                    ],
+                    span: None,
+                    r#type: "assignment_expression".to_string(),
+                    value: "".to_string(),
+                },
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: ";".to_string(),
+                    value: ";".to_string(),
+                },
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "identifier".to_string(),
+                            value: "_i284".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "<".to_string(),
+                            value: "<".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "identifier".to_string(),
+                            value: "_size280".to_string(),
+                        },
+                    ],
+                    span: None,
+                    r#type: "binary_expression".to_string(),
+                    value: "".to_string(),
+                },
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: ";".to_string(),
+                    value: ";".to_string(),
+                },
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "++".to_string(),
+                            value: "++".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "identifier".to_string(),
+                            value: "_i284".to_string(),
+                        },
+                    ],
+                    span: None,
+                    r#type: "update_expression".to_string(),
+                    value: "".to_string(),
+                },
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: ")".to_string(),
+                    value: ")".to_string(),
+                },
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: "compound_statement".to_string(),
+                    value: "".to_string(),
+                },
+            ],
+            span: None,
+            r#type: "for_statement".to_string(),
+            value: "".to_string(),
+        };
+
+        let expected: Stmt = ForStmt::new(
+            Some(
+                BinaryExpr::new(
+                    Box::new(Ident::new("_i284".into()).into()),
+                    Op::Equal,
+                    Box::new(Expr::Literal("0".into())),
+                )
+                .into(),
+            ),
+            Some(
+                BinaryExpr::new(
+                    Box::new(Ident::new("_i284".into()).into()),
+                    Op::LessThan,
+                    Box::new(Ident::new("_size280".into()).into()),
+                )
+                .into(),
+            ),
+            Some(IncDecExpr::new(true, true, Box::new(Ident::new("_i284".into()).into())).into()),
+            Block::new(vec![]).into(),
         )
         .into();
         let expected: Node = expected.into();

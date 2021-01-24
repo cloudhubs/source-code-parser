@@ -15,7 +15,6 @@ pub enum Stmt {
     DoWhileStmt(DoWhileStmt),
     ReturnStmt(ReturnStmt),
     SwitchStmt(SwitchStmt),
-    IncDecStmt(IncDecStmt),
     ImportStmt(ImportStmt),
     BreakStmt(BreakStmt),
     ContinueStmt(ContinueStmt),
@@ -98,15 +97,6 @@ pub struct SwitchStmt {
     pub condition: Expr,
     pub cases: Vec<(Option<Expr>, Block)>,
     #[new(value = r#""switch_stmt""#)]
-    r#type: &'static str,
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
-pub struct IncDecStmt {
-    pub is_pre: bool,
-    pub is_inc: bool,
-    pub expr: Expr,
-    #[new(value = r#""inc_dec_stmt""#)]
     r#type: &'static str,
 }
 

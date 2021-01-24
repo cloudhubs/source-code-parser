@@ -13,6 +13,7 @@ pub enum Expr {
     IndexExpr(IndexExpr),
     ParenExpr(ParenExpr),
     DotExpr(DotExpr),
+    IncDecExpr(IncDecExpr),
     Ident(Ident),
     Literal(String),
 }
@@ -76,5 +77,14 @@ pub struct DotExpr {
 pub struct Ident {
     pub name: String,
     #[new(value = r#""ident_expr""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct IncDecExpr {
+    pub is_pre: bool,
+    pub is_inc: bool,
+    pub expr: Box<Expr>,
+    #[new(value = r#""inc_dec_expr""#)]
     r#type: &'static str,
 }
