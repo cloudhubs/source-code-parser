@@ -326,6 +326,10 @@ fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
         "type_identifier",
     ])?;
 
+    variable_ident_inner(ident, variable_type)
+}
+
+fn variable_ident_inner(ident: &AST, variable_type: &mut String) -> Option<String> {
     Some(match &*ident.r#type {
         "pointer_declarator"
         | "reference_declarator"
@@ -335,15 +339,15 @@ fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
                 .children
                 .iter()
                 .filter(|child| match &*child.r#type {
-                    "identifier" | "field_identifier" => false,
+                    "identifier" | "field_identifier" | "type_identifier" | "this" => false,
                     _ => true,
                 }) // get either & or * type
                 .for_each(|star| variable_type.push_str(&star.value));
             ident
-                .find_child_by_type(&["identifier", "field_identifier"])
+                .find_child_by_type(&["identifier", "field_identifier", "type_identifier", "this"])
                 .map_or_else(|| "".to_string(), |identifier| identifier.value.clone())
         }
-        "identifier" | "field_identifier" | "type_identifier" => ident.value.clone(),
+        "identifier" | "field_identifier" | "type_identifier" | "this" => ident.value.clone(),
         _ => "".to_string(),
     })
 }
@@ -644,14 +648,26 @@ fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -
 
 fn expression(node: &AST) -> Option<Expr> {
     match &*node.r#type {
-        "pointer_declarator"
-        | "pointer_expression"
-        | "reference_declarator"
-        | "reference_expression"
-        | "parameter_declaration" => {
+        "pointer_declarator" | "reference_declarator" | "parameter_declaration" => {
             let mut ptr_symbol = String::new();
             let name = variable_ident(node, &mut ptr_symbol)?;
-            let mut ident: Expr = Ident::new(name).into();
+            let mut ident: Expr = match &*name {
+                "this" => Expr::Literal(name),
+                _ => Ident::new(name).into(),
+            };
+            ptr_symbol
+                .chars()
+                .map(|star| Op::from(&*star.to_string()))
+                .for_each(|star| ident = UnaryExpr::new(Box::new(ident.clone()), star).into());
+            Some(ident)
+        }
+        "pointer_expression" | "reference_expression" => {
+            let mut ptr_symbol = String::new();
+            let name = variable_ident_inner(node, &mut ptr_symbol)?;
+            let mut ident: Expr = match &*name {
+                "this" => Expr::Literal(name),
+                _ => Ident::new(name).into(),
+            };
             ptr_symbol
                 .chars()
                 .map(|star| Op::from(&*star.to_string()))
@@ -1270,5 +1286,125 @@ mod tests {
         };
         let destructor = transform_into_method(&destructor, "", "").unwrap();
         assert_eq!("~CastInfoServiceIf", destructor.method_name);
+    }
+
+    #[test]
+    fn return_stmt_test() {
+        let ast = AST {
+            children: vec![
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: "return".to_string(),
+                    value: "return".to_string(),
+                },
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "!".to_string(),
+                            value: "!".to_string(),
+                        },
+                        AST {
+                            children: vec![
+                                AST {
+                                    children: vec![],
+                                    span: None,
+                                    r#type: "(".to_string(),
+                                    value: "(".to_string(),
+                                },
+                                AST {
+                                    children: vec![
+                                        AST {
+                                            children: vec![
+                                                AST {
+                                                    children: vec![],
+                                                    span: None,
+                                                    r#type: "*".to_string(),
+                                                    value: "*".to_string(),
+                                                },
+                                                AST {
+                                                    children: vec![],
+                                                    span: None,
+                                                    r#type: "this".to_string(),
+                                                    value: "this".to_string(),
+                                                },
+                                            ],
+                                            span: None,
+                                            r#type: "pointer_expression".to_string(),
+                                            value: "".to_string(),
+                                        },
+                                        AST {
+                                            children: vec![],
+                                            span: None,
+                                            r#type: "==".to_string(),
+                                            value: "==".to_string(),
+                                        },
+                                        AST {
+                                            children: vec![],
+                                            span: None,
+                                            r#type: "identifier".to_string(),
+                                            value: "rhs".to_string(),
+                                        },
+                                    ],
+                                    span: None,
+                                    r#type: "binary_expression".to_string(),
+                                    value: "".to_string(),
+                                },
+                                AST {
+                                    children: vec![],
+                                    span: None,
+                                    r#type: ")".to_string(),
+                                    value: ")".to_string(),
+                                },
+                            ],
+                            span: None,
+                            r#type: "parenthesized_expression".to_string(),
+                            value: "".to_string(),
+                        },
+                    ],
+                    span: None,
+                    r#type: "unary_expression".to_string(),
+                    value: "".to_string(),
+                },
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: ";".to_string(),
+                    value: ";".to_string(),
+                },
+            ],
+            span: None,
+            r#type: "return_statement".to_string(),
+            value: "".to_string(),
+        };
+
+        let expected: Stmt = ReturnStmt::new(Some(
+            UnaryExpr::new(
+                Box::new(
+                    ParenExpr::new(Box::new(
+                        BinaryExpr::new(
+                            Box::new(
+                                UnaryExpr::new(Box::new(Expr::Literal("this".into())), Op::Star)
+                                    .into(),
+                            ),
+                            Op::EqualEqual,
+                            Box::new(Ident::new("rhs".into()).into()),
+                        )
+                        .into(),
+                    ))
+                    .into(),
+                ),
+                Op::ExclamationPoint,
+            )
+            .into(),
+        ))
+        .into();
+        let expected: Node = expected.into();
+
+        let actual = func_body_node(&ast).unwrap();
+
+        assert_eq!(expected, actual);
     }
 }
