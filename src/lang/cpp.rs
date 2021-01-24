@@ -714,6 +714,7 @@ fn expression(node: &AST) -> Option<Expr> {
             Some(Ident::new(s).into())
         }
         "update_expression" => {
+            // I need to potentially consider that an update expression may not be an IncDecExpr
             let mut it = node.children.iter();
             let first = it.next()?;
             let second = it.next()?;
