@@ -363,9 +363,7 @@ fn find_type_or_none(ast: &AST) -> Option<String> {
 
 /// Parse the body of a method, static block, constructor, etc.
 fn parse_block(ast: &AST, component: &ComponentInfo) -> Block {
-    Block {
-        nodes: parse_child_nodes(ast, component),
-    }
+    Block::new(parse_child_nodes(ast, component))
 }
 
 fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Node> {
@@ -396,13 +394,10 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
                 .collect();
 
             // TODO: Use name
-            let decl: Stmt = DeclStmt {
-                r#type,
-                rhs,
-                is_static: Some(modifier.is_static),
-                is_final: Some(modifier.is_final),
-            }
-            .into();
+            let mut decl = DeclStmt::new(r#type, rhs);
+            decl.is_static = Some(modifier.is_static);
+            decl.is_final = Some(modifier.is_final);
+            let decl: Stmt = decl.into();
             Some(decl.into())
         }
 

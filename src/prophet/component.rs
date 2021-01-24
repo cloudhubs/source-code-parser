@@ -48,7 +48,7 @@ pub struct MethodComponent {
     pub body: Option<Block>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, Serialize, Clone)]
 pub struct MethodParamComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -57,6 +57,14 @@ pub struct MethodParamComponent {
     pub annotation: Option<Vec<AnnotationComponent>>,
     pub parameter_type: String,
     pub parameter_name: String,
+}
+
+impl PartialEq for MethodParamComponent {
+    fn eq(&self, other: &Self) -> bool {
+        self.parameter_name == other.parameter_name
+            && self.parameter_type == other.parameter_type
+            && self.annotation == other.annotation
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]

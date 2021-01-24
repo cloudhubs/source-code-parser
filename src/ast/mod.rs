@@ -22,4 +22,6 @@ pub enum Node {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct Block {
     pub nodes: Vec<Node>,
+    #[new(value = r#""block""#)]
+    r#type: &'static str,
 }
