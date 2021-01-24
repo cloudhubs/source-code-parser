@@ -197,6 +197,7 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
 fn merge_modules(modules: Vec<ModuleComponent>, lang: Language) -> Vec<ModuleComponent> {
     match lang {
         Language::Cpp => cpp::merge_modules(modules),
+        Language::Java => java::merge_modules(modules),
         _ => modules,
     }
 }

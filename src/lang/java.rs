@@ -1,43 +1,97 @@
+use std::path::PathBuf;
+
+use itertools::Itertools;
+
 use crate::prophet::*;
 use crate::{ast::*, parse::AST};
 
-pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
-    find_components_internal(ast, String::new(), path)
+pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
+    // TODO implement correctly
+    modules
 }
 
-fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<ComponentType> {
-    let mut components = vec![];
+pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
+    // Generate module identifier
+    let p = PathBuf::from(path);
+    let mod_path;
+    if p.is_file() {
+        let p: PathBuf = p.into_iter().dropping_back(1).collect();
+        mod_path = p.into_os_string().into_string().unwrap()
+    } else {
+        mod_path = String::from(path);
+    }
+    let instance_name = format!("{}::ModuleComponent", mod_path);
 
-    for node in ast
-        .find_all_children_by_type(&[
-            "import_declaration",
-            "package_declaration",
+    // Find classes
+    let package_name = match ast.find_child_by_type(&["package_declaration"]) {
+        Some(pkg_node) => &*pkg_node.value,
+        None => "",
+    };
+    let classes = find_classes(
+        &ast,
+        String::new(),
+        path,
+        &[
             "class_declaration",
-            "interface_declaration",
             "enum_declaration",
             "annotation_declaration",
-        ])
-        .expect("Provided an invalid Java file, no class, interface, annotation, enum, packages, or imports found!")
-        .iter()
-    {
-        match &*node.r#type {
-            "import_declaration" => println!("{}", parse_import(&node)),
-            "package_declaration" => {
-                package = parse_package(&node)
-                    .expect(&*format!("Malformed package declaration {:#?}!", node));
-            }
-            "class_declaration"
-            | "interface_declaration"
-            | "enum_declaration"
-            | "annotation_declaration" => match parse_class(node, &*package, path) {
-                Some(class) => components.push(ComponentType::ClassOrInterfaceComponent(class)),
-                None => {}
-            },
-            tag => todo!("Cannot identify provided tag {:#?}", tag),
-        };
-    }
+        ],
+    );
+    let interfaces = find_classes(&ast, String::new(), path, &["interface_declaration"]);
 
-    components
+    // Find methods
+    let methods = classes
+        .iter()
+        .chain(interfaces.iter())
+        .map(|class| class.component.methods.clone())
+        .flatten()
+        .collect();
+
+    // Generate module info
+    println!("{}\n{}\n", instance_name, path);
+    let component = ComponentInfo {
+        path: mod_path.clone().into(),
+        package_name: package_name.clone().into(),
+        instance_name: instance_name.clone().into(),
+        instance_type: InstanceType::ModuleComponent,
+    };
+    let container = ContainerComponent {
+        component,
+        accessor: AccessorType::Public,
+        stereotype: ContainerStereotype::Module,
+        methods,
+        container_name: mod_path.clone().into(),
+        line_count: 0,
+    };
+    let module = ModuleComponent {
+        component: container,
+        module_name: instance_name.clone().into(),
+        path: mod_path.clone().into(),
+        module_stereotype: ModuleStereotype::Fabricated,
+        classes,
+        interfaces,
+    };
+
+    vec![ComponentType::ModuleComponent(module)]
+}
+
+/// Search for classes in the provided level of the AST; parse them if found
+fn find_classes(
+    ast: &AST,
+    mut package: String,
+    path: &str,
+    types_to_find: &[&str],
+) -> Vec<ClassOrInterfaceComponent> {
+    if let Some(nodes) = ast.find_all_children_by_type(types_to_find) {
+        nodes
+            .iter()
+            .map(|node| parse_class(node, &*package, path))
+            .filter(|class| class.is_some())
+            .flat_map(|class| class)
+            .collect()
+    } else {
+        return vec![];
+    }
 }
 
 /// Take in the AST node containing the package declaration, and--if it is not malformed--return a string representing the package
