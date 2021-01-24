@@ -703,7 +703,7 @@ fn expression(node: &AST) -> Option<Expr> {
             let expr = node.children.iter().nth(1)?;
             Some(ParenExpr::new(Box::new(expression(expr)?)).into())
         }
-        "true" | "false" => Some(Expr::Literal(node.value.clone())),
+        "true" | "false" | "number_literal" | "this" => Some(node.value.clone().into()),
         "condition_clause" => {
             let cond = node.children.iter().nth(1)?;
             expression(cond)
@@ -713,7 +713,6 @@ fn expression(node: &AST) -> Option<Expr> {
             let s = type_ident(node);
             Some(Ident::new(s).into())
         }
-        "number_literal" => Some(node.value.clone().into()),
         _ => None,
     }
 }
@@ -1198,7 +1197,7 @@ mod tests {
             "::apache::thrift::protocol::TProtocol*".to_string(),
             actual_param.parameter_type,
         );
-        assert_eq!("name".to_string(), actual_param.parameter_name,);
+        assert_eq!("name".to_string(), actual_param.parameter_name);
     }
 
     #[test]
