@@ -1,6 +1,6 @@
 use super::*;
-use serde::Serialize;
 use crate::ast::Block;
+use serde::Serialize;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ComponentInfo {
@@ -16,7 +16,7 @@ pub struct ComponentInfo {
 #[serde(untagged)]
 pub enum ComponentType {
     ClassOrInterfaceComponent(ClassOrInterfaceComponent),
-    // AnnotationComponent(AnnotationComponent<'a>),
+    AnnotationComponent(AnnotationComponent),
     MethodComponent(MethodComponent),
     ModuleComponent(ModuleComponent),
     FieldComponent(FieldComponent),
@@ -37,6 +37,8 @@ pub struct MethodComponent {
     pub is_static: bool,
     #[serde(rename = "abstract_method")]
     pub is_abstract: bool,
+    #[serde(rename = "final_method")]
+    pub is_final: bool,
     #[serde(rename = "subroutines")]
     pub sub_methods: Vec<MethodComponent>,
     pub annotations: Vec<AnnotationComponent>,
@@ -46,14 +48,23 @@ pub struct MethodComponent {
     pub body: Option<Block>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, Serialize, Clone)]
 pub struct MethodParamComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
     // r#type: ??? -- this is Class<?> in prophet, not sure if used.
-    pub annotation: Option<AnnotationComponent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotation: Option<Vec<AnnotationComponent>>,
     pub parameter_type: String,
     pub parameter_name: String,
+}
+
+impl PartialEq for MethodParamComponent {
+    fn eq(&self, other: &Self) -> bool {
+        self.parameter_name == other.parameter_name
+            && self.parameter_type == other.parameter_type
+            && self.annotation == other.annotation
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -122,7 +133,6 @@ pub struct ClassOrInterfaceComponent {
     pub component: ContainerComponent,
     pub declaration_type: ContainerType,
     pub annotations: Vec<AnnotationComponent>,
-    pub stereotype: ContainerStereotype,
 
     // Class-specific fields
     #[serde(skip_serializing_if = "Option::is_none")]

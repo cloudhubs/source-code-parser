@@ -48,6 +48,7 @@ mod tests {
                     }],
                     is_static: false,
                     is_abstract: false,
+                    is_final: false,
                     sub_methods: vec![],
                     annotations: vec![AnnotationComponent {
                         component: ComponentInfo {
@@ -88,7 +89,6 @@ mod tests {
                 },
                 declaration_type: ContainerType::Class,
                 annotations: vec![],
-                stereotype: ContainerStereotype::Service,
                 constructors: None,
                 field_components: Some(vec![FieldComponent {
                     component: ComponentInfo {

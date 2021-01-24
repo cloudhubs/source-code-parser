@@ -13,6 +13,7 @@ pub enum Expr {
     IndexExpr(IndexExpr),
     ParenExpr(ParenExpr),
     DotExpr(DotExpr),
+    IncDecExpr(IncDecExpr),
     Ident(Ident),
     Literal(String),
 }
@@ -28,12 +29,16 @@ pub struct BinaryExpr {
     pub lhs: Box<Expr>,
     pub op: Op,
     pub rhs: Box<Expr>,
+    #[new(value = r#""binary_expr""#)]
+    r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct UnaryExpr {
     pub expr: Box<Expr>,
     pub op: Op,
+    #[new(value = r#""unary_expr""#)]
+    r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -41,32 +46,45 @@ pub struct CallExpr {
     // This could either be a Literal or a DotExpr
     pub name: Box<Expr>,
     pub args: Vec<Expr>,
+    #[new(value = r#""call_expr""#)]
+    r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct IndexExpr {
     pub expr: Box<Expr>,
     pub index_expr: Box<Expr>,
+    #[new(value = r#""index_expr""#)]
+    r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ParenExpr {
     pub expr: Box<Expr>,
+    #[new(value = r#""paren_expr""#)]
+    r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct DotExpr {
     pub expr: Box<Expr>,
-    pub rhs: Box<Expr>,
+    pub selected: Box<Expr>,
+    #[new(value = r#""dot_expr""#)]
+    r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct Ident {
     pub name: String,
-    #[new(default)]
-    pub is_static: Option<bool>,
-    #[new(default)]
-    pub is_final: Option<bool>,
-    #[new(default)]
-    pub r#type: Option<String>,
+    #[new(value = r#""ident_expr""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct IncDecExpr {
+    pub is_pre: bool,
+    pub is_inc: bool,
+    pub expr: Box<Expr>,
+    #[new(value = r#""inc_dec_expr""#)]
+    r#type: &'static str,
 }
