@@ -713,6 +713,7 @@ fn expression(node: &AST) -> Option<Expr> {
             let s = type_ident(node);
             Some(Ident::new(s).into())
         }
+        "number_literal" => Some(node.value.clone().into()),
         _ => None,
     }
 }
@@ -1400,6 +1401,70 @@ mod tests {
             )
             .into(),
         ))
+        .into();
+        let expected: Node = expected.into();
+
+        let actual = func_body_node(&ast).unwrap();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn init_declaration_test() {
+        let ast = AST {
+            children: vec![
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: "primitive_type".to_string(),
+                    value: "uint32_t".to_string(),
+                },
+                AST {
+                    children: vec![
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "identifier".to_string(),
+                            value: "xfer".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "=".to_string(),
+                            value: "=".to_string(),
+                        },
+                        AST {
+                            children: vec![],
+                            span: None,
+                            r#type: "number_literal".to_string(),
+                            value: "0".to_string(),
+                        },
+                    ],
+                    span: None,
+                    r#type: "init_declarator".to_string(),
+                    value: "".to_string(),
+                },
+                AST {
+                    children: vec![],
+                    span: None,
+                    r#type: ";".to_string(),
+                    value: ";".to_string(),
+                },
+            ],
+            span: None,
+            r#type: "declaration".to_string(),
+            value: "".to_string(),
+        };
+
+        let expected: Stmt = DeclStmt::new(
+            Some("uint32_t".into()),
+            vec![BinaryExpr::new(
+                Box::new(Ident::new("xfer".into()).into()),
+                Op::Equal,
+                Box::new(Expr::Literal("0".into())),
+            )
+            .into()],
+        )
         .into();
         let expected: Node = expected.into();
 
