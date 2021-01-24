@@ -123,15 +123,11 @@ fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
             .map(|entry| entry.unwrap())
             .filter(|entry| entry.path().is_dir())
             .map(|entry| entry.path().as_path().to_owned())
+            .map(|path| flatten_dirs(path.as_path()))
+            .filter(|entry| entry.is_ok())
+            .flat_map(|entry| entry)
+            .flatten()
             .collect();
-
-        for path in dirs.clone() {
-            let sub_dirs = flatten_dirs(path.as_path())?;
-            sub_dirs
-                .into_iter()
-                .filter(|entry| entry != dir)
-                .for_each(|dir| dirs.push(dir));
-        }
 
         dirs.push(dir.to_path_buf());
         Ok(dirs)
