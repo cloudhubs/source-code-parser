@@ -762,7 +762,7 @@ fn expression(node: &AST) -> Option<Expr> {
                 }
             }
         }
-        "array_declarator" /* | "index expression type str" */ => {
+        "array_declarator" | "subscript_expression" => {
             let ident = expression(node.children.iter().nth(0)?)?;
             let ndx_expr = expression(node.children.iter().nth(2)?)?;
             let ndx = IndexExpr::new(Box::new(ident), Box::new(ndx_expr));
