@@ -177,3 +177,75 @@ pub struct AnnotationComponent {
     pub key_value_pairs: Vec<AnnotationValuePair>,
     pub value: String,
 }
+
+impl AnnotationComponent {
+    pub fn create_single(
+        name: &str,
+        value: &str,
+        path: &str,
+        package_name: &str,
+    ) -> AnnotationComponent {
+        AnnotationComponent::new(
+            name,
+            vec![],
+            value,
+            path,
+            package_name,
+            "singleMemberAnnotationExprMetaModel",
+            "SingleMemberAnnotationExpr",
+        )
+    }
+
+    pub fn create_normal(
+        name: &str,
+        key_value_pairs: Vec<AnnotationValuePair>,
+        path: &str,
+        package_name: &str,
+    ) -> AnnotationComponent {
+        AnnotationComponent::new(
+            name,
+            key_value_pairs,
+            "",
+            path,
+            package_name,
+            "normalAnnotationExprMetaModel",
+            "NormalAnnotationExpr",
+        )
+    }
+
+    pub fn create_marker(name: &str, path: &str, package_name: &str) -> AnnotationComponent {
+        AnnotationComponent::new(
+            name,
+            vec![],
+            "",
+            path,
+            package_name,
+            "markerAnnotationExprMetaModel",
+            "MarkerAnnotationExpr",
+        )
+    }
+
+    pub fn new(
+        name: &str,
+        key_value_pairs: Vec<AnnotationValuePair>,
+        value: &str,
+        path: &str,
+        package_name: &str,
+        meta_model_field_name: &str,
+        annotation_meta_model: &str,
+    ) -> AnnotationComponent {
+        AnnotationComponent {
+            component: ComponentInfo {
+                path: String::from(path),
+                package_name: String::from(package_name),
+                instance_name: format!("{}::AnnotationComponent", meta_model_field_name),
+                instance_type: InstanceType::AnnotationComponent,
+            },
+            name: String::from(name),
+            annotation_meta_model: String::from(annotation_meta_model),
+            meta_model_field_name: String::from(meta_model_field_name),
+            key_value_pairs,
+            value: String::from(value),
+        }
+    }
+}

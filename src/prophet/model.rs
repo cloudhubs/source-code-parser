@@ -46,8 +46,8 @@ pub enum ContainerType {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct AnnotationValuePair {
-    key: String,
-    value: String,
+    pub key: String,
+    pub value: String,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]

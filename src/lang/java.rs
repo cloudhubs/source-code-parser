@@ -55,7 +55,15 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
 /// Take in the AST node containing the package declaration, and--if it is not malformed--return a string representing the package
 fn parse_package(ast: &AST) -> Option<String> {
     let result = ast.find_child_by_type(&["scoped_identifier"])?;
-    Some(stringify_tree_children(result))
+    let mut buffer = String::new();
+    for member in result.children.iter() {
+        if member.r#type == "scoped_identifier" {
+            buffer = format!("{}{}", parse_package(result)?, buffer);
+        } else {
+            buffer.push_str(&*member.value);
+        }
+    }
+    Some(buffer)
 }
 
 /// Take the AST node containing an import statement, and return back the String describing the package imported
@@ -106,7 +114,9 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
     // Generate the implementation data
     for member in ast.children.iter() {
         match &*member.r#type {
-            "modifiers" => modifier = parse_modifiers(member),
+            "modifiers" => {
+                modifier = parse_modifiers(member, &*component.path, &*component.package_name)
+            }
             "class_body" | "interface_body" | "enum_body" | "annotation_body" => {
                 let (_start, _end) = parse_class_body(
                     member,
@@ -159,7 +169,9 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
     for member in ast.children.iter() {
         match &*member.r#type {
             "identifier" | "static" => method_name = member.value.clone(),
-            "modifiers" => modifier = parse_modifiers(member),
+            "modifiers" => {
+                modifier = parse_modifiers(member, &*component.path, &*component.package_name)
+            }
             "formal_parameters" => parameters = parse_method_parameters(member, component),
             "constructor_body" | "block" => {
                 body = Some(parse_block(member, component));
@@ -187,7 +199,7 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
     }
 }
 
-/// Struct to hold return data from parse_modifiers
+/// Struct to hold return data from parse_modifiers/find_modifiers
 struct Modifier {
     accessor: AccessorType,
     annotations: Vec<AnnotationComponent>,
@@ -207,8 +219,16 @@ impl Modifier {
     }
 }
 
+/// Find the modifier child of a tree, and return it to the caller
+fn find_modifier(ast: &AST, path: &str, package: &str) -> Modifier {
+    match ast.find_child_by_type(&["modifiers"]) {
+        Some(modifier) => parse_modifiers(modifier, path, package),
+        None => Modifier::new(),
+    }
+}
+
 /// Parse the modifiers field of the AST; this includes access level and annotations
-fn parse_modifiers(ast: &AST) -> Modifier {
+fn parse_modifiers(ast: &AST, path: &str, package: &str) -> Modifier {
     // Parse access level
     let access_level = match ast.find_child_by_type(&["public", "protected", "private"]) {
         Some(ast) => match &*ast.r#type {
@@ -235,7 +255,7 @@ fn parse_modifiers(ast: &AST) -> Modifier {
 
     // Parse annotations
     let mut annotations = vec![];
-    parse_annotations(ast, &mut annotations);
+    parse_annotations(ast, path, package, &mut annotations);
 
     Modifier {
         accessor: access_level,
@@ -246,33 +266,103 @@ fn parse_modifiers(ast: &AST) -> Modifier {
     }
 }
 
-/// Find the modifier child of a tree, and return it to the caller
-fn find_modifier(ast: &AST) -> Modifier {
-    match ast.find_child_by_type(&["modifiers"]) {
-        Some(modifier) => parse_modifiers(modifier),
-        None => Modifier::new(),
+/// Recursively parse the annotations on a field
+fn parse_annotations(
+    ast: &AST,
+    path: &str,
+    package: &str,
+    annotations: &mut Vec<AnnotationComponent>,
+) -> Option<()> {
+    for item in ast
+        .find_all_children_by_type(&["annotation", "marker_annotation"])?
+        .iter()
+    {
+        let name = &*format!(
+            "@{}",
+            &*item
+                .find_child_by_type(&["identifier"])
+                .expect("Annotation found with no name (identifier)! AST malformed!")
+                .value
+        );
+
+        // Parse exact type of annotation
+        let params = item.find_child_by_type(&["annotation_argument_list"]);
+        println!("{}", name);
+        if name == "@Data" {
+            println!("{:#?}", params);
+        }
+
+        // Generate and store annotation
+        if params.is_some() {
+            let params = params.unwrap();
+            if let Some(params) = params.find_all_children_by_type(&["element_value_pair"]) {
+                // Annotation with named parameters -> NormalAnnotation
+                let mut key_value_pairs = vec![];
+
+                // Generate element values
+                for child in params.iter() {
+                    let key = &*child
+                        .find_child_by_type(&["identifier"])
+                        .expect(&*format!(
+                            "Annotation with multiple elements contains unnamed element! {:#?}",
+                            child
+                        ))
+                        .value;
+                    let value = parse_annotation_value(
+                        child
+                            .children
+                            .get(2)
+                            .expect("No value provided for an annotation element! AST malformed!"),
+                    );
+                    key_value_pairs.push(AnnotationValuePair {
+                        key: String::from(key),
+                        value,
+                    });
+                }
+
+                // Create annotation
+                annotations.push(AnnotationComponent::create_normal(
+                    name,
+                    key_value_pairs,
+                    path,
+                    package,
+                ));
+            } else {
+                // Annotation with 1 unnamed parameter -> SingleAnnotation
+                let val = params.children.get(1).expect("AST for a SingleAnnotation does not follow the pattern '(, value, )' in annotation_argument_list! AST malformed!");
+                annotations.push(AnnotationComponent::create_single(
+                    name,
+                    &*parse_annotation_value(val),
+                    path,
+                    package,
+                ));
+            }
+        } else {
+            // Annotation with no parameters -> MarkerAnnotation
+            annotations.push(AnnotationComponent::create_marker(name, path, package))
+        }
     }
+    Some(())
 }
 
-/// Recursively parse the annotations on a field
-fn parse_annotations(ast: &AST, annotations: &mut Vec<AnnotationComponent>) {
-    for item in ast.children.iter() {
-        match &*item.r#type {
-            "identifier" => annotations.push(AnnotationComponent {
-                component: ComponentInfo {
-                    path: String::new(),
-                    package_name: String::new(),
-                    instance_name: String::new(),
-                    instance_type: InstanceType::AnnotationComponent,
-                },
-                name: format!("@{}", item.r#value),
-                annotation_meta_model: String::new(),
-                meta_model_field_name: String::new(),
-                key_value_pairs: vec![],
-                value: String::new(),
-            }),
-            _ => parse_annotations(item, annotations),
+/// Parse one of the values stored within an annotation
+fn parse_annotation_value(ast: &AST) -> String {
+    if ast.children.len() > 0 {
+        // Filter the tokens to ensure the RHS parses correctly
+        let tokens = ast.children.iter().map(|node| {
+            if node.value == "new" {
+                "new "
+            } else {
+                &*node.value
+            }
+        });
+        let mut buffer = String::new();
+        for term in tokens {
+            buffer.push_str(term);
         }
+        buffer
+    } else {
+        ast.value.clone()
     }
 }
 
@@ -304,7 +394,9 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
     for part_defn in ast.children.iter() {
         match &*part_defn.r#type {
             "identifier" => name = part_defn.value.clone(),
-            "modifiers" => modifier = parse_modifiers(part_defn),
+            "modifiers" => {
+                modifier = parse_modifiers(part_defn, &*component.path, &*component.package_name)
+            }
             "..." => is_spread = true,
             _ => param_type = parse_type(part_defn),
         }
@@ -380,7 +472,7 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         "local_variable_declaration" | "field_declaration" => {
             // Extract informtion about the variable
             let r#type = find_type_or_none(ast);
-            let modifier = find_modifier(ast);
+            let modifier = find_modifier(ast, &*component.path, &*component.package_name);
 
             // Determine the value it was set to
             let rhs = parse_child_nodes(ast, component)
@@ -497,7 +589,7 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> FieldComponent {
         .filter(|var_ident| var_ident.is_some())
         .map(|identifier| identifier.unwrap().value.clone())
         .collect();
-    let modifier = find_modifier(ast);
+    let modifier = find_modifier(ast, &*component.path, &*component.package_name);
     let r#type = find_type(ast);
 
     // TODO: How to handle field_name, default_value?
