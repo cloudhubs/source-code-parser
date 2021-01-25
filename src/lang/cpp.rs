@@ -582,6 +582,11 @@ fn func_body_node(node: &AST) -> Option<Node> {
             let cont: Stmt = ContinueStmt::new().into();
             Some(cont.into())
         }
+        "throw_statement" => {
+            let expr = expression(node.children.iter().nth(1)?)?;
+            let throw: Stmt = ThrowStmt::new(expr).into();
+            Some(throw.into())
+        }
         "compound_statement" => {
             let nodes = block_nodes(node);
             let block = Block::new(nodes);
