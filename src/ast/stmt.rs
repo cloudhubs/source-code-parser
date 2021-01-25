@@ -18,6 +18,7 @@ pub enum Stmt {
     ImportStmt(ImportStmt),
     BreakStmt(BreakStmt),
     ContinueStmt(ContinueStmt),
+    ThrowStmt(ThrowStmt)
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -120,5 +121,12 @@ pub struct BreakStmt {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ContinueStmt {
     #[new(value = r#""continue_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct ThrowStmt {
+    expr: Expr,
+    #[new(value = r#""throw_stmt""#)]
     r#type: &'static str,
 }
