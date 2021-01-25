@@ -5,6 +5,9 @@ use crate::prophet::*;
 pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
     let mut merged = vec![];
     for mut module in modules {
+        // Need to merge functions into classes within a module as well..
+        merge_class_methods(&mut module);
+
         // First module is not a duplicate
         if merged.len() == 0 {
             merged.push(module);
@@ -24,52 +27,56 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
                 .methods
                 .append(&mut module.component.methods);
 
-            // Check if there are class methods declared in the functions
-            for class in mergeable.classes.iter_mut() {
-                let functions: Vec<&mut MethodComponent> = mergeable
-                    .component
-                    .methods
-                    .iter_mut()
-                    // Issue with merging... Trying to merge CastInfoServiceProcessor and CastInfoServiceProcessorFactory
-                    .filter(|m| m.method_name.starts_with(&class.component.container_name))
-                    .collect();
-
-                for function in functions {
-                    let class_method = class.component.methods.iter_mut().find(|m| {
-                        function.method_name.ends_with(&m.method_name)
-                            && m.parameters == function.parameters
-                    });
-
-                    if let Some(class_method) = class_method {
-                        class_method.line_begin = function.line_begin;
-                        class_method.line_end = function.line_end;
-                        class_method.line_count = function.line_count;
-                        class_method.body = function.body.clone();
-                    }
-                }
-            }
-
-            // Filter out the class methods since the merge already occurred in the previous loop
-            mergeable.component.methods =
-                mergeable
-                    .component
-                    .methods
-                    .clone()
-                    .into_iter()
-                    .filter(|m| {
-                        match mergeable.classes.iter_mut().find(|class| {
-                            m.method_name.starts_with(&class.component.container_name)
-                        }) {
-                            Some(_) => false,
-                            None => true,
-                        }
-                    })
-                    .collect();
+            merge_class_methods(mergeable);
         } else {
             merged.push(module);
         }
     }
     merged
+}
+
+fn merge_class_methods(module: &mut ModuleComponent) {
+    for class in module.classes.iter_mut() {
+        let functions: Vec<&mut MethodComponent> = module
+            .component
+            .methods
+            .iter_mut()
+            // Issue with merging... Trying to merge CastInfoServiceProcessor and CastInfoServiceProcessorFactory
+            .filter(|m| m.method_name.starts_with(&class.component.container_name))
+            .collect();
+
+        for function in functions {
+            let class_method = class.component.methods.iter_mut().find(|m| {
+                function.method_name.ends_with(&m.method_name)
+                    && m.parameters == function.parameters
+            });
+
+            if let Some(class_method) = class_method {
+                class_method.line_begin = function.line_begin;
+                class_method.line_end = function.line_end;
+                class_method.line_count = function.line_count;
+                class_method.body = function.body.clone();
+            }
+        }
+    }
+
+    // Filter out the class methods since the merge already occurred in the previous loop
+    module.component.methods = module
+        .component
+        .methods
+        .clone()
+        .into_iter()
+        .filter(|m| {
+            match module
+                .classes
+                .iter_mut()
+                .find(|class| m.method_name.starts_with(&class.component.container_name))
+            {
+                Some(_) => false,
+                None => true,
+            }
+        })
+        .collect();
 }
 
 pub fn find_components(ast: AST, module_name: &str, path: &str) -> Vec<ComponentType> {
