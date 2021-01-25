@@ -108,8 +108,17 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
     let mut constructors = vec![];
     let mut methods = vec![];
     let mut modifier = Modifier::new();
-    let mut start = 0;
-    let mut end = 0;
+
+    // Find bounds
+    let start;
+    let end;
+    if let Some(span) = ast.span {
+        start = span.0 as i32;
+        end = span.1 as i32;
+    } else {
+        start = 0;
+        end = 0;
+    }
 
     // Generate the implementation data
     for member in ast.children.iter() {
@@ -118,15 +127,13 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
                 modifier = parse_modifiers(member, &*component.path, &*component.package_name)
             }
             "class_body" | "interface_body" | "enum_body" | "annotation_body" => {
-                let (_start, _end) = parse_class_body(
+                parse_class_body(
                     member,
                     &component,
                     &mut constructors,
                     &mut methods,
                     &mut fields,
                 );
-                start = _start as i32;
-                end = _end as i32;
             }
             unknown_type => {
                 eprintln!(
@@ -145,7 +152,7 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
             stereotype: stereotype,
             methods,
             container_name: instance_name,
-            line_count: end - start,
+            line_count: end - start + 1,
         },
         declaration_type: ContainerType::Class,
         annotations: modifier.annotations,
@@ -612,10 +619,7 @@ fn parse_class_body(
     constructors: &mut Vec<MethodComponent>,
     methods: &mut Vec<MethodComponent>,
     fields: &mut Vec<FieldComponent>,
-) -> (usize, usize) {
-    let mut start = 0;
-    let mut end = 0;
-
+) {
     // Traverse body
     for member in ast.children.iter() {
         match &*member.r#type {
@@ -623,14 +627,6 @@ fn parse_class_body(
                 constructors.push(parse_method(member, component))
             }
             "method_declaration" => methods.push(parse_method(member, component)),
-            "{" => match member.span {
-                Some((line, _, _, _)) => start = line,
-                None => eprintln!("No span for open parenthesis! Cannot detect line number."),
-            },
-            "}" => match member.span {
-                Some((line, _, _, _)) => end = line,
-                None => eprintln!("No span for close parenthesis! Cannot detect line number."),
-            },
             "field_declaration" => fields.push(parse_field(member, component)),
             "class_declaration"
             | "interface_declaration"
@@ -643,8 +639,6 @@ fn parse_class_body(
             ),
         }
     }
-
-    (start, end)
 }
 
 /// Convert a vector into an Option. If the vector is empty, swaps it out for None; otherwise is Some(vector)
