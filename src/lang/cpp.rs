@@ -36,6 +36,7 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
 }
 
 fn merge_class_methods(module: &mut ModuleComponent) {
+    // Check if there are class methods declared in the functions
     for class in module.classes.iter_mut() {
         let functions: Vec<&mut MethodComponent> = module
             .component
@@ -607,9 +608,22 @@ fn variable_declaration(node: &AST) -> DeclStmt {
         ])
         .map_or_else(|| "".into(), |node| type_ident(node));
 
-    let init_declarator = node.find_child_by_type(&["init_declarator", "function_declarator"]);
+    let init_declarator =
+        node.find_child_by_type(&["init_declarator", "function_declarator", "array_declarator"]);
     match init_declarator {
-        Some(init_declarator) => variable_init_declaration(init_declarator, variable_type),
+        Some(init_declarator) => match &*init_declarator.r#type {
+            "init_declarator" | "function_declarator" => {
+                variable_init_declaration(init_declarator, variable_type)
+            }
+            "array_declarator" => {
+                let rhs = expression(init_declarator).expect(&*format!(
+                    "Malformed array_declarator {:#?}",
+                    init_declarator
+                ));
+                DeclStmt::new(Some(variable_type), vec![rhs])
+            }
+            _ => unreachable!(),
+        },
         None => {
             let name = variable_ident(node, &mut variable_type).expect(&*format!(
                 "No variable name for declaration with no init {:#?}",
@@ -747,6 +761,12 @@ fn expression(node: &AST) -> Option<Expr> {
                     Some(IncDecExpr::new(is_pre?, is_inc?, Box::new(expr)).into())
                 }
             }
+        }
+        "array_declarator" /* | "index expression type str" */ => {
+            let ident = expression(node.children.iter().nth(0)?)?;
+            let ndx_expr = expression(node.children.iter().nth(2)?)?;
+            let ndx = IndexExpr::new(Box::new(ident), Box::new(ndx_expr));
+            Some(ndx.into())
         }
         _ => None,
     }
