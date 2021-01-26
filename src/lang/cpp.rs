@@ -588,6 +588,16 @@ fn func_body_node(node: &AST) -> Option<Node> {
             let throw: Stmt = ThrowStmt::new(expr).into();
             Some(throw.into())
         }
+        "try_statement" => {
+            let mut children = node.children.iter();
+            let body = Block::new(block_nodes(children.nth(1)?));
+            let catch_bodies = children
+                .map(|catch| catch_statement(catch))
+                .filter_map(|catch| catch)
+                .collect();
+            let try_catch: Stmt = TryCatchStmt::new(body, catch_bodies).into();
+            Some(try_catch.into())
+        }
         "compound_statement" => {
             let nodes = block_nodes(node);
             let block = Block::new(nodes);
@@ -913,6 +923,23 @@ fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
 
     let for_stmt = ForStmt::new(init, cond, post, block);
     Some(for_stmt)
+}
+
+fn catch_statement(catch_clause: &AST) -> Option<CatchStmt> {
+    let params = catch_clause.find_child_by_type(&["parameter_list"])?;
+    let decl = params
+        .children
+        .iter()
+        .nth(1)
+        .map(|decl| match func_body_node(decl) {
+            Some(Node::Stmt(Stmt::DeclStmt(decl))) => Some(decl),
+            _ => None,
+        })
+        .flatten()?;
+    let body = Block::new(block_nodes(
+        catch_clause.find_child_by_type(&["compound_statement"])?,
+    ));
+    Some(CatchStmt::new(decl, body))
 }
 
 #[cfg(test)]
