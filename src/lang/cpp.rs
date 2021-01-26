@@ -757,7 +757,9 @@ fn expression(node: &AST) -> Option<Expr> {
             let expr = node.children.iter().nth(1)?;
             Some(ParenExpr::new(Box::new(expression(expr)?)).into())
         }
-        "true" | "false" | "number_literal" | "this" | "auto" => Some(node.value.clone().into()),
+        "true" | "false" | "number_literal" | "this" | "auto" | "string_literal" => {
+            Some(node.value.clone().into())
+        }
         "condition_clause" => {
             let cond = node.children.iter().nth(1)?;
             expression(cond)
