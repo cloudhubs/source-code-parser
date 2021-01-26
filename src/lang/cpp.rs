@@ -219,7 +219,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
 /// Get the value for a type identifier
 fn type_ident(ast: &AST) -> String {
     match &*ast.r#type {
-        "primitive_type" | "type_identifier" => ast.value.clone(),
+        "primitive_type" | "type_identifier" | "auto" => ast.value.clone(),
         "scoped_type_identifier" | "scoped_namespace_identifier" | "type_descriptor" => {
             let ret: String = ast
                 .children
@@ -347,15 +347,25 @@ fn variable_ident_inner(ident: &AST, variable_type: &mut String) -> Option<Strin
                 .children
                 .iter()
                 .filter(|child| match &*child.r#type {
-                    "identifier" | "field_identifier" | "type_identifier" | "this" => false,
+                    "identifier" | "field_identifier" | "type_identifier" | "this" | "auto" => {
+                        false
+                    }
                     _ => true,
                 }) // get either & or * type
                 .for_each(|star| variable_type.push_str(&star.value));
             ident
-                .find_child_by_type(&["identifier", "field_identifier", "type_identifier", "this"])
+                .find_child_by_type(&[
+                    "identifier",
+                    "field_identifier",
+                    "type_identifier",
+                    "this",
+                    "auto",
+                ])
                 .map_or_else(|| "".to_string(), |identifier| identifier.value.clone())
         }
-        "identifier" | "field_identifier" | "type_identifier" | "this" => ident.value.clone(),
+        "identifier" | "field_identifier" | "type_identifier" | "this" | "auto" => {
+            ident.value.clone()
+        }
         _ => "".to_string(),
     })
 }
@@ -618,6 +628,7 @@ fn variable_declaration(node: &AST) -> DeclStmt {
             "primitive_type",
             "scoped_type_identifier",
             "type_identifier",
+            "auto",
         ])
         .map_or_else(|| "".into(), |node| type_ident(node));
 
@@ -742,7 +753,7 @@ fn expression(node: &AST) -> Option<Expr> {
             let expr = node.children.iter().nth(1)?;
             Some(ParenExpr::new(Box::new(expression(expr)?)).into())
         }
-        "true" | "false" | "number_literal" | "this" => Some(node.value.clone().into()),
+        "true" | "false" | "number_literal" | "this" | "auto" => Some(node.value.clone().into()),
         "condition_clause" => {
             let cond = node.children.iter().nth(1)?;
             expression(cond)
