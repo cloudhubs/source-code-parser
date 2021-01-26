@@ -11,6 +11,7 @@ pub enum Stmt {
     ExprStmt(ExprStmt),
     IfStmt(IfStmt),
     ForStmt(ForStmt),
+    ForRangeStmt(ForRangeStmt),
     WhileStmt(WhileStmt),
     DoWhileStmt(DoWhileStmt),
     ReturnStmt(ReturnStmt),

@@ -549,6 +549,10 @@ fn func_body_node(node: &AST) -> Option<Node> {
             let for_stmt: Stmt = for_statement(node)?.into();
             Some(for_stmt.into())
         }
+        "for_range_loop" => {
+            let for_range_stmt: Stmt = for_range_statement(node)?.into();
+            Some(for_range_stmt.into())
+        }
         "if_statement" => {
             let if_stmt: Stmt = if_statement(node)?.into();
             Some(if_stmt.into())
@@ -943,6 +947,59 @@ fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
 
     let for_stmt = ForStmt::new(init, cond, post, block);
     Some(for_stmt)
+}
+
+fn for_range_statement(for_range_loop: &AST) -> Option<ForRangeStmt> {
+    let block = for_range_loop.find_child_by_type(&["compound_statement"])?;
+    let block = func_body(block);
+
+    let mut i = 0;
+    let mut r#type = None;
+    let mut decl = None;
+    let mut iterator = None;
+    for part in for_range_loop
+        .children
+        .iter()
+        .filter(|child| match &*child.r#type {
+            "for" | "(" | ":" | ")" | "compound_statement" => false,
+            _ => true,
+        })
+    {
+        match i {
+            // Declarations need to be considered for the initialization. Regular BinExpr
+            // are treated as ExprStmt here.
+            0 => r#type = expression(part),
+            1 => decl = expression(part),
+            2 => iterator = expression(part),
+            _ => {}
+        }
+        i += 1;
+    }
+
+    // Convert generic node to statement
+    let mut r#type = match r#type {
+        Some(Expr::Literal(t)) => t,
+        Some(Expr::Ident(ident)) => ident.name,
+        _ => "".into(),
+    };
+    let mut is_unary = true;
+    while is_unary {
+        match decl {
+            Some(Expr::UnaryExpr(expr)) => {
+                r#type.push_str(match expr.op {
+                    Op::Star => "*",
+                    Op::And => "&",
+                    _ => "",
+                });
+                decl = Some(*expr.expr);
+                is_unary = true;
+            }
+            _ => is_unary = false,
+        }
+    }
+    let decl = DeclStmt::new(Some(r#type), vec![decl?]);
+    let for_range_stmt = ForRangeStmt::new(Box::new(decl.into()), iterator, block);
+    Some(for_range_stmt)
 }
 
 fn catch_statement(catch_clause: &AST) -> Option<CatchStmt> {
