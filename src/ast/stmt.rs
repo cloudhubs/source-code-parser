@@ -15,10 +15,13 @@ pub enum Stmt {
     DoWhileStmt(DoWhileStmt),
     ReturnStmt(ReturnStmt),
     SwitchStmt(SwitchStmt),
+    CaseStmt(CaseStmt),
     ImportStmt(ImportStmt),
     BreakStmt(BreakStmt),
     ContinueStmt(ContinueStmt),
     ThrowStmt(ThrowStmt),
+    TryCatchStmt(TryCatchStmt),
+    CatchStmt(CatchStmt),
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -107,8 +110,16 @@ pub struct ReturnStmt {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct SwitchStmt {
     pub condition: Expr,
-    pub cases: Vec<(Option<Expr>, Block)>,
+    pub cases: Vec<CaseStmt>,
     #[new(value = r#""switch_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct CaseStmt {
+    cond: Option<Expr>,
+    body: Block,
+    #[new(value = r#""case_stmt""#)]
     r#type: &'static str,
 }
 
@@ -145,7 +156,15 @@ pub struct ThrowStmt {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct TryCatchStmt {
     pub try_body: Block,
-    pub catch_bodies: Vec<(DeclStmt, Block)>,
+    pub catch_bodies: Vec<CatchStmt>,
     #[new(value = r#""try_catch_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct CatchStmt {
+    pub exc: DeclStmt,
+    pub body: Block,
+    #[new(value = r#""catch_stmt""#)]
     r#type: &'static str,
 }

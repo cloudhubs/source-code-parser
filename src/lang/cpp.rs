@@ -862,7 +862,7 @@ fn switch_statement(switch_stmt: &AST) -> Option<SwitchStmt> {
     Some(switch_stmt)
 }
 
-fn switch_case(case_statement: &AST) -> Option<(Option<Expr>, Block)> {
+fn switch_case(case_statement: &AST) -> Option<CaseStmt> {
     let expr = case_statement.find_child_by_type(&["case", "default"])?;
     // todo: add literals to expression function
     let expr = match &*expr.r#type {
@@ -871,7 +871,8 @@ fn switch_case(case_statement: &AST) -> Option<(Option<Expr>, Block)> {
     };
     let nodes = block_nodes_iter(&case_statement.children[3..]);
     let block = Block::new(nodes);
-    Some((expr, block))
+    let case = CaseStmt::new(expr, block);
+    Some(case.into())
 }
 
 fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
