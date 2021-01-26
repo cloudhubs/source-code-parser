@@ -594,7 +594,10 @@ fn func_body_node(node: &AST) -> Option<Node> {
             Some(block.into())
         }
         // ...
-        _ => None,
+        _ => {
+            let expr: Stmt = expression(node)?.into();
+            Some(expr.into())
+        }
     }
 }
 
@@ -891,13 +894,21 @@ fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
             semicolons += 1;
         } else {
             match semicolons {
-                0 => init = expression(part), // Need to consider declarations here instead of just assignment_expr, etc
+                // Declarations need to be considered for the initialization. Regular BinExpr
+                // are treated as ExprStmt here.
+                0 => init = func_body_node(part),
                 1 => cond = expression(part),
                 2 => post = expression(part),
                 _ => {}
             }
         }
     }
+
+    // Convert generic node to statement
+    let init = match init {
+        Some(Node::Stmt(stmt)) => Some(Box::new(stmt)),
+        _ => None,
+    };
 
     let for_stmt = ForStmt::new(init, cond, post, block);
     Some(for_stmt)
@@ -1656,15 +1667,16 @@ mod tests {
             value: "".to_string(),
         };
 
+        let init: Expr = BinaryExpr::new(
+            Box::new(Ident::new("_i284".into()).into()),
+            Op::Equal,
+            Box::new(Expr::Literal("0".into())),
+        )
+        .into();
+        let init: Stmt = init.into();
+
         let expected: Stmt = ForStmt::new(
-            Some(
-                BinaryExpr::new(
-                    Box::new(Ident::new("_i284".into()).into()),
-                    Op::Equal,
-                    Box::new(Expr::Literal("0".into())),
-                )
-                .into(),
-            ),
+            Some(Box::new(init)),
             Some(
                 BinaryExpr::new(
                     Box::new(Ident::new("_i284".into()).into()),
