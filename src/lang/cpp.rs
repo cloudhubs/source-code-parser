@@ -763,7 +763,9 @@ fn expression(node: &AST) -> Option<Expr> {
             }
         }
         "array_declarator" | "subscript_expression" | "new_declarator" => {
-            let ident = expression(node.children.iter().nth(0)?)?;
+            // Identifier won't be found when the type is new_declarator.
+            let ident = expression(node.children.iter().nth(0)?)
+                .unwrap_or(Expr::Literal("Missing Ident".into()));
             let ndx_expr = expression(node.children.iter().nth(2)?)?;
             let ndx = IndexExpr::new(Box::new(ident), Box::new(ndx_expr));
             Some(ndx.into())
@@ -771,8 +773,14 @@ fn expression(node: &AST) -> Option<Expr> {
         "new_expression" => {
             let r#type = expression(node.children.iter().nth(1)?)?;
             let expr = expression(node.children.iter().last()?)?;
-            let init = CallExpr::new(Box::new("new".to_string().into()), vec![r#type, expr]);
-            Some(init.into())
+            match expr {
+                Expr::IndexExpr(mut ndx) => {
+                    ndx.expr = Box::new(r#type);
+                    let init = CallExpr::new(Box::new("new".to_string().into()), vec![ndx.into()]);
+                    Some(init.into())
+                }
+                _ => None,
+            }
         }
         _ => None,
     }
