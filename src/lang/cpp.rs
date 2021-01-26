@@ -632,6 +632,7 @@ fn variable_declaration(node: &AST) -> DeclStmt {
             "primitive_type",
             "scoped_type_identifier",
             "type_identifier",
+            "template_type",
             "auto",
         ])
         .map_or_else(|| "".into(), |node| type_ident(node));
