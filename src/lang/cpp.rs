@@ -806,6 +806,15 @@ fn expression(node: &AST) -> Option<Expr> {
                 _ => None,
             }
         }
+        "delete_expression" => {
+            let expr = node.children.iter().find(|node| match &*node.r#type {
+                "delete" | "[" | "]" => false,
+                _ => true,
+            })?;
+            let expr = expression(expr)?;
+            let del = CallExpr::new(Box::new("delete".to_string().into()), vec![expr]);
+            Some(del.into())
+        }
         _ => None,
     }
 }
