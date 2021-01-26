@@ -1016,7 +1016,8 @@ fn catch_statement(catch_clause: &AST) -> Option<CatchStmt> {
             Some(Node::Stmt(Stmt::DeclStmt(decl))) => Some(decl),
             _ => None,
         })
-        .flatten()?;
+        .flatten()
+        .unwrap_or(DeclStmt::new(None, vec![]));
     let body = Block::new(block_nodes(
         catch_clause.find_child_by_type(&["compound_statement"])?,
     ));
