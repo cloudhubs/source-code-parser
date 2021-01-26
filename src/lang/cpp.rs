@@ -232,7 +232,7 @@ fn type_ident(ast: &AST) -> String {
             ret
         }
         "scoped_identifier" => ast.children.iter().map(|child| type_ident(child)).collect(),
-        "template_type" => {
+        "template_type" | "template_function" => {
             let outer_type: String = ast
                 .children
                 .iter()
@@ -818,6 +818,10 @@ fn expression(node: &AST) -> Option<Expr> {
             let expr = expression(expr)?;
             let del = CallExpr::new(Box::new("delete".to_string().into()), vec![expr]);
             Some(del.into())
+        }
+        "template_function" => {
+            let func_ident = Ident::new(type_ident(node));
+            Some(func_ident.into())
         }
         _ => None,
     }
