@@ -225,7 +225,10 @@ fn type_ident(ast: &AST) -> String {
                 .children
                 .iter()
                 .map(|child| match &*child.r#type {
-                    "scoped_namespace_identifier" | "scoped_type_identifier" => type_ident(child),
+                    "scoped_identifier"
+                    | "scoped_namespace_identifier"
+                    | "scoped_type_identifier"
+                    | "template_type" => type_ident(child),
                     _ => child.value.clone(),
                 })
                 .collect();
@@ -248,7 +251,7 @@ fn type_ident(ast: &AST) -> String {
                 .children
                 .iter()
                 .filter(|child| child.r#type == "type_descriptor")
-                .map(|child| type_ident(&child))
+                .map(|child| type_ident(child))
                 .fold(String::new(), |t1, t2| match &*t1 {
                     "" => t2,
                     _ => t1 + ", " + &t2,
@@ -825,6 +828,19 @@ fn expression(node: &AST) -> Option<Expr> {
         "template_function" => {
             let func_ident = Ident::new(type_ident(node));
             Some(func_ident.into())
+        }
+        "initializer_list" => {
+            let exprs = node
+                .children
+                .iter()
+                .filter(|node| match &*node.r#type {
+                    "{" | "}" | "," => false,
+                    _ => true,
+                })
+                .map(|node| expression(node))
+                .flatten()
+                .collect();
+            Some(InitListExpr::new(exprs).into())
         }
         _ => None,
     }

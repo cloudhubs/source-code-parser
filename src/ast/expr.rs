@@ -14,6 +14,7 @@ pub enum Expr {
     ParenExpr(ParenExpr),
     DotExpr(DotExpr),
     IncDecExpr(IncDecExpr),
+    InitListExpr(InitListExpr),
     Ident(Ident),
     Literal(String),
 }
@@ -86,5 +87,12 @@ pub struct IncDecExpr {
     pub is_inc: bool,
     pub expr: Box<Expr>,
     #[new(value = r#""inc_dec_expr""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct InitListExpr {
+    pub exprs: Vec<Expr>,
+    #[new(value = r#""init_list_expr""#)]
     r#type: &'static str,
 }
