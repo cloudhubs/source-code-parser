@@ -737,7 +737,7 @@ fn expression(node: &AST) -> Option<Expr> {
             let ident: Expr = Ident::new(name).into();
             Some(ident)
         }
-        "assignment_expression" => binary_expression(node), //| "field_expression"
+        "assignment_expression" | "binary_expression" => binary_expression(node), //| "field_expression"
         "call_expression" => call_expression(node),
         "field_expression" => {
             let mut nodes = node.children.iter();
@@ -749,13 +749,6 @@ fn expression(node: &AST) -> Option<Expr> {
             let op = Op::from(&*node.children.iter().next()?.value);
             let expr = expression(node.children.iter().last()?)?;
             Some(UnaryExpr::new(Box::new(expr), op).into())
-        }
-        "binary_expression" => {
-            let mut it = node.children.iter();
-            let lhs = expression(it.next()?)?;
-            let op = Op::from(&*it.next()?.value);
-            let rhs = expression(it.next()?)?;
-            Some(BinaryExpr::new(Box::new(lhs), op, Box::new(rhs)).into())
         }
         "parenthesized_expression" => {
             let expr = node.children.iter().nth(1)?;
@@ -856,7 +849,95 @@ fn binary_expression(node: &AST) -> Option<Expr> {
     let lhs = expression(nodes.next()?)?;
     let op = Op::from(&*nodes.next()?.value);
     let rhs = expression(nodes.next()?)?;
-    Some(BinaryExpr::new(Box::new(lhs), op, Box::new(rhs)).into())
+
+    // Check if the binary expression is a logging statement
+    // taking the form of (LOG(level) || cout) << ... << ...;
+    let is_log = match (&op, &lhs) {
+        // Identify the log call to know to create a LogExpr
+        (Op::BitShiftLeft, Expr::CallExpr(call)) => match &*call.name {
+            Expr::Ident(ident) => match &*ident.name.to_lowercase() {
+                "log" => true,
+                _ => false,
+            },
+            _ => false,
+        },
+        // LogExpr already created on left hand side, so append this expr
+        // to its arguments
+        (Op::BitShiftLeft, Expr::LogExpr(_)) => true,
+        // Printing to screen counts as a log
+        (Op::BitShiftLeft, Expr::Ident(ident)) => match &*ident.name {
+            "std::cout" | "cout" => true,
+            _ => false,
+        },
+        _ => false,
+    };
+
+    let expr = match lhs {
+        Expr::LogExpr(mut log) => {
+            log.args.push(rhs);
+            return Some(log.into());
+        }
+        _ => BinaryExpr::new(Box::new(lhs), op, Box::new(rhs)).into(),
+    };
+
+    if is_log {
+        let log = convert_binary_expr_to_log(expr)?;
+        Some(log.into())
+    } else {
+        Some(expr.into())
+    }
+}
+
+fn convert_binary_expr_to_log(cpp_log: BinaryExpr) -> Option<LogExpr> {
+    // Get the flattened children of the binary expression, with the left
+    // hand most child being the log call or cout identifier.
+    let mut children = flatten_binary_expr_children(cpp_log);
+    children.reverse();
+
+    // Get the log call expression
+    let log_call = match children.pop()? {
+        // LOG call identified
+        Expr::CallExpr(call) => call,
+        // Printed to screen, convert Ident to CallExpr
+        Expr::Ident(ident) => match &*ident.name {
+            "std::cout" | "cout" => CallExpr::new(
+                Box::new("".to_string().into()),
+                vec![Ident::new("console".into()).into()],
+            ),
+            _ => return None,
+        },
+        _ => return None,
+    };
+
+    children.reverse();
+
+    // Get the log level from the first argument.
+    let log_level = match &log_call.args.first()? {
+        Expr::Ident(ident) => LogLevel::from(&*ident.name),
+        _ => return None,
+    };
+
+    Some(LogExpr::new(log_level, children))
+}
+
+/// Convert all of the children of a binary expression into their left and right hand
+/// expressions, in the order they appear in the code.
+fn flatten_binary_expr_children(expr: BinaryExpr) -> Vec<Expr> {
+    match (*expr.lhs, *expr.rhs) {
+        (Expr::BinaryExpr(lhs), Expr::BinaryExpr(rhs)) => flatten_binary_expr_children(lhs)
+            .into_iter()
+            .chain(flatten_binary_expr_children(rhs))
+            .collect(),
+        (expr, Expr::BinaryExpr(rhs)) => vec![expr]
+            .into_iter()
+            .chain(flatten_binary_expr_children(rhs))
+            .collect(),
+        (Expr::BinaryExpr(lhs), expr) => flatten_binary_expr_children(lhs)
+            .into_iter()
+            .chain(vec![expr])
+            .collect(),
+        (lhs, rhs) => vec![lhs, rhs],
+    }
 }
 
 // Takes AST node type "call_expression"

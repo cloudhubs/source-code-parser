@@ -23,7 +23,6 @@ pub enum Stmt {
     ThrowStmt(ThrowStmt),
     TryCatchStmt(TryCatchStmt),
     CatchStmt(CatchStmt),
-    LogStmt(LogStmt),
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -169,27 +168,4 @@ pub struct CatchStmt {
     pub body: Block,
     #[new(value = r#""catch_stmt""#)]
     r#type: &'static str,
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
-pub struct LogStmt {
-    pub level: LogLevel,
-    pub args: Vec<Expr>,
-    #[new(value = r#""log_stmt""#)]
-    r#type: &'static str,
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
-pub enum LogLevel {
-    Console,
-    Debug,
-    Warning,
-    Info,
-    Error,
-}
-
-impl Default for LogLevel {
-    fn default() -> Self {
-        LogLevel::Console
-    }
 }
