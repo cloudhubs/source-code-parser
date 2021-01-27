@@ -150,7 +150,7 @@ pub struct ContinueStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ThrowStmt {
-    expr: Expr,
+    expr: Option<Expr>,
     #[new(value = r#""throw_stmt""#)]
     r#type: &'static str,
 }

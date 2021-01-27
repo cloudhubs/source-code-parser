@@ -598,7 +598,7 @@ fn func_body_node(node: &AST) -> Option<Node> {
             Some(cont.into())
         }
         "throw_statement" => {
-            let expr = expression(node.children.iter().nth(1)?)?;
+            let expr = expression(node.children.iter().nth(1)?);
             let throw: Stmt = ThrowStmt::new(expr).into();
             Some(throw.into())
         }
