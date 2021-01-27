@@ -842,6 +842,11 @@ fn expression(node: &AST) -> Option<Expr> {
                 .collect();
             Some(InitListExpr::new(exprs).into())
         }
+        "sizeof_expression" => {
+            let expr = expression(node.children.iter().last()?)?;
+            let sizeof_call = CallExpr::new(Box::new("sizeof".to_string().into()), vec![expr]);
+            Some(sizeof_call.into())
+        }
         _ => None,
     }
 }
