@@ -1,5 +1,6 @@
 use crate::ast::op::Op;
 use crate::ast::stmt::*;
+use crate::ast::Block;
 use derive_more::From;
 use derive_new::new;
 use serde::Serialize;
@@ -16,6 +17,7 @@ pub enum Expr {
     IncDecExpr(IncDecExpr),
     InitListExpr(InitListExpr),
     LogExpr(LogExpr),
+    LambdaExpr(LambdaExpr),
     Ident(Ident),
     Literal(String),
 }
@@ -146,4 +148,12 @@ impl From<&str> for LogLevel {
             _ => LogLevel::default(),
         }
     }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct LambdaExpr {
+    pub parameters: Vec<DeclStmt>,
+    pub body: Block,
+    #[new(value = r#""lambda_expr""#)]
+    r#type: &'static str,
 }

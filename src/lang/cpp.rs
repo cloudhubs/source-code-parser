@@ -840,6 +840,20 @@ fn expression(node: &AST) -> Option<Expr> {
             let sizeof_call = CallExpr::new(Box::new("sizeof".to_string().into()), vec![expr]);
             Some(sizeof_call.into())
         }
+        "lambda_expression" => {
+            let parameter_list = node
+                .find_child_by_type(&["abstract_function_declarator"])?
+                .find_child_by_type(&["parameter_list"])?
+                .children
+                .iter()
+                .filter(|child| child.r#type == "parameter_declaration")
+                .map(|param_decl| variable_declaration(param_decl))
+                .collect();
+
+            let body = func_body(node.find_child_by_type(&["compound_statement"])?);
+
+            Some(LambdaExpr::new(parameter_list, body).into())
+        }
         _ => None,
     }
 }
