@@ -90,7 +90,9 @@ fn paren_expression(paren_expr: &AST) -> Option<ParenExpr> {
 }
 
 fn update_expression(update_expr: &AST) -> Option<Expr> {
-    // I need to potentially consider that an update expression may not be an IncDecExpr
+    // As far as I can tell, update_expressions are always increment/decrement operations.
+    // If there's another type of node where update_expression would show up, the call to
+    // expression() from the for_statement() function should be able to handle the case.
     let mut it = update_expr.children.iter();
     let first = it.next()?;
     let second = it.next()?;
