@@ -34,6 +34,7 @@ pub fn expression(node: &AST) -> Option<Expr> {
         "initializer_list" => Some(init_list_expression(node).into()),
         "sizeof_expression" => Some(sizeof_expression(node)?.into()),
         "lambda_expression" => Some(lambda_expression(node)?.into()),
+        "type_descriptor" => Some(type_descriptor(node)?.into()),
         _ => None,
     }
 }
@@ -166,7 +167,16 @@ fn init_list_expression(initializer_list: &AST) -> InitListExpr {
 }
 
 fn sizeof_expression(sizeof_expr: &AST) -> Option<CallExpr> {
-    let expr = expression(sizeof_expr.children.iter().last()?)?;
+    let expr = expression(
+        sizeof_expr
+            .children
+            .iter()
+            .filter(|node| match &*node.r#type {
+                "(" | ")" => false,
+                _ => true,
+            })
+            .last()?,
+    )?;
     let sizeof_call = CallExpr::new(Box::new("sizeof".to_string().into()), vec![expr]);
     Some(sizeof_call)
 }
@@ -295,4 +305,15 @@ fn lambda_expression(lambda_expr: &AST) -> Option<LambdaExpr> {
     let body = func_body(lambda_expr.find_child_by_type(&["compound_statement"])?);
 
     Some(LambdaExpr::new(parameter_list, body))
+}
+
+fn type_descriptor(type_desc: &AST) -> Option<String> {
+    let specifier = type_desc.children.iter().next()?;
+    match &*specifier.r#type {
+        "struct_specifier" => Some(format!(
+            "struct {}",
+            type_ident(specifier.children.iter().last()?)
+        )),
+        _ => None,
+    }
 }

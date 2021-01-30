@@ -229,6 +229,8 @@ pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<(Vec<Componen
         None => return Ok((vec![], Language::Unknown)),
     };
 
+    println!("Parsing file: {:?}", path.to_str().unwrap_or_default());
+
     Ok(ast.transform(lang, path.to_str().unwrap_or_default()))
 }
 

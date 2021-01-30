@@ -343,6 +343,7 @@ fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
         "identifier",
         "field_identifier",
         "type_identifier",
+        "array_declarator",
     ])?;
 
     variable_ident_inner(ident, variable_type)
@@ -353,7 +354,8 @@ fn variable_ident_inner(ident: &AST, variable_type: &mut String) -> Option<Strin
         "pointer_declarator"
         | "reference_declarator"
         | "pointer_expression"
-        | "reference_expression" => {
+        | "reference_expression"
+        | "array_declarator" => {
             ident
                 .children
                 .iter()

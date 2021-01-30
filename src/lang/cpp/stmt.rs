@@ -110,8 +110,10 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
 }
 
 fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -> DeclStmt {
-    let name = variable_ident(init_declarator, &mut variable_type)
-        .expect("No identifier for init declarator");
+    let name = variable_ident(init_declarator, &mut variable_type).expect(&*format!(
+        "No identifier for init declarator {:#?}",
+        init_declarator
+    ));
     let decl_type = init_declarator.find_child_by_type(&["=", "argument_list", "parameter_list"]);
     let rhs = match decl_type {
         Some(decl_type) => match &*decl_type.r#type {
