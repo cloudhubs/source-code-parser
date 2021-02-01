@@ -267,6 +267,7 @@ fn type_ident(ast: &AST) -> String {
 
             format!("{}<{}>", outer_type, inner_types)
         }
+        "destructor_name" | "constructor_name" => func_ident(ast),
         _ => ast.value.clone(),
     }
 }
@@ -282,23 +283,14 @@ fn func_ident(ast: &AST) -> String {
                 "destructor_name",
                 "constructor_name",
                 "operator_name",
+                "template_type",
             ]);
             match ident {
                 Some(ident) => func_ident(ident),
                 None => "".to_string(),
             }
         }
-        "scoped_identifier" => {
-            let ident: String = ast
-                .children
-                .iter()
-                .map(|child| match &*child.r#type {
-                    "destructor_name" | "constructor_name" => func_ident(child),
-                    _ => child.value.clone(),
-                })
-                .collect();
-            ident
-        }
+        "scoped_identifier" | "template_type" => type_ident(ast),
         "destructor_name" | "constructor_name" => {
             let ident: String = ast
                 .children
