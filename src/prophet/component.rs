@@ -61,9 +61,7 @@ pub struct MethodParamComponent {
 
 impl PartialEq for MethodParamComponent {
     fn eq(&self, other: &Self) -> bool {
-        self.parameter_name == other.parameter_name
-            && self.parameter_type == other.parameter_type
-            && self.annotation == other.annotation
+        self.parameter_type == other.parameter_type && self.annotation == other.annotation
     }
 }
 
