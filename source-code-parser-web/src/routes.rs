@@ -48,10 +48,7 @@ pub fn ast(payload: web::Json<AstRequest>) -> HttpResponse {
 }
 
 fn ok<T: Serialize>(data: T) -> HttpResponse {
-    let resp = json!({
-        "status": 200,
-        "data": data,
-    });
+    let resp = json!(data);
     HttpResponse::Ok().json(resp)
 }
 

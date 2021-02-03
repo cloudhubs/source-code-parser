@@ -1,5 +1,6 @@
 use crate::ast::op::Op;
 use crate::ast::stmt::*;
+use crate::ast::Block;
 use derive_more::From;
 use derive_new::new;
 use serde::Serialize;
@@ -14,6 +15,9 @@ pub enum Expr {
     ParenExpr(ParenExpr),
     DotExpr(DotExpr),
     IncDecExpr(IncDecExpr),
+    InitListExpr(InitListExpr),
+    LogExpr(LogExpr),
+    LambdaExpr(LambdaExpr),
     Ident(Ident),
     Literal(String),
 }
@@ -86,5 +90,70 @@ pub struct IncDecExpr {
     pub is_inc: bool,
     pub expr: Box<Expr>,
     #[new(value = r#""inc_dec_expr""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct InitListExpr {
+    pub exprs: Vec<Expr>,
+    #[new(value = r#""init_list_expr""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct LogExpr {
+    pub level: LogLevel,
+    pub args: Vec<Expr>,
+    #[new(value = r#""log_expr""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+pub enum LogLevel {
+    Console,
+    Debug,
+    Warning,
+    Info,
+    Error,
+    Fatal,
+}
+
+impl Default for LogLevel {
+    fn default() -> Self {
+        LogLevel::Console
+    }
+}
+
+impl From<LogLevel> for String {
+    fn from(level: LogLevel) -> Self {
+        match level {
+            LogLevel::Debug => "debug".into(),
+            LogLevel::Error => "error".into(),
+            LogLevel::Fatal => "fatal".into(),
+            LogLevel::Warning => "warning".into(),
+            LogLevel::Info => "info".into(),
+            _ => "console".into(),
+        }
+    }
+}
+
+impl From<&str> for LogLevel {
+    fn from(string: &str) -> LogLevel {
+        match string {
+            "debug" => LogLevel::Debug,
+            "error" => LogLevel::Error,
+            "fatal" => LogLevel::Fatal,
+            "warning" => LogLevel::Warning,
+            "info" => LogLevel::Info,
+            _ => LogLevel::default(),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct LambdaExpr {
+    pub parameters: Vec<DeclStmt>,
+    pub body: Block,
+    #[new(value = r#""lambda_expr""#)]
     r#type: &'static str,
 }

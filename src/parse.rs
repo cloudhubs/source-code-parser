@@ -1,9 +1,8 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
-
-use itertools::Itertools;
 
 use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span, LANG,
@@ -229,6 +228,8 @@ pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<(Vec<Componen
         Some((ast, lang)) => (ast, lang),
         None => return Ok((vec![], Language::Unknown)),
     };
+
+    println!("Parsing file: {:?}", path.to_str().unwrap_or_default());
 
     Ok(ast.transform(lang, path.to_str().unwrap_or_default()))
 }

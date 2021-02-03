@@ -11,13 +11,18 @@ pub enum Stmt {
     ExprStmt(ExprStmt),
     IfStmt(IfStmt),
     ForStmt(ForStmt),
+    ForRangeStmt(ForRangeStmt),
     WhileStmt(WhileStmt),
     DoWhileStmt(DoWhileStmt),
     ReturnStmt(ReturnStmt),
     SwitchStmt(SwitchStmt),
+    CaseStmt(CaseStmt),
     ImportStmt(ImportStmt),
     BreakStmt(BreakStmt),
     ContinueStmt(ContinueStmt),
+    ThrowStmt(ThrowStmt),
+    TryCatchStmt(TryCatchStmt),
+    CatchStmt(CatchStmt),
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -61,11 +66,22 @@ pub struct IfStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ForStmt {
-    pub init: Option<Expr>, // Expr, BinExpr that is = ? or a new DeclExpr?
+    // ExprStmt(BinExpr) or DeclStmt
+    pub init: Option<Box<Stmt>>,
     pub condition: Option<Expr>,
     pub post: Option<Expr>,
     pub body: Block,
     #[new(value = r#""for_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct ForRangeStmt {
+    // ExprStmt or DecLStmt
+    pub init: Box<Stmt>,
+    pub iterator: Option<Expr>,
+    pub body: Block,
+    #[new(value = r#""for_range_stmt""#)]
     r#type: &'static str,
 }
 
@@ -95,8 +111,16 @@ pub struct ReturnStmt {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct SwitchStmt {
     pub condition: Expr,
-    pub cases: Vec<(Option<Expr>, Block)>,
+    pub cases: Vec<CaseStmt>,
     #[new(value = r#""switch_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct CaseStmt {
+    cond: Option<Expr>,
+    body: Block,
+    #[new(value = r#""case_stmt""#)]
     r#type: &'static str,
 }
 
@@ -120,5 +144,28 @@ pub struct BreakStmt {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ContinueStmt {
     #[new(value = r#""continue_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct ThrowStmt {
+    expr: Option<Expr>,
+    #[new(value = r#""throw_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct TryCatchStmt {
+    pub try_body: Block,
+    pub catch_bodies: Vec<CatchStmt>,
+    #[new(value = r#""try_catch_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct CatchStmt {
+    pub exc: DeclStmt,
+    pub body: Block,
+    #[new(value = r#""catch_stmt""#)]
     r#type: &'static str,
 }

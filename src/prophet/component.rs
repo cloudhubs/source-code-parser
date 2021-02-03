@@ -6,7 +6,9 @@ use serde::Serialize;
 pub struct ComponentInfo {
     pub path: String,
     pub package_name: String,
+    #[serde(rename = "instanceName")]
     pub instance_name: String,
+    #[serde(rename = "instanceType")]
     pub instance_type: InstanceType,
     // This does not seem to be used in Prophet.
     // sub_components: Vec<ComponentType<'a>>,
@@ -61,9 +63,7 @@ pub struct MethodParamComponent {
 
 impl PartialEq for MethodParamComponent {
     fn eq(&self, other: &Self) -> bool {
-        self.parameter_name == other.parameter_name
-            && self.parameter_type == other.parameter_type
-            && self.annotation == other.annotation
+        self.parameter_type == other.parameter_type && self.annotation == other.annotation
     }
 }
 
@@ -102,7 +102,7 @@ impl ModuleComponent {
             component: container,
             module_name: name,
             path,
-            module_stereotype: ModuleStereotype::Controller,
+            module_stereotype: ModuleStereotype::Fabricated,
             classes: vec![],
             interfaces: vec![],
         };
