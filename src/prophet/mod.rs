@@ -7,6 +7,8 @@ pub use context::*;
 mod model;
 pub use model::*;
 
+mod compat;
+
 #[cfg(test)]
 mod tests {
     use super::*;
