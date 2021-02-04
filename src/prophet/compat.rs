@@ -4,6 +4,7 @@ use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct JSSAContext<'a> {
+    pub id: i64,
     #[serde(flatten)]
     pub instace_type: ComponentInfo,
     // module_package_map: ModulePackageMap<'a>,
@@ -11,11 +12,11 @@ pub struct JSSAContext<'a> {
     pub root_path: &'a str,
     pub class_names: Vec<String>,
     pub interface_names: Vec<String>,
-    pub containers: Vec<i32>,
+    pub containers: Vec<i64>,
     pub classes: Vec<ClassOrInterfaceComponent>,
     pub interfaces: Vec<ClassOrInterfaceComponent>,
     pub modules: Vec<ModuleComponent>,
-    pub methods: Vec<i32>,
+    pub methods: Vec<i64>,
 }
 
 impl From<super::JSSAContext<'_>> for JSSAContext<'_> {
@@ -26,11 +27,9 @@ impl From<super::JSSAContext<'_>> for JSSAContext<'_> {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct MethodComponent {
+    pub id: i64,
     #[serde(flatten)]
     pub component: ComponentInfo,
-
-    // excluding the IDs for now since I'm not sure why they're here
-    // pub id: i64,
     pub accessor: AccessorType,
     pub method_name: String,
     pub return_type: String,
@@ -42,7 +41,7 @@ pub struct MethodComponent {
     #[serde(rename = "final_method")]
     pub is_final: bool,
     #[serde(rename = "subroutines")]
-    pub sub_methods: Vec<MethodComponent>,
+    pub sub_methods: Vec<i64>,
     pub annotations: Vec<AnnotationComponent>,
     pub line_count: i32,
     pub line_begin: i32,
@@ -50,34 +49,26 @@ pub struct MethodComponent {
     pub body: Option<Block>,
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub struct MethodParamComponent {
-    #[serde(flatten)]
-    pub component: ComponentInfo,
-    // r#type: ??? -- this is Class<?> in prophet, not sure if used.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub annotation: Option<Vec<AnnotationComponent>>,
-    pub parameter_type: String,
-    pub parameter_name: String,
-}
-
 #[derive(Debug, Serialize)]
 pub struct ModuleComponent {
+    pub id: i64,
     // can contain functions here
     #[serde(flatten)]
     pub component: ContainerComponent,
     pub module_name: String,
-    pub path: String,
+    pub path: String, // dupe field I think
     #[serde(rename = "moduleStereotype")]
     pub module_stereotype: ModuleStereotype,
-    // class_names, interface_names, method_names
-    // containers
+    pub class_names: Vec<String>,
+    pub interface_names: Vec<String>,
+    pub containers: Vec<i32>,
     pub classes: Vec<ClassOrInterfaceComponent>,
     pub interfaces: Vec<ClassOrInterfaceComponent>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct ClassOrInterfaceComponent {
+    pub id: i64,
     #[serde(flatten)]
     pub component: ContainerComponent,
     pub declaration_type: ContainerType,
