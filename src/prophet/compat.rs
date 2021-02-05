@@ -112,9 +112,9 @@ pub struct ModuleComponent {
     pub module_stereotype: ModuleStereotype,
     pub class_names: Vec<String>,
     pub interface_names: Vec<String>,
-    pub containers: Vec<i32>,
-    pub classes: Vec<ClassOrInterfaceComponent>,
-    pub interfaces: Vec<ClassOrInterfaceComponent>,
+    pub containers: Vec<i64>,
+    pub classes: Vec<i64>,
+    pub interfaces: Vec<i64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -123,7 +123,6 @@ pub struct ClassOrInterfaceComponent {
     pub component: ContainerComponent,
     pub declaration_type: ContainerType,
     pub annotations: Vec<AnnotationComponent>,
-    pub sub_components: Vec<ComponentType>,
 
     // Class-specific fields
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -147,4 +146,5 @@ pub struct ContainerComponent {
     // I don't think this is actually used in Prophet
     // #[serde(rename = "rawSource")]
     // raw_source: &'a str,
+    pub sub_components: Vec<ComponentType>,
 }
