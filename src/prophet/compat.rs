@@ -49,9 +49,20 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
                 .collect()
         };
 
-        let mut method_ids = map_ids(&funcs, &mut id);
-        let mut class_ids = map_ids(&classes, &mut id);
-        let mut module_ids = map_ids(&other.modules, &mut id);
+        let method_ids = map_ids(&funcs, &mut id);
+        let class_ids = map_ids(&classes, &mut id);
+        let module_ids = map_ids(&other.modules, &mut id);
+
+        let methods: Vec<MethodComponent> = method_ids
+            .iter()
+            .map(|(ndx, id)| {
+                let func = funcs.get(*ndx).expect(&*format!(
+                    "Ivalid index {} into funcs array during prophet compat conversion",
+                    ndx
+                ));
+                MethodComponent::convert_compat(func, *id)
+            })
+            .collect();
 
         let class_names = classes
             .iter()
@@ -74,11 +85,15 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             succeeded: other.succeeded,
             class_names,
             interface_names,
-            containers: vec![],
+            containers: class_ids
+                .iter()
+                .map(|(_, id)| *id)
+                .chain(module_ids.iter().map(|(_, id)| *id))
+                .collect(),
             classes: vec![],
             interfaces: vec![],
             modules: vec![],
-            methods: vec![],
+            methods: method_ids.iter().map(|(_, id)| *id).collect(),
         }
     }
 }
@@ -115,6 +130,12 @@ pub struct MethodComponent {
     pub line_begin: i32,
     pub line_end: i32,
     pub body: Option<Block>,
+}
+
+impl MethodComponent {
+    fn convert_compat(other: &super::MethodComponent, id: i64) -> MethodComponent {
+        todo!()
+    }
 }
 
 #[derive(Debug, Serialize, Eq, PartialEq, Clone)]
