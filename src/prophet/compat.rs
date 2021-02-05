@@ -1,10 +1,10 @@
 use super::*;
 use crate::ast::Block;
 use serde::Serialize;
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize)]
 pub struct JSSAContext {
-    pub id: i64,
     #[serde(flatten)]
     pub instance_type: InstanceType,
     // module_package_map: ModulePackageMap<'a>,
@@ -20,33 +20,40 @@ pub struct JSSAContext {
 
 impl From<super::JSSAContext<'_>> for JSSAContext {
     fn from(other: super::JSSAContext<'_>) -> Self {
+        let mut id = 2i64;
+
         let classes: Vec<_> = other
             .modules
             .iter()
             .flat_map(|module| module.classes.clone())
             .collect();
 
-        let constructors: Vec<_> = classes
-            .iter()
-            .flat_map(|class| class.constructors.clone())
-            .flat_map(|constructors| constructors)
-            .collect();
+        let funcs: Vec<_> = {
+            let constructors: Vec<_> = classes
+                .iter()
+                .flat_map(|class| class.constructors.clone())
+                .flat_map(|constructors| constructors)
+                .collect();
 
-        let module_functions: Vec<_> = other
-            .modules
-            .iter()
-            .flat_map(|module| module.component.methods.clone())
-            .collect();
+            let module_functions: Vec<_> = other
+                .modules
+                .iter()
+                .flat_map(|module| module.component.methods.clone())
+                .collect();
 
-        let funcs: Vec<_> = classes
-            .iter()
-            .flat_map(|class| class.component.methods.clone())
-            .chain(constructors)
-            .chain(module_functions)
-            .collect();
+            classes
+                .iter()
+                .flat_map(|class| class.component.methods.clone())
+                .chain(constructors)
+                .chain(module_functions)
+                .collect()
+        };
+
+        let mut method_ids = map_ids(&funcs, &mut id);
+        let mut class_ids = map_ids(&classes, &mut id);
+        let mut module_ids = map_ids(&other.modules, &mut id);
 
         JSSAContext {
-            id: 1,
             instance_type: other.component.instance_type,
             succeeded: other.succeeded,
             class_names: vec![],
@@ -58,6 +65,15 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             methods: vec![],
         }
     }
+}
+
+fn map_ids<T>(components: &Vec<T>, id: &mut i64) -> HashMap<usize, i64> {
+    let mut ids = HashMap::new();
+    for (i, _) in components.iter().enumerate() {
+        ids.insert(i, *id);
+        *id += 1;
+    }
+    ids
 }
 
 #[derive(Debug, Serialize, Clone)]
