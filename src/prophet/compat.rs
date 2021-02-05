@@ -53,11 +53,27 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
         let mut class_ids = map_ids(&classes, &mut id);
         let mut module_ids = map_ids(&other.modules, &mut id);
 
+        let class_names = classes
+            .iter()
+            .filter(|component| {
+                component.constructors.is_some() && component.field_components.is_some()
+            })
+            .map(|class| class.component.container_name.clone())
+            .collect();
+
+        let interface_names = classes
+            .iter()
+            .filter(|component| {
+                component.constructors.is_none() && component.field_components.is_none()
+            })
+            .map(|class| class.component.container_name.clone())
+            .collect();
+
         JSSAContext {
             instance_type: other.component.instance_type,
             succeeded: other.succeeded,
-            class_names: vec![],
-            interface_names: vec![],
+            class_names,
+            interface_names,
             containers: vec![],
             classes: vec![],
             interfaces: vec![],
