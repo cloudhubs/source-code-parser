@@ -3,13 +3,12 @@ use crate::ast::Block;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
-pub struct JSSAContext<'a> {
+pub struct JSSAContext {
     pub id: i64,
     #[serde(flatten)]
-    pub instace_type: ComponentInfo,
+    pub instance_type: InstanceType,
     // module_package_map: ModulePackageMap<'a>,
     pub succeeded: bool,
-    pub root_path: &'a str,
     pub class_names: Vec<String>,
     pub interface_names: Vec<String>,
     pub containers: Vec<i64>,
@@ -19,9 +18,45 @@ pub struct JSSAContext<'a> {
     pub methods: Vec<i64>,
 }
 
-impl From<super::JSSAContext<'_>> for JSSAContext<'_> {
-    fn from(_: super::JSSAContext<'_>) -> Self {
-        todo!()
+impl From<super::JSSAContext<'_>> for JSSAContext {
+    fn from(other: super::JSSAContext<'_>) -> Self {
+        let classes: Vec<_> = other
+            .modules
+            .iter()
+            .flat_map(|module| module.classes.clone())
+            .collect();
+
+        let constructors: Vec<_> = classes
+            .iter()
+            .flat_map(|class| class.constructors.clone())
+            .flat_map(|constructors| constructors)
+            .collect();
+
+        let module_functions: Vec<_> = other
+            .modules
+            .iter()
+            .flat_map(|module| module.component.methods.clone())
+            .collect();
+
+        let funcs: Vec<_> = classes
+            .iter()
+            .flat_map(|class| class.component.methods.clone())
+            .chain(constructors)
+            .chain(module_functions)
+            .collect();
+
+        JSSAContext {
+            id: 1,
+            instance_type: other.component.instance_type,
+            succeeded: other.succeeded,
+            class_names: vec![],
+            interface_names: vec![],
+            containers: vec![],
+            classes: vec![],
+            interfaces: vec![],
+            modules: vec![],
+            methods: vec![],
+        }
     }
 }
 

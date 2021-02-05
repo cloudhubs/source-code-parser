@@ -23,7 +23,7 @@ pub enum InstanceType {
     ImportComponent,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ContainerStereotype {
     Fabricated,
@@ -36,7 +36,7 @@ pub enum ContainerStereotype {
     Module,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ContainerType {
     Class,
@@ -83,7 +83,7 @@ impl Into<Language> for LANG {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ModuleStereotype {
     Fabricated,

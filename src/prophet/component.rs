@@ -67,7 +67,7 @@ impl PartialEq for MethodParamComponent {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ModuleComponent {
     // can contain functions here
     #[serde(flatten)]
@@ -110,7 +110,7 @@ impl ModuleComponent {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ContainerComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -127,7 +127,7 @@ pub struct ContainerComponent {
     // raw_source: &'a str,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ClassOrInterfaceComponent {
     #[serde(flatten)]
     pub component: ContainerComponent,
