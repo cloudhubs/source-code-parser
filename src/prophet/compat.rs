@@ -76,7 +76,7 @@ fn map_ids<T>(components: &Vec<T>, id: &mut i64) -> HashMap<usize, i64> {
     ids
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Eq, PartialEq, Clone)]
 pub struct MethodComponent {
     pub id: i64,
     #[serde(flatten)]
@@ -101,7 +101,7 @@ pub struct MethodComponent {
     pub body: Option<Block>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Eq, PartialEq, Clone)]
 pub struct ModuleComponent {
     // can contain functions here
     #[serde(flatten)]
@@ -116,7 +116,7 @@ pub struct ModuleComponent {
     pub interfaces: Vec<i64>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ClassOrInterfaceComponent {
     #[serde(flatten)]
     pub component: ContainerComponent,
@@ -146,4 +146,14 @@ pub struct ContainerComponent {
     // #[serde(rename = "rawSource")]
     // raw_source: &'a str,
     pub sub_components: Vec<ComponentType>,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[serde(untagged)]
+pub enum ComponentType {
+    ClassOrInterfaceComponent(ClassOrInterfaceComponent),
+    AnnotationComponent(AnnotationComponent),
+    MethodComponent(MethodComponent),
+    ModuleComponent(ModuleComponent),
+    FieldComponent(FieldComponent),
 }
