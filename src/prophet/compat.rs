@@ -134,7 +134,38 @@ pub struct MethodComponent {
 
 impl MethodComponent {
     fn convert_compat(other: &super::MethodComponent, id: i64) -> MethodComponent {
-        todo!()
+        let sub_components = other
+            .parameters
+            .clone()
+            .iter()
+            .map(|param| ComponentType::MethodParamComponent(param.clone()))
+            .chain(
+                other
+                    .annotations
+                    .clone()
+                    .iter()
+                    .map(|annotation| ComponentType::AnnotationComponent(annotation.clone())),
+            )
+            .collect();
+
+        MethodComponent {
+            id,
+            component: other.component.clone(),
+            accessor: other.accessor.clone(),
+            method_name: other.method_name.clone(),
+            return_type: other.return_type.clone(),
+            parameters: other.parameters.clone(), // add to subcomponents as well
+            is_static: other.is_static,
+            is_abstract: other.is_abstract,
+            is_final: other.is_final,
+            sub_methods: vec![],
+            sub_components,
+            annotations: other.annotations.clone(), // add to subcomponents as well
+            line_count: other.line_count,
+            line_begin: other.line_begin,
+            line_end: other.line_end,
+            body: other.body.clone(),
+        }
     }
 }
 
@@ -193,4 +224,5 @@ pub enum ComponentType {
     MethodComponent(MethodComponent),
     ModuleComponent(ModuleComponent),
     FieldComponent(FieldComponent),
+    MethodParamComponent(MethodParamComponent),
 }
