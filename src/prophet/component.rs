@@ -73,7 +73,6 @@ pub struct ModuleComponent {
     #[serde(flatten)]
     pub component: ContainerComponent,
     pub module_name: String,
-    pub path: String,
     #[serde(rename = "moduleStereotype")]
     pub module_stereotype: ModuleStereotype,
     // class_names, interface_names, method_names
@@ -85,7 +84,7 @@ pub struct ModuleComponent {
 impl ModuleComponent {
     pub fn new(name: String, path: String) -> Self {
         let info = ComponentInfo {
-            path: path.clone(),
+            path: path,
             package_name: name.clone(),
             instance_name: name.clone(),
             instance_type: InstanceType::ModuleComponent,
@@ -101,7 +100,6 @@ impl ModuleComponent {
         let module = ModuleComponent {
             component: container,
             module_name: name,
-            path,
             module_stereotype: ModuleStereotype::Fabricated,
             classes: vec![],
             interfaces: vec![],

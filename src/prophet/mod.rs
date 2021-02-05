@@ -73,7 +73,6 @@ mod tests {
                 line_count: 3,
             },
             module_name: "module_name".to_string(),
-            path: "/path/module_name".to_string(),
             module_stereotype: ModuleStereotype::Repository,
             classes: vec![ClassOrInterfaceComponent {
                 component: ContainerComponent {

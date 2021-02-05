@@ -107,7 +107,6 @@ pub struct ModuleComponent {
     #[serde(flatten)]
     pub component: ContainerComponent,
     pub module_name: String,
-    pub path: String, // dupe field I think
     #[serde(rename = "moduleStereotype")]
     pub module_stereotype: ModuleStereotype,
     pub class_names: Vec<String>,
