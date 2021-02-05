@@ -14,7 +14,7 @@ pub struct ComponentInfo {
     // sub_components: Vec<ComponentType<'a>>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(untagged)]
 pub enum ComponentType {
     ClassOrInterfaceComponent(ClassOrInterfaceComponent),

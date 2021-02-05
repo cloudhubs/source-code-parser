@@ -93,6 +93,7 @@ pub struct MethodComponent {
     pub is_final: bool,
     #[serde(rename = "subroutines")]
     pub sub_methods: Vec<i64>,
+    pub sub_components: Vec<ComponentType>,
     pub annotations: Vec<AnnotationComponent>,
     pub line_count: i32,
     pub line_begin: i32,
@@ -102,7 +103,6 @@ pub struct MethodComponent {
 
 #[derive(Debug, Serialize)]
 pub struct ModuleComponent {
-    pub id: i64,
     // can contain functions here
     #[serde(flatten)]
     pub component: ContainerComponent,
@@ -119,15 +119,32 @@ pub struct ModuleComponent {
 
 #[derive(Debug, Serialize)]
 pub struct ClassOrInterfaceComponent {
-    pub id: i64,
     #[serde(flatten)]
     pub component: ContainerComponent,
     pub declaration_type: ContainerType,
     pub annotations: Vec<AnnotationComponent>,
+    pub sub_components: Vec<ComponentType>,
 
     // Class-specific fields
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub constructors: Option<Vec<MethodComponent>>,
+    pub constructors: Option<Vec<i64>>,
     #[serde(rename = "fieldComponents", skip_serializing_if = "Option::is_none")]
     pub field_components: Option<Vec<FieldComponent>>,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+pub struct ContainerComponent {
+    pub id: i64,
+    #[serde(flatten)]
+    pub component: ComponentInfo,
+    pub accessor: AccessorType,
+    pub stereotype: ContainerStereotype,
+    pub methods: Vec<i32>,
+    #[serde(rename = "containerName")]
+    pub container_name: String,
+    #[serde(rename = "lineCount")]
+    pub line_count: i32,
+    // I don't think this is actually used in Prophet
+    // #[serde(rename = "rawSource")]
+    // raw_source: &'a str,
 }
