@@ -180,7 +180,7 @@ impl MethodComponent {
     }
 
     fn is_equiv(&self, other: &super::MethodComponent) -> bool {
-        self.component == other.component
+        self.component == other.component // todo: this won't work once we add ::{id}
             && self.accessor == other.accessor
             && self.method_name == other.method_name
             && self.return_type == other.return_type
@@ -209,6 +209,78 @@ pub struct ModuleComponent {
     pub containers: Vec<i64>,
     pub classes: Vec<i64>,
     pub interfaces: Vec<i64>,
+}
+
+impl ModuleComponent {
+    fn convert_compat(
+        other: &super::ModuleComponent,
+        id: i64,
+        methods: &Vec<MethodComponent>,
+        classes: &Vec<ClassOrInterfaceComponent>,
+    ) -> ModuleComponent {
+        let class_names = other
+            .classes
+            .iter()
+            .filter(|component| {
+                component.constructors.is_some() && component.field_components.is_some()
+            })
+            .map(|class| class.component.container_name.clone())
+            .collect();
+
+        let interface_names = other
+            .classes
+            .iter()
+            .filter(|component| {
+                component.constructors.is_none() && component.field_components.is_none()
+            })
+            .map(|class| class.component.container_name.clone())
+            .collect();
+
+        let class_ids: Vec<_> = classes
+            .iter()
+            .filter(|class| {
+                other
+                    .classes
+                    .iter()
+                    .filter(|other_class| {
+                        other_class.constructors.is_some() && other_class.field_components.is_some()
+                    })
+                    .find(|other_class| class.is_equiv(other_class))
+                    .is_some()
+            })
+            .map(|class| class.component.id)
+            .collect();
+
+        let interface_ids: Vec<_> = classes
+            .iter()
+            .filter(|class| {
+                other
+                    .classes
+                    .iter()
+                    .filter(|other_class| {
+                        other_class.constructors.is_none() && other_class.field_components.is_none()
+                    })
+                    .find(|other_class| class.is_equiv(other_class))
+                    .is_some()
+            })
+            .map(|class| class.component.id)
+            .collect();
+
+        ModuleComponent {
+            component: ContainerComponent::convert_compat(&other.component, id, methods, &vec![]),
+            module_name: other.module_name.clone(),
+            module_stereotype: other.module_stereotype.clone(),
+            class_names,
+            interface_names,
+            containers: class_ids
+                .clone()
+                .into_iter()
+                .chain(interface_ids.clone().into_iter())
+                .collect(),
+            classes: class_ids,
+            interfaces: interface_ids,
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -261,6 +333,13 @@ impl ClassOrInterfaceComponent {
             constructors,
             field_components: other.field_components.clone(),
         }
+    }
+
+    fn is_equiv(&self, other: &super::ClassOrInterfaceComponent) -> bool {
+        self.component.is_equiv(&other.component)
+            && self.declaration_type == other.declaration_type
+            && self.field_components == other.field_components
+            && self.constructors.is_some() == other.constructors.is_some()
     }
 }
 
@@ -324,6 +403,13 @@ impl ContainerComponent {
             line_count: other.line_count,
             sub_components,
         }
+    }
+
+    fn is_equiv(&self, other: &super::ContainerComponent) -> bool {
+        self.accessor == other.accessor
+            && self.stereotype == other.stereotype
+            && self.container_name == other.container_name // todo: this won't work once we add ::{id}
+            && self.line_count == other.line_count
     }
 }
 
