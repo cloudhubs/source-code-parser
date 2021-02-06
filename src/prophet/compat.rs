@@ -53,7 +53,7 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
         let class_ids = map_ids(&classes, &mut id);
         let module_ids = map_ids(&other.modules, &mut id);
 
-        let methods: Vec<MethodComponent> = method_ids
+        let methods: Vec<_> = method_ids
             .iter()
             .map(|(ndx, id)| {
                 let func = funcs.get(*ndx).expect(&*format!(
@@ -198,6 +198,23 @@ pub struct ClassOrInterfaceComponent {
     pub field_components: Option<Vec<FieldComponent>>,
 }
 
+impl ClassOrInterfaceComponent {
+    fn convert_compat(
+        other: &super::ClassOrInterfaceComponent,
+        id: i64,
+        methods: &Vec<MethodComponent>,
+        id_map: &HashMap<usize, i64>,
+    ) -> ClassOrInterfaceComponent {
+        ClassOrInterfaceComponent {
+            component: ContainerComponent::convert_compat(&other.component, id, methods, id_map),
+            declaration_type: other.declaration_type.clone(),
+            annotations: other.annotations.clone(),
+            constructors: None, // todo
+            field_components: other.field_components.clone(),
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ContainerComponent {
     pub id: i64,
@@ -214,6 +231,29 @@ pub struct ContainerComponent {
     // #[serde(rename = "rawSource")]
     // raw_source: &'a str,
     pub sub_components: Vec<ComponentType>,
+}
+
+impl ContainerComponent {
+    fn convert_compat(
+        other: &super::ContainerComponent,
+        id: i64,
+        methods: &Vec<MethodComponent>,
+        id_map: &HashMap<usize, i64>,
+    ) -> ContainerComponent {
+        // other.methods.iter().
+        // need to find methods in this container... cant really do it with just indices
+
+        ContainerComponent {
+            id,
+            component: other.component.clone(),
+            accessor: other.accessor.clone(),
+            stereotype: other.stereotype.clone(),
+            methods: vec![],
+            container_name: other.container_name.clone(),
+            line_count: other.line_count,
+            sub_components: vec![],
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
