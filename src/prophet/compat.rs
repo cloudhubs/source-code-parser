@@ -80,6 +80,24 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             })
             .collect();
 
+        let interfaces: Vec<_> = class_ids
+            .iter()
+            .map(|(ndx, id)| {
+                let interface = classes.get(*ndx).expect(&*format!(
+                    "Ivalid index {} into funcs classes during prophet compat conversion",
+                    ndx
+                ));
+                if interface.constructors.is_none() && interface.field_components.is_none() {
+                    Some(ClassOrInterfaceComponent::convert_compat(
+                        interface, *id, &methods,
+                    ))
+                } else {
+                    None
+                }
+            })
+            .flat_map(|interface| interface)
+            .collect();
+
         let classes: Vec<_> = class_ids
             .iter()
             .map(|(ndx, id)| {
@@ -87,7 +105,25 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
                     "Ivalid index {} into funcs classes during prophet compat conversion",
                     ndx
                 ));
-                ClassOrInterfaceComponent::convert_compat(class, *id, &methods)
+                if class.constructors.is_some() && class.field_components.is_some() {
+                    Some(ClassOrInterfaceComponent::convert_compat(
+                        class, *id, &methods,
+                    ))
+                } else {
+                    None
+                }
+            })
+            .flat_map(|class| class)
+            .collect();
+
+        let modules: Vec<_> = module_ids
+            .iter()
+            .map(|(ndx, id)| {
+                let module = other.modules.get(*ndx).expect(&*format!(
+                    "Ivalid index {} into modules array during prophet compat conversion",
+                    ndx
+                ));
+                ModuleComponent::convert_compat(module, *id, &methods, &classes)
             })
             .collect();
 
@@ -102,8 +138,8 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
                 .chain(module_ids.iter().map(|(_, id)| *id))
                 .collect(),
             classes,
-            interfaces: vec![],
-            modules: vec![],
+            interfaces,
+            modules,
             methods: method_ids.iter().map(|(_, id)| *id).collect(),
         }
     }
