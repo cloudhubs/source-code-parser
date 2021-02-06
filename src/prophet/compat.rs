@@ -49,21 +49,6 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
                 .collect()
         };
 
-        let method_ids = map_ids(&funcs, &mut id);
-        let class_ids = map_ids(&classes, &mut id);
-        let module_ids = map_ids(&other.modules, &mut id);
-
-        let methods: Vec<_> = method_ids
-            .iter()
-            .map(|(ndx, id)| {
-                let func = funcs.get(*ndx).expect(&*format!(
-                    "Ivalid index {} into funcs array during prophet compat conversion",
-                    ndx
-                ));
-                MethodComponent::convert_compat(func, *id)
-            })
-            .collect();
-
         let class_names = classes
             .iter()
             .filter(|component| {
@@ -80,6 +65,32 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             .map(|class| class.component.container_name.clone())
             .collect();
 
+        let method_ids = map_ids(&funcs, &mut id);
+        let class_ids = map_ids(&classes, &mut id);
+        let module_ids = map_ids(&other.modules, &mut id);
+
+        let methods: Vec<_> = method_ids
+            .iter()
+            .map(|(ndx, id)| {
+                let func = funcs.get(*ndx).expect(&*format!(
+                    "Ivalid index {} into funcs array during prophet compat conversion",
+                    ndx
+                ));
+                MethodComponent::convert_compat(func, *id)
+            })
+            .collect();
+
+        let classes: Vec<_> = class_ids
+            .iter()
+            .map(|(ndx, id)| {
+                let class = classes.get(*ndx).expect(&*format!(
+                    "Ivalid index {} into funcs classes during prophet compat conversion",
+                    ndx
+                ));
+                ClassOrInterfaceComponent::convert_compat(class, *id, &methods)
+            })
+            .collect();
+
         JSSAContext {
             instance_type: other.component.instance_type,
             succeeded: other.succeeded,
@@ -90,7 +101,7 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
                 .map(|(_, id)| *id)
                 .chain(module_ids.iter().map(|(_, id)| *id))
                 .collect(),
-            classes: vec![],
+            classes,
             interfaces: vec![],
             modules: vec![],
             methods: method_ids.iter().map(|(_, id)| *id).collect(),
@@ -167,6 +178,22 @@ impl MethodComponent {
             body: other.body.clone(),
         }
     }
+
+    fn is_equiv(&self, other: &super::MethodComponent) -> bool {
+        self.component == other.component
+            && self.accessor == other.accessor
+            && self.method_name == other.method_name
+            && self.return_type == other.return_type
+            && self.parameters == other.parameters
+            && self.is_static == other.is_static
+            && self.is_abstract == other.is_abstract
+            && self.is_final == other.is_final
+            && self.annotations == other.annotations
+            && self.line_count == other.line_count
+            && self.line_begin == other.line_begin
+            && self.line_end == other.line_end
+            && self.body == other.body
+    }
 }
 
 #[derive(Debug, Serialize, Eq, PartialEq, Clone)]
@@ -203,10 +230,14 @@ impl ClassOrInterfaceComponent {
         other: &super::ClassOrInterfaceComponent,
         id: i64,
         methods: &Vec<MethodComponent>,
-        id_map: &HashMap<usize, i64>,
     ) -> ClassOrInterfaceComponent {
         ClassOrInterfaceComponent {
-            component: ContainerComponent::convert_compat(&other.component, id, methods, id_map),
+            component: ContainerComponent::convert_compat(
+                &other.component,
+                id,
+                methods,
+                &other.annotations,
+            ),
             declaration_type: other.declaration_type.clone(),
             annotations: other.annotations.clone(),
             constructors: None, // todo
@@ -222,7 +253,7 @@ pub struct ContainerComponent {
     pub component: ComponentInfo,
     pub accessor: AccessorType,
     pub stereotype: ContainerStereotype,
-    pub methods: Vec<i32>,
+    pub methods: Vec<i64>,
     #[serde(rename = "containerName")]
     pub container_name: String,
     #[serde(rename = "lineCount")]
@@ -238,20 +269,45 @@ impl ContainerComponent {
         other: &super::ContainerComponent,
         id: i64,
         methods: &Vec<MethodComponent>,
-        id_map: &HashMap<usize, i64>,
+        annotations: &Vec<AnnotationComponent>,
     ) -> ContainerComponent {
         // other.methods.iter().
         // need to find methods in this container... cant really do it with just indices
+        // other.methods;
+        let methods: Vec<_> = methods
+            .iter()
+            .filter(|method| {
+                other
+                    .methods
+                    .iter()
+                    .find(|other_method| method.is_equiv(other_method))
+                    .is_some()
+            })
+            .map(|method| method.clone())
+            .collect();
+
+        let method_ids = methods.iter().map(|method| method.id).collect();
+
+        let sub_components = methods
+            .into_iter()
+            .map(|method| ComponentType::MethodComponent(method))
+            .chain(
+                annotations
+                    .clone()
+                    .into_iter()
+                    .map(|annotation| ComponentType::AnnotationComponent(annotation)),
+            )
+            .collect();
 
         ContainerComponent {
             id,
             component: other.component.clone(),
             accessor: other.accessor.clone(),
             stereotype: other.stereotype.clone(),
-            methods: vec![],
+            methods: method_ids,
             container_name: other.container_name.clone(),
             line_count: other.line_count,
-            sub_components: vec![],
+            sub_components,
         }
     }
 }
