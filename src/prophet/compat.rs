@@ -231,6 +231,24 @@ impl ClassOrInterfaceComponent {
         id: i64,
         methods: &Vec<MethodComponent>,
     ) -> ClassOrInterfaceComponent {
+        let constructors: Vec<_> = methods
+            .iter()
+            .filter(|method| match &other.constructors {
+                Some(constructors) => constructors
+                    .iter()
+                    .find(|constructor| method.is_equiv(constructor))
+                    .is_some(),
+                None => false,
+            })
+            .map(|constructor| constructor.id)
+            .collect();
+
+        let constructors = if constructors.len() > 0 {
+            Some(constructors)
+        } else {
+            None
+        };
+
         ClassOrInterfaceComponent {
             component: ContainerComponent::convert_compat(
                 &other.component,
@@ -240,7 +258,7 @@ impl ClassOrInterfaceComponent {
             ),
             declaration_type: other.declaration_type.clone(),
             annotations: other.annotations.clone(),
-            constructors: None, // todo
+            constructors,
             field_components: other.field_components.clone(),
         }
     }
@@ -271,9 +289,6 @@ impl ContainerComponent {
         methods: &Vec<MethodComponent>,
         annotations: &Vec<AnnotationComponent>,
     ) -> ContainerComponent {
-        // other.methods.iter().
-        // need to find methods in this container... cant really do it with just indices
-        // other.methods;
         let methods: Vec<_> = methods
             .iter()
             .filter(|method| {
