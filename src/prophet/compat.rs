@@ -5,7 +5,6 @@ use std::collections::HashMap;
 
 #[derive(Debug, Serialize)]
 pub struct JSSAContext {
-    #[serde(flatten)]
     pub instance_type: InstanceType,
     // module_package_map: ModulePackageMap<'a>,
     pub succeeded: bool,

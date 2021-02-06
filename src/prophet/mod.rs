@@ -7,7 +7,7 @@ pub use context::*;
 mod model;
 pub use model::*;
 
-mod compat;
+pub mod compat;
 
 #[cfg(test)]
 mod tests {

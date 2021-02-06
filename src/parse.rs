@@ -98,7 +98,7 @@ impl AST {
     }
 }
 
-pub fn parse_project_context(root_path: &Path) -> std::io::Result<JSSAContext> {
+pub fn parse_project_context(root_path: &Path) -> std::io::Result<compat::JSSAContext> {
     let path_str = root_path.to_str().unwrap_or("");
     let modules = parse_directory(&root_path)?;
     let ctx = JSSAContext {
@@ -112,7 +112,7 @@ pub fn parse_project_context(root_path: &Path) -> std::io::Result<JSSAContext> {
         root_path: path_str,
         modules,
     };
-    Ok(ctx)
+    Ok(ctx.into())
 }
 
 fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
