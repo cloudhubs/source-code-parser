@@ -194,9 +194,15 @@ impl MethodComponent {
             )
             .collect();
 
+        // Add the ID onto the end of meta names
+        let component = ComponentInfo {
+            instance_name: format!("{}::{}", other.component.instance_name, id),
+            ..other.component.clone()
+        };
+
         MethodComponent {
             id,
-            component: other.component.clone(),
+            component,
             accessor: other.accessor.clone(),
             method_name: other.method_name.clone(),
             return_type: other.return_type.clone(),
@@ -428,9 +434,16 @@ impl ContainerComponent {
             )
             .collect();
 
+        // Add the ID onto the end of meta names
+        let component = ComponentInfo {
+            instance_name: format!("{}::{}", other.component.instance_name, id),
+            package_name: format!("{}::{}", other.component.package_name, id),
+            ..other.component.clone()
+        };
+
         ContainerComponent {
             id,
-            component: other.component.clone(),
+            component,
             accessor: other.accessor.clone(),
             stereotype: other.stereotype.clone(),
             methods: method_ids,
