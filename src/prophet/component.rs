@@ -14,6 +14,17 @@ pub struct ComponentInfo {
     // sub_components: Vec<ComponentType<'a>>,
 }
 
+impl ComponentInfo {
+    pub fn is_equiv(&self, other: &ComponentInfo) -> bool {
+        let equiv_str = |s1: &str, s2: &str| (s1.starts_with(s2) && s1.contains("::")) || s1 == s2;
+        let equiv_path = equiv_str(&self.path, &other.path);
+        let equiv_pkg = equiv_str(&self.package_name, &other.package_name);
+        let equiv_inst_name = equiv_str(&self.instance_name, &other.instance_name);
+
+        equiv_path && equiv_inst_name && equiv_pkg && self.instance_type == other.instance_type
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(untagged)]
 pub enum ComponentType {

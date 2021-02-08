@@ -221,7 +221,7 @@ impl MethodComponent {
     }
 
     fn is_equiv(&self, other: &super::MethodComponent) -> bool {
-        self.component == other.component // todo: this won't work once we add ::{id}
+        self.component.is_equiv(&other.component)
             && self.accessor == other.accessor
             && self.method_name == other.method_name
             && self.return_type == other.return_type
