@@ -45,7 +45,7 @@ mod tests {
                             instance_type: InstanceType::ModuleComponent,
                         },
                         annotation: None,
-                        parameter_type: "String".to_string(),
+                        r#type: "String".to_string(),
                         parameter_name: "str".to_string(),
                     }],
                     is_static: false,

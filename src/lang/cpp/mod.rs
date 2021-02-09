@@ -415,7 +415,7 @@ fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<Met
         },
         annotation: None,
         parameter_name: ident,
-        parameter_type: param_type,
+        r#type: param_type,
     };
 
     Some(param)
@@ -902,7 +902,7 @@ mod tests {
         let actual_param = func_parameter(&param, "", "").unwrap();
         assert_eq!(
             "::apache::thrift::protocol::TProtocol*".to_string(),
-            actual_param.parameter_type,
+            actual_param.r#type,
         );
         assert_eq!("name".to_string(), actual_param.parameter_name);
     }

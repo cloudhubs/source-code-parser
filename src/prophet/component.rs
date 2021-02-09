@@ -72,13 +72,14 @@ pub struct MethodParamComponent {
     // r#type: ??? -- this is Class<?> in prophet, not sure if used.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub annotation: Option<Vec<AnnotationComponent>>,
-    pub parameter_type: String,
+    /// The parameter type
+    pub r#type: String,
     pub parameter_name: String,
 }
 
 impl PartialEq for MethodParamComponent {
     fn eq(&self, other: &Self) -> bool {
-        self.parameter_type == other.parameter_type && self.annotation == other.annotation
+        self.r#type == other.r#type && self.annotation == other.annotation
     }
 }
 
