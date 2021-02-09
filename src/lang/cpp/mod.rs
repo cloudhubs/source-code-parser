@@ -57,23 +57,9 @@ fn merge_class_methods(module: &mut ModuleComponent) {
         for function in functions {
             let name = class.component.container_name.clone();
             let class_method = class.component.methods.iter_mut().find(|m| {
-                if name == "UniqueIdHandler" {
-                    println!(
-                        "{} vs {} == {} && {}",
-                        &function.method_name,
-                        &m.method_name,
-                        function.method_name.ends_with(&m.method_name),
-                        m.parameters == function.parameters
-                    );
-                    println!("{:#?}", function.parameters);
-                    println!("{:#?}", m.parameters)
-                }
                 function.method_name.ends_with(&m.method_name)
                     && m.parameters == function.parameters
             });
-            // if class.component.container_name == "UniqueIdHandler" {
-            //     println!("{} and {:#?}", function.method_name, class_method);
-            // }
 
             if let Some(class_method) = class_method {
                 class_method.line_begin = function.line_begin;

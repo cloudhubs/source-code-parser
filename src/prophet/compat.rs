@@ -1,5 +1,5 @@
 use super::*;
-use crate::ast::Block;
+use crate::ast::{Block, Expr, Node, Stmt};
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -64,7 +64,13 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             .map(|class| class.component.container_name.clone())
             .collect();
 
+        let mut subroutines: Vec<_> = funcs
+            .iter()
+            .flat_map(|method| find_subroutines(&method))
+            .collect();
+
         let method_ids = map_ids(&funcs, &mut id);
+        let subroutine_ids = map_ids(&subroutines, &mut id);
         let class_ids = map_ids(&classes, &mut id);
         let module_ids = map_ids(&other.modules, &mut id);
 
@@ -78,6 +84,14 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
                 MethodComponent::convert_compat(func, *id)
             })
             .collect();
+
+        subroutine_ids.iter().for_each(|(ndx, id)| {
+            let sub = subroutines.get_mut(*ndx).expect(&*format!(
+                "Ivalid index {} into subroutines array during prophet compat conversion",
+                ndx
+            ));
+            sub.id = *id;
+        });
 
         let interfaces: Vec<_> = class_ids
             .iter()
@@ -141,6 +155,71 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             modules,
             methods: method_ids.iter().map(|(_, id)| *id).collect(),
         }
+    }
+}
+
+fn find_subroutines(method: &super::MethodComponent) -> Vec<MethodComponent> {
+    match &method.body {
+        Some(body) => body
+            .nodes
+            .iter()
+            .flat_map(|node| find_subroutines_inner(node))
+            .collect(),
+        None => vec![],
+    }
+}
+
+fn find_subroutines_inner(node: &Node) -> Vec<MethodComponent> {
+    match node {
+        Node::Stmt(Stmt::ExprStmt(stmt)) => find_subroutines_expr(&stmt.expr.clone().into()),
+        Node::Expr(Expr::CallExpr(call)) => find_subroutines_expr(&call.clone().into()),
+        _ => vec![],
+    }
+}
+
+fn find_subroutines_expr(expr: &Expr) -> Vec<MethodComponent> {
+    match expr {
+        Expr::CallExpr(call) => {
+            let name = match *call.name.clone() {
+                Expr::Ident(ident) => ident.name.clone(),
+                Expr::Literal(lit) => lit.clone(),
+                _ => "".into(),
+            };
+            // This gets really complex since you can pass something more
+            // complex than a regular variable or literal. I think
+            // subroutines shouldn't really be necessary but I'll include
+            // the names at least
+            let _parameters: Vec<String> = call
+                .args
+                .clone()
+                .into_iter()
+                .map(|_arg| "".into())
+                .collect();
+            vec![MethodComponent {
+                id: -1,
+                component: ComponentInfo {
+                    path: "".into(),
+                    package_name: "".into(),
+                    instance_name: "".into(),
+                    instance_type: InstanceType::MethodComponent,
+                },
+                accessor: AccessorType::Default,
+                method_name: name,
+                return_type: "".into(),
+                parameters: vec![],
+                is_static: false,
+                is_abstract: false,
+                is_final: false,
+                sub_methods: vec![],
+                sub_components: vec![],
+                annotations: vec![],
+                line_count: 0,
+                line_begin: 0,
+                line_end: 0,
+                body: None,
+            }]
+        }
+        _ => vec![],
     }
 }
 
