@@ -313,7 +313,13 @@ impl ModuleComponent {
             .collect();
 
         ModuleComponent {
-            component: ContainerComponent::convert_compat(&other.component, id, methods, &vec![]),
+            component: ContainerComponent::convert_compat(
+                &other.component,
+                id,
+                methods,
+                &vec![],
+                true,
+            ),
             module_name: other.module_name.clone(),
             module_stereotype: other.module_stereotype.clone(),
             class_names,
@@ -390,6 +396,7 @@ impl ClassOrInterfaceComponent {
                 id,
                 &methods,
                 &other.annotations,
+                false,
             ),
             declaration_type: other.declaration_type.clone(),
             annotations: other.annotations.clone(),
@@ -430,6 +437,7 @@ impl ContainerComponent {
         id: i64,
         methods: &Vec<MethodComponent>,
         annotations: &Vec<AnnotationComponent>,
+        is_module: bool,
     ) -> ContainerComponent {
         let methods: Vec<_> = methods
             .iter()
@@ -456,10 +464,17 @@ impl ContainerComponent {
             )
             .collect();
 
+        // Only modules have their ID appended to their package name it seems
+        let package_name = if is_module {
+            format!("{}::{}", other.component.package_name, id)
+        } else {
+            other.component.package_name.clone()
+        };
+
         // Add the ID onto the end of meta names
         let component = ComponentInfo {
             instance_name: format!("{}::{}", other.component.instance_name, id),
-            package_name: format!("{}::{}", other.component.package_name, id),
+            package_name,
             ..other.component.clone()
         };
 
