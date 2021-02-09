@@ -382,6 +382,8 @@ impl ClassOrInterfaceComponent {
             })
             .collect();
 
+        // The instance_name should have already been adjusted to
+        // name::ClassComponent or name::InterfaceComponent
         ClassOrInterfaceComponent {
             component: ContainerComponent::convert_compat(
                 &other.component,
