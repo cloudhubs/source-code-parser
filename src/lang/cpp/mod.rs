@@ -55,10 +55,25 @@ fn merge_class_methods(module: &mut ModuleComponent) {
             .collect();
 
         for function in functions {
+            let name = class.component.container_name.clone();
             let class_method = class.component.methods.iter_mut().find(|m| {
+                if name == "UniqueIdHandler" {
+                    println!(
+                        "{} vs {} == {} && {}",
+                        &function.method_name,
+                        &m.method_name,
+                        function.method_name.ends_with(&m.method_name),
+                        m.parameters == function.parameters
+                    );
+                    println!("{:#?}", function.parameters);
+                    println!("{:#?}", m.parameters)
+                }
                 function.method_name.ends_with(&m.method_name)
                     && m.parameters == function.parameters
             });
+            // if class.component.container_name == "UniqueIdHandler" {
+            //     println!("{} and {:#?}", function.method_name, class_method);
+            // }
 
             if let Some(class_method) = class_method {
                 class_method.line_begin = function.line_begin;
@@ -357,7 +372,11 @@ fn variable_ident_inner(ident: &AST, variable_type: &mut String) -> Option<Strin
                     }
                     _ => true,
                 }) // get either & or * type
-                .for_each(|star| variable_type.push_str(&star.value));
+                .for_each(|star| {
+                    if !variable_type.contains(&star.value) {
+                        variable_type.push_str(&star.value);
+                    }
+                });
             ident
                 .find_child_by_type(&[
                     "identifier",
@@ -371,13 +390,20 @@ fn variable_ident_inner(ident: &AST, variable_type: &mut String) -> Option<Strin
         "identifier" | "field_identifier" | "type_identifier" | "this" | "auto" => {
             ident.value.clone()
         }
+        "abstract_pointer_declarator" | "abstract_reference_declarator" => {
+            variable_type.push_str(&ident.children.get(0)?.value);
+            "".to_string()
+        }
         _ => "".to_string(),
     })
 }
 
 fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<MethodParamComponent> {
     let mut param_type = variable_type(param_decl)?;
-    let ident = variable_ident(param_decl, &mut param_type)?;
+    let ident = variable_ident(param_decl, &mut param_type).unwrap_or(variable_ident_inner(
+        param_decl.children.iter().last()?,
+        &mut param_type,
+    )?);
 
     let param = MethodParamComponent {
         component: ComponentInfo {
