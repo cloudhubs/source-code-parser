@@ -196,7 +196,12 @@ impl MethodComponent {
 
         // Add the ID onto the end of meta names
         let component = ComponentInfo {
-            instance_name: format!("{}::{}", other.component.instance_name, id),
+            path: format!(
+                "{}::MethodDeclaration::{}",
+                other.component.path.to_string(),
+                other.method_name
+            ),
+            instance_name: format!("MethodInfoComponent::{}", id),
             ..other.component.clone()
         };
 
@@ -362,11 +367,26 @@ impl ClassOrInterfaceComponent {
             None
         };
 
+        let methods: Vec<_> = methods
+            .iter()
+            .map(|method| MethodComponent {
+                component: ComponentInfo {
+                    // Adjust name to be ClassName::ClassComponent::MethodInfoComponent::ID
+                    instance_name: format!(
+                        "{}::ClassComponent::{}",
+                        other.component.container_name, method.component.instance_name
+                    ),
+                    ..method.component.clone()
+                },
+                ..method.clone()
+            })
+            .collect();
+
         ClassOrInterfaceComponent {
             component: ContainerComponent::convert_compat(
                 &other.component,
                 id,
-                methods,
+                &methods,
                 &other.annotations,
             ),
             declaration_type: other.declaration_type.clone(),

@@ -428,11 +428,11 @@ fn transform_into_class(
             component: ComponentInfo {
                 path: path.into(),
                 package_name: module_name.into(),
-                instance_name: class_name.clone(),
+                instance_name: format!("{}::ClassComponent", class_name),
                 instance_type: InstanceType::ClassComponent,
             },
             accessor: AccessorType::Default,
-            stereotype: ContainerStereotype::Entity,
+            stereotype: ContainerStereotype::Fabricated,
             methods,
             container_name: class_name,
             line_count: 0,

@@ -16,12 +16,16 @@ pub struct ComponentInfo {
 
 impl ComponentInfo {
     pub fn is_equiv(&self, other: &ComponentInfo) -> bool {
-        let equiv_str = |s1: &str, s2: &str| (s1.starts_with(s2) && s1.contains("::")) || s1 == s2;
-        let equiv_path = equiv_str(&self.path, &other.path);
-        let equiv_pkg = equiv_str(&self.package_name, &other.package_name);
-        let equiv_inst_name = equiv_str(&self.instance_name, &other.instance_name);
+        let equiv_path =
+            self.path == format!("{}::MethodDeclaration::{}", other.path, other.instance_name);
+        let equiv_pkg = self.package_name == other.package_name;
+        let equiv_inst_type = self.instance_type == other.instance_type;
 
-        equiv_path && equiv_inst_name && equiv_pkg && self.instance_type == other.instance_type
+        // Instance name fields shouldn't be directly compared here since it gets mutated
+        // to ClassName::ClassComponent::MethodInfoComponent::I'D where "other" is just
+        // the method name. The path covers this part.
+
+        equiv_path && equiv_pkg && equiv_inst_type
     }
 }
 
@@ -95,9 +99,9 @@ pub struct ModuleComponent {
 impl ModuleComponent {
     pub fn new(name: String, path: String) -> Self {
         let info = ComponentInfo {
-            path: path,
+            instance_name: format!("{}::ModuleComponent", path),
+            path,
             package_name: name.clone(),
-            instance_name: name.clone(),
             instance_type: InstanceType::ModuleComponent,
         };
         let container = ContainerComponent {
