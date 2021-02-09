@@ -157,7 +157,7 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
             } else {
                 mod_path = String::from(path.clone());
             }
-            let module_name = format!("{}::ModuleComponent", mod_path);
+            let module_name = mod_path.clone();
 
             // Get directory
             let read_dir = std::fs::read_dir(dir.clone())?;
