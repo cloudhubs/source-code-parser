@@ -170,6 +170,7 @@ pub struct MethodComponent {
     pub is_final: bool,
     #[serde(rename = "subroutines")]
     pub sub_methods: Vec<i64>,
+    #[serde(rename = "subComponents")]
     pub sub_components: Vec<ComponentType>,
     pub annotations: Vec<AnnotationComponent>,
     pub line_count: i32,
