@@ -374,6 +374,7 @@ fn variable_ident_inner(ident: &AST, variable_type: &mut String) -> Option<Strin
                 }) // get either & or * type
                 .for_each(|star| {
                     if !variable_type.contains(&star.value) {
+                        // trying to prevent duplicate * and & when they shouldnt be there..
                         variable_type.push_str(&star.value);
                     }
                 });
