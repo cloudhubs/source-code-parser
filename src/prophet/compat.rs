@@ -428,6 +428,7 @@ pub struct ContainerComponent {
     // I don't think this is actually used in Prophet
     // #[serde(rename = "rawSource")]
     // raw_source: &'a str,
+    #[serde(rename = "subComponents")]
     pub sub_components: Vec<ComponentType>,
 }
 
