@@ -92,7 +92,8 @@ impl AST {
             }
             lang => {
                 println!("unsupported lang: {:?}", lang);
-                todo!();
+                (vec![], Language::Unknown)
+                // todo!();
             }
         }
     }
@@ -170,7 +171,13 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
                 let entry = entry?;
                 if !entry.path().is_dir() {
                     let mut file = File::open(entry.path())?;
-                    let (components, lang) = parse_file(&mut file, &entry.path())?;
+                    let (components, lang) = match parse_file(&mut file, &entry.path()) {
+                        Ok(res) => res,
+                        Err(err) => {
+                            eprintln!("Could not read file {:?}: {:#?}", entry.path(), err);
+                            continue;
+                        }
+                    };
                     language = lang;
 
                     for component in components.into_iter() {
@@ -217,6 +224,7 @@ fn merge_modules(modules: Vec<ModuleComponent>, lang: Language) -> Vec<ModuleCom
 
 pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<(Vec<ComponentType>, Language)> {
     let mut code = String::new();
+    println!("checking file {:?}", path);
     file.read_to_string(&mut code)?;
 
     let result = parse_ast(AstPayload {
