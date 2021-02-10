@@ -147,6 +147,9 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
         for dir in dirs {
             // Generate module constants
             let path = dir.as_path().to_str().unwrap_or("").to_string();
+            if path.contains(".git") {
+                continue;
+            }
 
             // Generate module identifier
             let p = std::path::PathBuf::from(path.clone());
