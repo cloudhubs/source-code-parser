@@ -224,7 +224,6 @@ fn merge_modules(modules: Vec<ModuleComponent>, lang: Language) -> Vec<ModuleCom
 
 pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<(Vec<ComponentType>, Language)> {
     let mut code = String::new();
-    println!("checking file {:?}", path);
     file.read_to_string(&mut code)?;
 
     let result = parse_ast(AstPayload {

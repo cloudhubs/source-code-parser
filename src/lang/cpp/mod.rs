@@ -55,9 +55,9 @@ fn merge_class_methods(module: &mut ModuleComponent) {
             .collect();
 
         for function in functions {
-            let name = class.component.container_name.clone();
+            let class_name = &*class.component.container_name;
             let class_method = class.component.methods.iter_mut().find(|m| {
-                function.method_name.ends_with(&m.method_name)
+                function.method_name == format!("{}::{}", class_name, &m.method_name)
                     && m.parameters == function.parameters
             });
 
