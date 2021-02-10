@@ -57,23 +57,9 @@ fn merge_class_methods(module: &mut ModuleComponent) {
         for function in functions {
             let name = class.component.container_name.clone();
             let class_method = class.component.methods.iter_mut().find(|m| {
-                if name == "UniqueIdHandler" {
-                    println!(
-                        "{} vs {} == {} && {}",
-                        &function.method_name,
-                        &m.method_name,
-                        function.method_name.ends_with(&m.method_name),
-                        m.parameters == function.parameters
-                    );
-                    println!("{:#?}", function.parameters);
-                    println!("{:#?}", m.parameters)
-                }
                 function.method_name.ends_with(&m.method_name)
                     && m.parameters == function.parameters
             });
-            // if class.component.container_name == "UniqueIdHandler" {
-            //     println!("{} and {:#?}", function.method_name, class_method);
-            // }
 
             if let Some(class_method) = class_method {
                 class_method.line_begin = function.line_begin;
@@ -216,7 +202,6 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
     let params = func_parameters(parameter_list, module_name, path);
 
     let body = ast.find_child_by_type(&["compound_statement"]);
-    // println!("p{} {} body? {}", path, fn_ident, body.is_some());
     let (line_begin, line_end) = match body {
         Some(body) => match body.span {
             Some((line_start, _col_start, line_end, _col_end)) => {
@@ -519,9 +504,6 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
                     continue;
                 }
 
-                if &*field.r#type != "field_declaration" {
-                    println!("{:#?}", field);
-                }
                 assert!(&*field.r#type == "field_declaration");
                 // Not a method if this is reached
                 let mut field_type = variable_type(field)
