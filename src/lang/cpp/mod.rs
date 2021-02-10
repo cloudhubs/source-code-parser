@@ -55,6 +55,7 @@ fn merge_class_methods(module: &mut ModuleComponent) {
             .collect();
 
         for function in functions {
+            let name = class.component.container_name.clone();
             let class_method = class.component.methods.iter_mut().find(|m| {
                 function.method_name.ends_with(&m.method_name)
                     && m.parameters == function.parameters
@@ -160,7 +161,11 @@ fn transform_namespace_to_module(ast: AST, path: &str) -> Option<ModuleComponent
 
 /// Transforms an AST with type label "function_definition" or "field_declaration" or "declaration" to a `MethodComponent`
 fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<MethodComponent> {
-    // TODO: child type "compound_statement" for function block
+    let ast = match ast.find_child_by_type(&["operator_cast"]) {
+        Some(op) => op,
+        None => ast,
+    };
+
     let ret = ast.find_child_by_type(&[
         "primitive_type",
         "scoped_type_identifier",
@@ -171,23 +176,32 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         None => "".to_string(),
     };
 
-    let decl = match ast.find_child_by_type(&["reference_declarator", "pointer_declarator"]) {
+    let decl = match ast.find_child_by_type(&[
+        "reference_declarator",
+        "pointer_declarator",
+        "abstract_pointer_declarator",
+        "abstract_reference_declarator",
+    ]) {
         Some(reference_decl) => {
             let reference = reference_decl.find_child_by_type(&["*", "&"])?;
             ret_type.push_str(&reference.value);
-            reference_decl.find_child_by_type(&["function_declarator"])
+            reference_decl
+                .find_child_by_type(&["function_declarator", "abstract_function_declarator"])
         }
-        None => ast.find_child_by_type(&["function_declarator"]),
+        None => ast.find_child_by_type(&["function_declarator", "abstract_function_declarator"]),
     }?;
 
     // let identifier = decl.find_child_by_type(&["scoped_identifier", "identifier"])?;
-    let fn_ident = func_ident(decl);
+    let fn_ident = if ast.r#type != "operator_cast" {
+        func_ident(decl)
+    } else {
+        "operator_cast".into()
+    };
 
     let parameter_list = decl.find_child_by_type(&["parameter_list"])?;
     let params = func_parameters(parameter_list, module_name, path);
 
     let body = ast.find_child_by_type(&["compound_statement"]);
-    // println!("p{} {} body? {}", path, fn_ident, body.is_some());
     let (line_begin, line_end) = match body {
         Some(body) => match body.span {
             Some((line_start, _col_start, line_end, _col_end)) => {
@@ -268,6 +282,17 @@ fn type_ident(ast: &AST) -> String {
             format!("{}<{}>", outer_type, inner_types)
         }
         "destructor_name" | "constructor_name" => func_ident(ast),
+        "struct_specifier" => {
+            format!(
+                "struct {}",
+                type_ident(
+                    ast.children
+                        .iter()
+                        .last()
+                        .expect("Malformed struct specifier")
+                )
+            )
+        }
         _ => ast.value.clone(),
     }
 }
@@ -322,6 +347,7 @@ fn variable_type(ast: &AST) -> Option<String> {
         "primitive_type",
         "type_identifier",
         "template_type",
+        "struct_specifier",
     ])?;
     Some(type_ident(scoped_type_ident))
 }
@@ -357,7 +383,12 @@ fn variable_ident_inner(ident: &AST, variable_type: &mut String) -> Option<Strin
                     }
                     _ => true,
                 }) // get either & or * type
-                .for_each(|star| variable_type.push_str(&star.value));
+                .for_each(|star| {
+                    if !variable_type.contains(&star.value) {
+                        // trying to prevent duplicate * and & when they shouldnt be there..
+                        variable_type.push_str(&star.value);
+                    }
+                });
             ident
                 .find_child_by_type(&[
                     "identifier",
@@ -371,13 +402,20 @@ fn variable_ident_inner(ident: &AST, variable_type: &mut String) -> Option<Strin
         "identifier" | "field_identifier" | "type_identifier" | "this" | "auto" => {
             ident.value.clone()
         }
+        "abstract_pointer_declarator" | "abstract_reference_declarator" => {
+            variable_type.push_str(&ident.children.get(0)?.value);
+            "".to_string()
+        }
         _ => "".to_string(),
     })
 }
 
 fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<MethodParamComponent> {
     let mut param_type = variable_type(param_decl)?;
-    let ident = variable_ident(param_decl, &mut param_type)?;
+    let ident = variable_ident(param_decl, &mut param_type).unwrap_or(variable_ident_inner(
+        param_decl.children.iter().last()?,
+        &mut param_type,
+    )?);
 
     let param = MethodParamComponent {
         component: ComponentInfo {
@@ -388,7 +426,7 @@ fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<Met
         },
         annotation: None,
         parameter_name: ident,
-        parameter_type: param_type,
+        r#type: param_type,
     };
 
     Some(param)
@@ -428,18 +466,18 @@ fn transform_into_class(
             component: ComponentInfo {
                 path: path.into(),
                 package_name: module_name.into(),
-                instance_name: class_name.clone(),
+                instance_name: format!("{}::ClassComponent", class_name),
                 instance_type: InstanceType::ClassComponent,
             },
             accessor: AccessorType::Default,
-            stereotype: ContainerStereotype::Entity,
+            stereotype: ContainerStereotype::Fabricated,
             methods,
             container_name: class_name,
             line_count: 0,
         },
         declaration_type: ContainerType::Class,
         annotations: vec![],
-        constructors: None,
+        constructors: Some(vec![]),
         field_components: Some(fields),
     })
 }
@@ -468,7 +506,8 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
 
                 assert!(&*field.r#type == "field_declaration");
                 // Not a method if this is reached
-                let mut field_type = variable_type(field).expect("Field declaration had no type");
+                let mut field_type = variable_type(field)
+                    .expect(&format!("Field declaration had no type {:#?}", field));
                 let field_name = variable_ident(field, &mut field_type)
                     .expect("Field declaration had no identifier");
                 let field = FieldComponent {
@@ -875,7 +914,7 @@ mod tests {
         let actual_param = func_parameter(&param, "", "").unwrap();
         assert_eq!(
             "::apache::thrift::protocol::TProtocol*".to_string(),
-            actual_param.parameter_type,
+            actual_param.r#type,
         );
         assert_eq!("name".to_string(), actual_param.parameter_name);
     }

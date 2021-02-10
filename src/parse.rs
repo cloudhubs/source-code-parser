@@ -98,7 +98,7 @@ impl AST {
     }
 }
 
-pub fn parse_project_context(root_path: &Path) -> std::io::Result<JSSAContext> {
+pub fn parse_project_context(root_path: &Path) -> std::io::Result<compat::JSSAContext> {
     let path_str = root_path.to_str().unwrap_or("");
     let modules = parse_directory(&root_path)?;
     let ctx = JSSAContext {
@@ -112,7 +112,7 @@ pub fn parse_project_context(root_path: &Path) -> std::io::Result<JSSAContext> {
         root_path: path_str,
         modules,
     };
-    Ok(ctx)
+    Ok(ctx.into())
 }
 
 fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
@@ -147,6 +147,9 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
         for dir in dirs {
             // Generate module constants
             let path = dir.as_path().to_str().unwrap_or("").to_string();
+            if path.contains(".git") {
+                continue;
+            }
 
             // Generate module identifier
             let p = std::path::PathBuf::from(path.clone());
@@ -157,7 +160,7 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
             } else {
                 mod_path = String::from(path.clone());
             }
-            let module_name = format!("{}::ModuleComponent", mod_path);
+            let module_name = mod_path.clone();
 
             // Get directory
             let read_dir = std::fs::read_dir(dir.clone())?;

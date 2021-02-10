@@ -14,7 +14,22 @@ pub struct ComponentInfo {
     // sub_components: Vec<ComponentType<'a>>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+impl ComponentInfo {
+    pub fn is_equiv(&self, other: &ComponentInfo) -> bool {
+        let equiv_path =
+            self.path == format!("{}::MethodDeclaration::{}", other.path, other.instance_name);
+        let equiv_pkg = self.package_name == other.package_name;
+        let equiv_inst_type = self.instance_type == other.instance_type;
+
+        // Instance name fields shouldn't be directly compared here since it gets mutated
+        // to ClassName::ClassComponent::MethodInfoComponent::I'D where "other" is just
+        // the method name. The path covers this part.
+
+        equiv_path && equiv_pkg && equiv_inst_type
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(untagged)]
 pub enum ComponentType {
     ClassOrInterfaceComponent(ClassOrInterfaceComponent),
@@ -57,23 +72,23 @@ pub struct MethodParamComponent {
     // r#type: ??? -- this is Class<?> in prophet, not sure if used.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub annotation: Option<Vec<AnnotationComponent>>,
-    pub parameter_type: String,
+    /// The parameter type
+    pub r#type: String,
     pub parameter_name: String,
 }
 
 impl PartialEq for MethodParamComponent {
     fn eq(&self, other: &Self) -> bool {
-        self.parameter_type == other.parameter_type && self.annotation == other.annotation
+        self.r#type == other.r#type && self.annotation == other.annotation
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ModuleComponent {
     // can contain functions here
     #[serde(flatten)]
     pub component: ContainerComponent,
     pub module_name: String,
-    pub path: String,
     #[serde(rename = "moduleStereotype")]
     pub module_stereotype: ModuleStereotype,
     // class_names, interface_names, method_names
@@ -85,9 +100,9 @@ pub struct ModuleComponent {
 impl ModuleComponent {
     pub fn new(name: String, path: String) -> Self {
         let info = ComponentInfo {
-            path: path.clone(),
+            instance_name: format!("{}::ModuleComponent", path),
+            path,
             package_name: name.clone(),
-            instance_name: name.clone(),
             instance_type: InstanceType::ModuleComponent,
         };
         let container = ContainerComponent {
@@ -101,7 +116,6 @@ impl ModuleComponent {
         let module = ModuleComponent {
             component: container,
             module_name: name,
-            path,
             module_stereotype: ModuleStereotype::Fabricated,
             classes: vec![],
             interfaces: vec![],
@@ -110,7 +124,7 @@ impl ModuleComponent {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ContainerComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -127,7 +141,7 @@ pub struct ContainerComponent {
     // raw_source: &'a str,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ClassOrInterfaceComponent {
     #[serde(flatten)]
     pub component: ContainerComponent,
