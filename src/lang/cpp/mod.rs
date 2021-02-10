@@ -175,7 +175,11 @@ fn transform_namespace_to_module(ast: AST, path: &str) -> Option<ModuleComponent
 
 /// Transforms an AST with type label "function_definition" or "field_declaration" or "declaration" to a `MethodComponent`
 fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<MethodComponent> {
-    // TODO: child type "compound_statement" for function block
+    let ast = match ast.find_child_by_type(&["operator_cast"]) {
+        Some(op) => op,
+        None => ast,
+    };
+
     let ret = ast.find_child_by_type(&[
         "primitive_type",
         "scoped_type_identifier",
@@ -186,17 +190,27 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         None => "".to_string(),
     };
 
-    let decl = match ast.find_child_by_type(&["reference_declarator", "pointer_declarator"]) {
+    let decl = match ast.find_child_by_type(&[
+        "reference_declarator",
+        "pointer_declarator",
+        "abstract_pointer_declarator",
+        "abstract_reference_declarator",
+    ]) {
         Some(reference_decl) => {
             let reference = reference_decl.find_child_by_type(&["*", "&"])?;
             ret_type.push_str(&reference.value);
-            reference_decl.find_child_by_type(&["function_declarator"])
+            reference_decl
+                .find_child_by_type(&["function_declarator", "abstract_function_declarator"])
         }
-        None => ast.find_child_by_type(&["function_declarator"]),
+        None => ast.find_child_by_type(&["function_declarator", "abstract_function_declarator"]),
     }?;
 
     // let identifier = decl.find_child_by_type(&["scoped_identifier", "identifier"])?;
-    let fn_ident = func_ident(decl);
+    let fn_ident = if ast.r#type != "operator_cast" {
+        func_ident(decl)
+    } else {
+        "operator_cast".into()
+    };
 
     let parameter_list = decl.find_child_by_type(&["parameter_list"])?;
     let params = func_parameters(parameter_list, module_name, path);
@@ -283,6 +297,17 @@ fn type_ident(ast: &AST) -> String {
             format!("{}<{}>", outer_type, inner_types)
         }
         "destructor_name" | "constructor_name" => func_ident(ast),
+        "struct_specifier" => {
+            format!(
+                "struct {}",
+                type_ident(
+                    ast.children
+                        .iter()
+                        .last()
+                        .expect("Malformed struct specifier")
+                )
+            )
+        }
         _ => ast.value.clone(),
     }
 }
@@ -337,6 +362,7 @@ fn variable_type(ast: &AST) -> Option<String> {
         "primitive_type",
         "type_identifier",
         "template_type",
+        "struct_specifier",
     ])?;
     Some(type_ident(scoped_type_ident))
 }
@@ -493,9 +519,13 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
                     continue;
                 }
 
+                if &*field.r#type != "field_declaration" {
+                    println!("{:#?}", field);
+                }
                 assert!(&*field.r#type == "field_declaration");
                 // Not a method if this is reached
-                let mut field_type = variable_type(field).expect("Field declaration had no type");
+                let mut field_type = variable_type(field)
+                    .expect(&format!("Field declaration had no type {:#?}", field));
                 let field_name = variable_ident(field, &mut field_type)
                     .expect("Field declaration had no identifier");
                 let field = FieldComponent {
