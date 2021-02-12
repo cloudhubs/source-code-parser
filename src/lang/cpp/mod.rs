@@ -461,6 +461,10 @@ fn transform_into_class(
         }
     }
 
+    let line_begin = field_list.children.iter().next()?.span?.0;
+    let line_end = field_list.children.iter().last()?.span?.0;
+    let line_count = line_end as i32 - line_begin as i32 + 1;
+
     Some(ClassOrInterfaceComponent {
         component: ContainerComponent {
             component: ComponentInfo {
@@ -473,7 +477,7 @@ fn transform_into_class(
             stereotype: ContainerStereotype::Fabricated,
             methods,
             container_name: class_name,
-            line_count: 0,
+            line_count,
         },
         declaration_type: ContainerType::Class,
         annotations: vec![],
