@@ -98,7 +98,7 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
     let component = ComponentInfo {
         path: path.into(),
         package_name: package.into(),
-        instance_name: instance_name.clone(),
+        instance_name: format!("{}::ClassComponent", instance_name),
         instance_type: instance_type,
     };
 
@@ -163,14 +163,25 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
 
 /// Parse the AST for a specified method
 fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
+    // Define new component info
+    let component = ComponentInfo {
+        path: component.path.clone(),
+        package_name: component.package_name.clone(),
+        instance_name: format!("{}::MethodInfoComponent", component.instance_name),
+        instance_type: InstanceType::MethodComponent,
+    };
+
     // Define fields
     let mut body = None;
     let mut modifier = Modifier::new();
     let mut method_name = String::new();
     let mut parameters = vec![];
     let return_type = find_type(ast);
-    let line_begin = ast.span.expect("No span for a method! AST malformed!").0 as i32;
-    let line_end = ast.span.expect("No span for a method! AST malformed!").2 as i32;
+
+    // Extract position
+    let span = ast.span.expect("No span for a method! AST malformed!");
+    let line_begin = span.0 as i32;
+    let line_end = span.2 as i32;
 
     // Parse method
     for member in ast.children.iter() {
@@ -179,9 +190,9 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
             "modifiers" => {
                 modifier = parse_modifiers(member, &*component.path, &*component.package_name)
             }
-            "formal_parameters" => parameters = parse_method_parameters(member, component),
+            "formal_parameters" => parameters = parse_method_parameters(member, &component),
             "constructor_body" | "block" => {
-                body = Some(parse_block(member, component));
+                body = Some(parse_block(member, &component));
             }
             unknown => println!("{} unknown", unknown),
         }
@@ -189,7 +200,7 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
 
     // Return the method component
     MethodComponent {
-        component: component.clone(),
+        component,
         accessor: modifier.accessor,
         method_name,
         return_type,
@@ -294,10 +305,6 @@ fn parse_annotations(
 
         // Parse exact type of annotation
         let params = item.find_child_by_type(&["annotation_argument_list"]);
-        println!("{}", name);
-        if name == "@Data" {
-            println!("{:#?}", params);
-        }
 
         // Generate and store annotation
         if params.is_some() {
@@ -415,7 +422,12 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
     }
 
     MethodParamComponent {
-        component: component.clone(),
+        component: ComponentInfo {
+            path: component.path.clone(),
+            package_name: component.package_name.clone(),
+            instance_name: format!("{}::MethodParameterComponent", component.instance_name),
+            instance_type: InstanceType::ParameterComponent,
+        },
         annotation: fold_vec(modifier.annotations),
         parameter_type: param_type.into(),
         parameter_name: name.into(),
@@ -439,25 +451,27 @@ fn parse_type(ast: &AST) -> String {
             .expect("Cannot detect the type of a numeric primitive! The AST appears malformed!")
             .r#type
             .clone(),
-        "boolean_type" => ast.value.clone(),
+        "boolean_type" | "void_type" => ast.value.clone(),
         "dimensions" => stringify_tree_children(ast),
-        unknown => String::from(unknown),
+        unknown => String::from("N/A"),
     }
 }
+
 fn find_type(ast: &AST) -> String {
-    find_type_or_none(ast).get_or_insert("void".into()).clone()
-}
-fn find_type_or_none(ast: &AST) -> Option<String> {
-    let child = ast.find_child_by_type(&[
+    let r#type = ast.find_child_by_type(&[
         "type_identifier",
         "array_type",
         "integral_type",
         "floating_point_type",
         "boolean_type",
+        "void_type",
         "dimensions",
-    ])?;
-
-    Some(parse_type(child))
+    ]);
+    if let Some(r#type) = r#type {
+        parse_type(r#type)
+    } else {
+        String::from("N/A")
+    }
 }
 
 /// Parse the body of a method, static block, constructor, etc.
@@ -478,7 +492,7 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     match &*ast.r#type {
         "local_variable_declaration" | "field_declaration" => {
             // Extract informtion about the variable
-            let r#type = find_type_or_none(ast);
+            let r#type = find_type(ast);
             let modifier = find_modifier(ast, &*component.path, &*component.package_name);
 
             // Determine the value it was set to
@@ -493,7 +507,7 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
                 .collect();
 
             // TODO: Use name
-            let mut decl = DeclStmt::new(r#type, rhs);
+            let mut decl = DeclStmt::new(Some(r#type), rhs);
             decl.is_static = Some(modifier.is_static);
             decl.is_final = Some(modifier.is_final);
             let decl: Stmt = decl.into();
@@ -601,7 +615,12 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> FieldComponent {
 
     // TODO: How to handle field_name, default_value?
     FieldComponent {
-        component: component.clone(),
+        component: ComponentInfo {
+            path: component.path.clone(),
+            package_name: component.package_name.clone(),
+            instance_name: format!("{}::FieldComponent", component.instance_name),
+            instance_type: InstanceType::FieldComponent,
+        },
         annotations: modifier.annotations,
         variables,
         field_name: String::new(),

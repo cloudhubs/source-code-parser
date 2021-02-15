@@ -92,7 +92,7 @@ impl ModuleComponent {
         };
         let container = ContainerComponent {
             component: info,
-            accessor: AccessorType::Default,
+            accessor: AccessorType::Public,
             stereotype: ContainerStereotype::Module,
             methods: vec![],
             container_name: name.clone(),
@@ -102,7 +102,7 @@ impl ModuleComponent {
             component: container,
             module_name: name,
             path,
-            module_stereotype: ModuleStereotype::Controller,
+            module_stereotype: ModuleStereotype::Fabricated,
             classes: vec![],
             interfaces: vec![],
         };
