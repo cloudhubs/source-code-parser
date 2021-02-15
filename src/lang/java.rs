@@ -429,7 +429,7 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
             instance_type: InstanceType::ParameterComponent,
         },
         annotation: fold_vec(modifier.annotations),
-        parameter_type: param_type.into(),
+        r#type: param_type.into(),
         parameter_name: name.into(),
     }
 }

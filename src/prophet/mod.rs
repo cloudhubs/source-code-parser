@@ -7,6 +7,8 @@ pub use context::*;
 mod model;
 pub use model::*;
 
+pub mod compat;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -43,7 +45,7 @@ mod tests {
                             instance_type: InstanceType::ModuleComponent,
                         },
                         annotation: None,
-                        parameter_type: "String".to_string(),
+                        r#type: "String".to_string(),
                         parameter_name: "str".to_string(),
                     }],
                     is_static: false,
@@ -71,7 +73,6 @@ mod tests {
                 line_count: 3,
             },
             module_name: "module_name".to_string(),
-            path: "/path/module_name".to_string(),
             module_stereotype: ModuleStereotype::Repository,
             classes: vec![ClassOrInterfaceComponent {
                 component: ContainerComponent {

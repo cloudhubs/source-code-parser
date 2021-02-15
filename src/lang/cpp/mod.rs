@@ -1,10 +1,21 @@
-use crate::ast::*;
 use crate::parse::AST;
 use crate::prophet::*;
+
+mod body;
+pub use body::*;
+
+mod expr;
+pub use expr::*;
+
+mod stmt;
+pub use stmt::*;
 
 pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
     let mut merged = vec![];
     for mut module in modules {
+        // Need to merge functions into classes within a module as well..
+        merge_class_methods(&mut module);
+
         // First module is not a duplicate
         if merged.len() == 0 {
             merged.push(module);
@@ -24,52 +35,58 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
                 .methods
                 .append(&mut module.component.methods);
 
-            // Check if there are class methods declared in the functions
-            for class in mergeable.classes.iter_mut() {
-                let functions: Vec<&mut MethodComponent> = mergeable
-                    .component
-                    .methods
-                    .iter_mut()
-                    // Issue with merging... Trying to merge CastInfoServiceProcessor and CastInfoServiceProcessorFactory
-                    .filter(|m| m.method_name.starts_with(&class.component.container_name))
-                    .collect();
-
-                for function in functions {
-                    let class_method = class.component.methods.iter_mut().find(|m| {
-                        function.method_name.ends_with(&m.method_name)
-                            && m.parameters == function.parameters
-                    });
-
-                    if let Some(class_method) = class_method {
-                        class_method.line_begin = function.line_begin;
-                        class_method.line_end = function.line_end;
-                        class_method.line_count = function.line_count;
-                        class_method.body = function.body.clone();
-                    }
-                }
-            }
-
-            // Filter out the class methods since the merge already occurred in the previous loop
-            mergeable.component.methods =
-                mergeable
-                    .component
-                    .methods
-                    .clone()
-                    .into_iter()
-                    .filter(|m| {
-                        match mergeable.classes.iter_mut().find(|class| {
-                            m.method_name.starts_with(&class.component.container_name)
-                        }) {
-                            Some(_) => false,
-                            None => true,
-                        }
-                    })
-                    .collect();
+            merge_class_methods(mergeable);
         } else {
             merged.push(module);
         }
     }
     merged
+}
+
+fn merge_class_methods(module: &mut ModuleComponent) {
+    // Check if there are class methods declared in the functions
+    for class in module.classes.iter_mut() {
+        let functions: Vec<&mut MethodComponent> = module
+            .component
+            .methods
+            .iter_mut()
+            // Issue with merging... Trying to merge CastInfoServiceProcessor and CastInfoServiceProcessorFactory
+            .filter(|m| m.method_name.starts_with(&class.component.container_name))
+            .collect();
+
+        for function in functions {
+            let class_name = &*class.component.container_name;
+            let class_method = class.component.methods.iter_mut().find(|m| {
+                function.method_name == format!("{}::{}", class_name, &m.method_name)
+                    && m.parameters == function.parameters
+            });
+
+            if let Some(class_method) = class_method {
+                class_method.line_begin = function.line_begin;
+                class_method.line_end = function.line_end;
+                class_method.line_count = function.line_count;
+                class_method.body = function.body.clone();
+            }
+        }
+    }
+
+    // Filter out the class methods since the merge already occurred in the previous loop
+    module.component.methods = module
+        .component
+        .methods
+        .clone()
+        .into_iter()
+        .filter(|m| {
+            match module
+                .classes
+                .iter_mut()
+                .find(|class| m.method_name.starts_with(&class.component.container_name))
+            {
+                Some(_) => false,
+                None => true,
+            }
+        })
+        .collect();
 }
 
 pub fn find_components(ast: AST, module_name: &str, path: &str) -> Vec<ComponentType> {
@@ -144,7 +161,11 @@ fn transform_namespace_to_module(ast: AST, path: &str) -> Option<ModuleComponent
 
 /// Transforms an AST with type label "function_definition" or "field_declaration" or "declaration" to a `MethodComponent`
 fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<MethodComponent> {
-    // TODO: child type "compound_statement" for function block
+    let ast = match ast.find_child_by_type(&["operator_cast"]) {
+        Some(op) => op,
+        None => ast,
+    };
+
     let ret = ast.find_child_by_type(&[
         "primitive_type",
         "scoped_type_identifier",
@@ -155,23 +176,32 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         None => "".to_string(),
     };
 
-    let decl = match ast.find_child_by_type(&["reference_declarator", "pointer_declarator"]) {
+    let decl = match ast.find_child_by_type(&[
+        "reference_declarator",
+        "pointer_declarator",
+        "abstract_pointer_declarator",
+        "abstract_reference_declarator",
+    ]) {
         Some(reference_decl) => {
             let reference = reference_decl.find_child_by_type(&["*", "&"])?;
             ret_type.push_str(&reference.value);
-            reference_decl.find_child_by_type(&["function_declarator"])
+            reference_decl
+                .find_child_by_type(&["function_declarator", "abstract_function_declarator"])
         }
-        None => ast.find_child_by_type(&["function_declarator"]),
+        None => ast.find_child_by_type(&["function_declarator", "abstract_function_declarator"]),
     }?;
 
     // let identifier = decl.find_child_by_type(&["scoped_identifier", "identifier"])?;
-    let fn_ident = func_ident(decl);
+    let fn_ident = if ast.r#type != "operator_cast" {
+        func_ident(decl)
+    } else {
+        "operator_cast".into()
+    };
 
     let parameter_list = decl.find_child_by_type(&["parameter_list"])?;
     let params = func_parameters(parameter_list, module_name, path);
 
     let body = ast.find_child_by_type(&["compound_statement"]);
-    // println!("p{} {} body? {}", path, fn_ident, body.is_some());
     let (line_begin, line_end) = match body {
         Some(body) => match body.span {
             Some((line_start, _col_start, line_end, _col_end)) => {
@@ -181,7 +211,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
         },
         None => (0, 0),
     };
-    let body = body.map_or_else(|| None, |body| Some(func_body(body)));
+    let body = body.map_or_else(|| None, |body| Some(body::func_body(body)));
 
     let method = MethodComponent {
         component: ComponentInfo {
@@ -211,20 +241,23 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
 /// Get the value for a type identifier
 fn type_ident(ast: &AST) -> String {
     match &*ast.r#type {
-        "primitive_type" | "type_identifier" => ast.value.clone(),
+        "primitive_type" | "type_identifier" | "auto" => ast.value.clone(),
         "scoped_type_identifier" | "scoped_namespace_identifier" | "type_descriptor" => {
             let ret: String = ast
                 .children
                 .iter()
                 .map(|child| match &*child.r#type {
-                    "scoped_namespace_identifier" | "scoped_type_identifier" => type_ident(child),
+                    "scoped_identifier"
+                    | "scoped_namespace_identifier"
+                    | "scoped_type_identifier"
+                    | "template_type" => type_ident(child),
                     _ => child.value.clone(),
                 })
                 .collect();
             ret
         }
         "scoped_identifier" => ast.children.iter().map(|child| type_ident(child)).collect(),
-        "template_type" => {
+        "template_type" | "template_function" => {
             let outer_type: String = ast
                 .children
                 .iter()
@@ -240,13 +273,25 @@ fn type_ident(ast: &AST) -> String {
                 .children
                 .iter()
                 .filter(|child| child.r#type == "type_descriptor")
-                .map(|child| type_ident(&child))
+                .map(|child| type_ident(child))
                 .fold(String::new(), |t1, t2| match &*t1 {
                     "" => t2,
                     _ => t1 + ", " + &t2,
                 });
 
             format!("{}<{}>", outer_type, inner_types)
+        }
+        "destructor_name" | "constructor_name" => func_ident(ast),
+        "struct_specifier" => {
+            format!(
+                "struct {}",
+                type_ident(
+                    ast.children
+                        .iter()
+                        .last()
+                        .expect("Malformed struct specifier")
+                )
+            )
         }
         _ => ast.value.clone(),
     }
@@ -263,23 +308,14 @@ fn func_ident(ast: &AST) -> String {
                 "destructor_name",
                 "constructor_name",
                 "operator_name",
+                "template_type",
             ]);
             match ident {
                 Some(ident) => func_ident(ident),
                 None => "".to_string(),
             }
         }
-        "scoped_identifier" => {
-            let ident: String = ast
-                .children
-                .iter()
-                .map(|child| match &*child.r#type {
-                    "destructor_name" | "constructor_name" => func_ident(child),
-                    _ => child.value.clone(),
-                })
-                .collect();
-            ident
-        }
+        "scoped_identifier" | "template_type" => type_ident(ast),
         "destructor_name" | "constructor_name" => {
             let ident: String = ast
                 .children
@@ -311,6 +347,7 @@ fn variable_type(ast: &AST) -> Option<String> {
         "primitive_type",
         "type_identifier",
         "template_type",
+        "struct_specifier",
     ])?;
     Some(type_ident(scoped_type_ident))
 }
@@ -324,6 +361,7 @@ fn variable_ident(ast: &AST, variable_type: &mut String) -> Option<String> {
         "identifier",
         "field_identifier",
         "type_identifier",
+        "array_declarator",
     ])?;
 
     variable_ident_inner(ident, variable_type)
@@ -334,27 +372,50 @@ fn variable_ident_inner(ident: &AST, variable_type: &mut String) -> Option<Strin
         "pointer_declarator"
         | "reference_declarator"
         | "pointer_expression"
-        | "reference_expression" => {
+        | "reference_expression"
+        | "array_declarator" => {
             ident
                 .children
                 .iter()
                 .filter(|child| match &*child.r#type {
-                    "identifier" | "field_identifier" | "type_identifier" | "this" => false,
+                    "identifier" | "field_identifier" | "type_identifier" | "this" | "auto" => {
+                        false
+                    }
                     _ => true,
                 }) // get either & or * type
-                .for_each(|star| variable_type.push_str(&star.value));
+                .for_each(|star| {
+                    if !variable_type.contains(&star.value) {
+                        // trying to prevent duplicate * and & when they shouldnt be there..
+                        variable_type.push_str(&star.value);
+                    }
+                });
             ident
-                .find_child_by_type(&["identifier", "field_identifier", "type_identifier", "this"])
+                .find_child_by_type(&[
+                    "identifier",
+                    "field_identifier",
+                    "type_identifier",
+                    "this",
+                    "auto",
+                ])
                 .map_or_else(|| "".to_string(), |identifier| identifier.value.clone())
         }
-        "identifier" | "field_identifier" | "type_identifier" | "this" => ident.value.clone(),
+        "identifier" | "field_identifier" | "type_identifier" | "this" | "auto" => {
+            ident.value.clone()
+        }
+        "abstract_pointer_declarator" | "abstract_reference_declarator" => {
+            variable_type.push_str(&ident.children.get(0)?.value);
+            "".to_string()
+        }
         _ => "".to_string(),
     })
 }
 
 fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<MethodParamComponent> {
     let mut param_type = variable_type(param_decl)?;
-    let ident = variable_ident(param_decl, &mut param_type)?;
+    let ident = variable_ident(param_decl, &mut param_type).unwrap_or(variable_ident_inner(
+        param_decl.children.iter().last()?,
+        &mut param_type,
+    )?);
 
     let param = MethodParamComponent {
         component: ComponentInfo {
@@ -365,7 +426,7 @@ fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<Met
         },
         annotation: None,
         parameter_name: ident,
-        parameter_type: param_type,
+        r#type: param_type,
     };
 
     Some(param)
@@ -400,23 +461,27 @@ fn transform_into_class(
         }
     }
 
+    let line_begin = field_list.children.iter().next()?.span?.0;
+    let line_end = field_list.children.iter().last()?.span?.0;
+    let line_count = line_end as i32 - line_begin as i32 + 1;
+
     Some(ClassOrInterfaceComponent {
         component: ContainerComponent {
             component: ComponentInfo {
                 path: path.into(),
                 package_name: module_name.into(),
-                instance_name: class_name.clone(),
+                instance_name: format!("{}::ClassComponent", class_name),
                 instance_type: InstanceType::ClassComponent,
             },
             accessor: AccessorType::Default,
-            stereotype: ContainerStereotype::Entity,
+            stereotype: ContainerStereotype::Fabricated,
             methods,
             container_name: class_name,
-            line_count: 0,
+            line_count,
         },
         declaration_type: ContainerType::Class,
         annotations: vec![],
-        constructors: None,
+        constructors: Some(vec![]),
         field_components: Some(fields),
     })
 }
@@ -445,7 +510,8 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
 
                 assert!(&*field.r#type == "field_declaration");
                 // Not a method if this is reached
-                let mut field_type = variable_type(field).expect("Field declaration had no type");
+                let mut field_type = variable_type(field)
+                    .expect(&format!("Field declaration had no type {:#?}", field));
                 let field_name = variable_ident(field, &mut field_type)
                     .expect("Field declaration had no identifier");
                 let field = FieldComponent {
@@ -489,372 +555,6 @@ fn field_is_abstract_method(field: &AST) -> bool {
     let eq = field.find_child_by_type(&["="]).is_some();
     let zero = field.find_child_by_value("0").is_some();
     virtual_specifier && eq && zero
-}
-
-// Takes in an AST with type field "compound_statement"
-fn func_body(body: &AST) -> Block {
-    let nodes = block_nodes(body);
-    Block::new(nodes)
-}
-
-fn block_nodes(compound_statement: &AST) -> Vec<Node> {
-    block_nodes_iter(&compound_statement.children)
-}
-
-fn block_nodes_iter(children: &[AST]) -> Vec<Node> {
-    children
-        .iter()
-        .map(|child| func_body_node(child))
-        .flat_map(|node| node)
-        .collect()
-}
-
-// Takes child of compound_statement
-fn func_body_node(node: &AST) -> Option<Node> {
-    match &*node.r#type {
-        "declaration" => {
-            let decl: Stmt = variable_declaration(node).into();
-            let decl = decl.into();
-            Some(decl)
-        }
-        "while_statement" => {
-            let cond = node
-                .find_child_by_type(&["condition_clause"])
-                .map(|cond| expression(cond))??;
-            let nodes = node
-                .find_child_by_type(&["compound_statement"])
-                .map(|block| block_nodes(block))?;
-            let while_stmt: Stmt = WhileStmt::new(cond, Block::new(nodes)).into();
-            Some(while_stmt.into())
-        }
-        "for_statement" => {
-            let for_stmt: Stmt = for_statement(node)?.into();
-            Some(for_stmt.into())
-        }
-        "if_statement" => {
-            let if_stmt: Stmt = if_statement(node)?.into();
-            Some(if_stmt.into())
-        }
-        "switch_statement" => {
-            let switch_stmt: Stmt = switch_statement(node)?.into();
-            Some(switch_stmt.into())
-        }
-        "expression_statement" => {
-            let expr = node
-                .children
-                .iter()
-                .next()
-                .map_or_else(|| None, |node| expression(node))?;
-            let stmt: Stmt = expr.into();
-            Some(stmt.into())
-        }
-        "using_declaration" => {
-            let ident =
-                node.find_child_by_type(&["namespace_identifier", "scoped_namespace_identifier"])?;
-            let using = type_ident(ident);
-            let using: Stmt = ImportStmt::new(false, false, using).into();
-            Some(using.into())
-        }
-        "return_statement" => {
-            // If there isn't an expression and the 2nd child is of type ";",
-            // the expression function will return None anyways.
-            let expr = node
-                .children
-                .iter()
-                .nth(1)
-                .map(|expr| expression(expr))
-                .flatten();
-            let ret: Stmt = ReturnStmt::new(expr).into();
-            Some(ret.into())
-        }
-        "break_statement" => {
-            let brk: Stmt = BreakStmt::new().into();
-            Some(brk.into())
-        }
-        "continue_statment" => {
-            let cont: Stmt = ContinueStmt::new().into();
-            Some(cont.into())
-        }
-        "compound_statement" => {
-            let nodes = block_nodes(node);
-            let block = Block::new(nodes);
-            Some(block.into())
-        }
-        // ...
-        _ => None,
-    }
-}
-
-// Takes in node type "declaration"
-fn variable_declaration(node: &AST) -> DeclStmt {
-    let mut variable_type = node
-        .find_child_by_type(&[
-            "primitive_type",
-            "scoped_type_identifier",
-            "type_identifier",
-        ])
-        .map_or_else(|| "".into(), |node| type_ident(node));
-
-    let init_declarator = node.find_child_by_type(&["init_declarator", "function_declarator"]);
-    match init_declarator {
-        Some(init_declarator) => variable_init_declaration(init_declarator, variable_type),
-        None => {
-            let name = variable_ident(node, &mut variable_type).expect(&*format!(
-                "No variable name for declaration with no init {:#?}",
-                node,
-            ));
-            let ident = Ident::new(name);
-            DeclStmt::new(Some(variable_type), vec![ident.into()])
-        }
-    }
-}
-
-fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -> DeclStmt {
-    let name = variable_ident(init_declarator, &mut variable_type)
-        .expect("No identifier for init declarator");
-    let decl_type = init_declarator.find_child_by_type(&["=", "argument_list", "parameter_list"]);
-    let rhs = match decl_type {
-        Some(decl_type) => match &*decl_type.r#type {
-            "=" => {
-                let value = init_declarator.children.iter().next_back();
-                value.map_or_else(|| None, |value| expression(value))
-            }
-            "argument_list" | "parameter_list" => {
-                let argument_list = decl_type;
-                let args: Vec<Expr> = argument_list
-                    .children
-                    .iter()
-                    .map(|arg| expression(arg))
-                    .flat_map(|arg| arg)
-                    .collect();
-                let init = CallExpr::new(Box::new("new".to_string().into()), args).into();
-                Some(init)
-            }
-            _ => None,
-        },
-        None => None,
-    };
-    let ident = Ident::new(name);
-    let rhs = match rhs {
-        Some(rhs) => {
-            let init: Expr =
-                BinaryExpr::new(Box::new(ident.into()), Op::Equal, Box::new(rhs)).into();
-            vec![init]
-        }
-        None => vec![ident.into()],
-    };
-    DeclStmt::new(Some(variable_type), rhs)
-}
-
-fn expression(node: &AST) -> Option<Expr> {
-    match &*node.r#type {
-        "pointer_declarator" | "reference_declarator" | "parameter_declaration" => {
-            let mut ptr_symbol = String::new();
-            let name = variable_ident(node, &mut ptr_symbol)?;
-            let mut ident: Expr = match &*name {
-                "this" => Expr::Literal(name),
-                _ => Ident::new(name).into(),
-            };
-            ptr_symbol
-                .chars()
-                .map(|star| Op::from(&*star.to_string()))
-                .for_each(|star| ident = UnaryExpr::new(Box::new(ident.clone()), star).into());
-            Some(ident)
-        }
-        "pointer_expression" | "reference_expression" => {
-            let mut ptr_symbol = String::new();
-            let name = variable_ident_inner(node, &mut ptr_symbol)?;
-            let mut ident: Expr = match &*name {
-                "this" => Expr::Literal(name),
-                _ => Ident::new(name).into(),
-            };
-            ptr_symbol
-                .chars()
-                .map(|star| Op::from(&*star.to_string()))
-                .for_each(|star| ident = UnaryExpr::new(Box::new(ident.clone()), star).into());
-            Some(ident)
-        }
-        "identifier" | "field_identifier" | "type_identifier" => {
-            let name = node.value.clone();
-            let ident: Expr = Ident::new(name).into();
-            Some(ident)
-        }
-        "assignment_expression" => binary_expression(node), //| "field_expression"
-        "call_expression" => call_expression(node),
-        "field_expression" => {
-            let mut nodes = node.children.iter();
-            let lhs = expression(nodes.next()?)?;
-            let rhs = expression(nodes.last()?)?;
-            Some(DotExpr::new(Box::new(lhs), Box::new(rhs)).into())
-        }
-        "unary_expression" => {
-            let op = Op::from(&*node.children.iter().next()?.value);
-            let expr = expression(node.children.iter().last()?)?;
-            Some(UnaryExpr::new(Box::new(expr), op).into())
-        }
-        "binary_expression" => {
-            let mut it = node.children.iter();
-            let lhs = expression(it.next()?)?;
-            let op = Op::from(&*it.next()?.value);
-            let rhs = expression(it.next()?)?;
-            Some(BinaryExpr::new(Box::new(lhs), op, Box::new(rhs)).into())
-        }
-        "parenthesized_expression" => {
-            let expr = node.children.iter().nth(1)?;
-            Some(ParenExpr::new(Box::new(expression(expr)?)).into())
-        }
-        "true" | "false" | "number_literal" | "this" => Some(node.value.clone().into()),
-        "condition_clause" => {
-            let cond = node.children.iter().nth(1)?;
-            expression(cond)
-        }
-        // Handle scoped identifiers
-        "scoped_identifier" => {
-            let s = type_ident(node);
-            Some(Ident::new(s).into())
-        }
-        "update_expression" => {
-            // I need to potentially consider that an update expression may not be an IncDecExpr
-            let mut it = node.children.iter();
-            let first = it.next()?;
-            let second = it.next()?;
-            let update_expr_info = |node: &AST| match &*node.r#type {
-                "++" => (Some(true), Some(true)),
-                "--" => (Some(true), Some(false)),
-                _ => (None, None),
-            };
-            let (is_pre, is_inc) = update_expr_info(first);
-            match is_pre {
-                Some(_) => {
-                    let expr = expression(second)?;
-                    Some(IncDecExpr::new(is_pre?, is_inc?, Box::new(expr)).into())
-                }
-                None => {
-                    let expr = expression(first)?;
-                    let (is_pre, is_inc) = update_expr_info(second);
-                    Some(IncDecExpr::new(is_pre?, is_inc?, Box::new(expr)).into())
-                }
-            }
-        }
-        _ => None,
-    }
-}
-
-fn binary_expression(node: &AST) -> Option<Expr> {
-    let mut nodes = node.children.iter();
-    let lhs = expression(nodes.next()?)?;
-    let op = Op::from(&*nodes.next()?.value);
-    let rhs = expression(nodes.next()?)?;
-    Some(BinaryExpr::new(Box::new(lhs), op, Box::new(rhs)).into())
-}
-
-// Takes AST node type "call_expression"
-fn call_expression(node: &AST) -> Option<Expr> {
-    let mut nodes = node.children.iter();
-    // field_expression, identifier
-    let function_name = expression(nodes.next()?)?;
-    let argument_list = nodes.next_back()?;
-    let args: Vec<Expr> = argument_list
-        .children
-        .iter()
-        .map(|arg| expression(arg))
-        .flat_map(|arg| arg)
-        .collect();
-    Some(CallExpr::new(Box::new(function_name), args).into())
-}
-
-fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
-    let cond = if_stmt
-        .find_child_by_type(&["condition_clause"])
-        .map(|cond| expression(cond))??;
-    let mut blocks = if_stmt
-        .children
-        .iter()
-        .filter(|node| &*node.r#type == "compound_statement")
-        .map(|block| Block::new(block_nodes(block)));
-    let body = match blocks.next() {
-        Some(block) => block,
-        None => {
-            let stmt = if_stmt.children.iter().last()?;
-            let stmt = func_body_node(stmt)?;
-            Block::new(vec![stmt])
-        }
-    };
-    // Check for else block, if else block, or no else block.
-    let else_body = match blocks.next() {
-        Some(else_body) => Some(else_body),
-        None => {
-            let else_if = if_stmt
-                .find_child_by_type(&["if_statement"])
-                .map(|if_stmt| if_statement(if_stmt))
-                .flatten()
-                .map(|if_stmt| {
-                    let if_stmt: Stmt = if_stmt.into();
-                    Block::new(vec![if_stmt.into()])
-                });
-            else_if
-        }
-    };
-    Some(IfStmt::new(cond, body, else_body))
-}
-
-fn switch_statement(switch_stmt: &AST) -> Option<SwitchStmt> {
-    let cond = switch_stmt
-        .find_child_by_type(&["condition_clause"])
-        .map(|cond| expression(cond))??;
-    let cases = switch_stmt
-        .find_child_by_type(&["compound_statement"])
-        .map(|switch_stmt| switch_stmt.children.iter())?
-        .map(|case| switch_case(case))
-        .flat_map(|case| case)
-        .collect();
-
-    let switch_stmt = SwitchStmt::new(cond, cases);
-    Some(switch_stmt)
-}
-
-fn switch_case(case_statement: &AST) -> Option<(Option<Expr>, Block)> {
-    let expr = case_statement.find_child_by_type(&["case", "default"])?;
-    // todo: add literals to expression function
-    let expr = match &*expr.r#type {
-        "case" => expression(case_statement.children.iter().nth(1)?),
-        "default" | _ => None,
-    };
-    let nodes = block_nodes_iter(&case_statement.children[3..]);
-    let block = Block::new(nodes);
-    Some((expr, block))
-}
-
-fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
-    let block = for_stmt.find_child_by_type(&["compound_statement"])?;
-    let block = func_body(block);
-
-    let mut init = None;
-    let mut cond = None;
-    let mut post = None;
-    let mut semicolons = 0u8;
-    for part in for_stmt
-        .children
-        .iter()
-        .filter(|child| match &*child.r#type {
-            "for" | "(" | ")" | "compound_statement" => false,
-            _ => true,
-        })
-    {
-        if &*part.r#type == ";" {
-            semicolons += 1;
-        } else {
-            match semicolons {
-                0 => init = expression(part), // Need to consider declarations here instead of just assignment_expr, etc
-                1 => cond = expression(part),
-                2 => post = expression(part),
-                _ => {}
-            }
-        }
-    }
-
-    let for_stmt = ForStmt::new(init, cond, post, block);
-    Some(for_stmt)
 }
 
 #[cfg(test)]
@@ -1218,7 +918,7 @@ mod tests {
         let actual_param = func_parameter(&param, "", "").unwrap();
         assert_eq!(
             "::apache::thrift::protocol::TProtocol*".to_string(),
-            actual_param.parameter_type,
+            actual_param.r#type,
         );
         assert_eq!("name".to_string(), actual_param.parameter_name);
     }
@@ -1309,332 +1009,5 @@ mod tests {
         };
         let destructor = transform_into_method(&destructor, "", "").unwrap();
         assert_eq!("~CastInfoServiceIf", destructor.method_name);
-    }
-
-    #[test]
-    fn return_stmt_test() {
-        let ast = AST {
-            children: vec![
-                AST {
-                    children: vec![],
-                    span: None,
-                    r#type: "return".to_string(),
-                    value: "return".to_string(),
-                },
-                AST {
-                    children: vec![
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "!".to_string(),
-                            value: "!".to_string(),
-                        },
-                        AST {
-                            children: vec![
-                                AST {
-                                    children: vec![],
-                                    span: None,
-                                    r#type: "(".to_string(),
-                                    value: "(".to_string(),
-                                },
-                                AST {
-                                    children: vec![
-                                        AST {
-                                            children: vec![
-                                                AST {
-                                                    children: vec![],
-                                                    span: None,
-                                                    r#type: "*".to_string(),
-                                                    value: "*".to_string(),
-                                                },
-                                                AST {
-                                                    children: vec![],
-                                                    span: None,
-                                                    r#type: "this".to_string(),
-                                                    value: "this".to_string(),
-                                                },
-                                            ],
-                                            span: None,
-                                            r#type: "pointer_expression".to_string(),
-                                            value: "".to_string(),
-                                        },
-                                        AST {
-                                            children: vec![],
-                                            span: None,
-                                            r#type: "==".to_string(),
-                                            value: "==".to_string(),
-                                        },
-                                        AST {
-                                            children: vec![],
-                                            span: None,
-                                            r#type: "identifier".to_string(),
-                                            value: "rhs".to_string(),
-                                        },
-                                    ],
-                                    span: None,
-                                    r#type: "binary_expression".to_string(),
-                                    value: "".to_string(),
-                                },
-                                AST {
-                                    children: vec![],
-                                    span: None,
-                                    r#type: ")".to_string(),
-                                    value: ")".to_string(),
-                                },
-                            ],
-                            span: None,
-                            r#type: "parenthesized_expression".to_string(),
-                            value: "".to_string(),
-                        },
-                    ],
-                    span: None,
-                    r#type: "unary_expression".to_string(),
-                    value: "".to_string(),
-                },
-                AST {
-                    children: vec![],
-                    span: None,
-                    r#type: ";".to_string(),
-                    value: ";".to_string(),
-                },
-            ],
-            span: None,
-            r#type: "return_statement".to_string(),
-            value: "".to_string(),
-        };
-
-        let expected: Stmt = ReturnStmt::new(Some(
-            UnaryExpr::new(
-                Box::new(
-                    ParenExpr::new(Box::new(
-                        BinaryExpr::new(
-                            Box::new(
-                                UnaryExpr::new(Box::new(Expr::Literal("this".into())), Op::Star)
-                                    .into(),
-                            ),
-                            Op::EqualEqual,
-                            Box::new(Ident::new("rhs".into()).into()),
-                        )
-                        .into(),
-                    ))
-                    .into(),
-                ),
-                Op::ExclamationPoint,
-            )
-            .into(),
-        ))
-        .into();
-        let expected: Node = expected.into();
-
-        let actual = func_body_node(&ast).unwrap();
-
-        assert_eq!(expected, actual);
-    }
-
-    #[test]
-    fn init_declaration_test() {
-        let ast = AST {
-            children: vec![
-                AST {
-                    children: vec![],
-                    span: None,
-                    r#type: "primitive_type".to_string(),
-                    value: "uint32_t".to_string(),
-                },
-                AST {
-                    children: vec![
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "identifier".to_string(),
-                            value: "xfer".to_string(),
-                        },
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "=".to_string(),
-                            value: "=".to_string(),
-                        },
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "number_literal".to_string(),
-                            value: "0".to_string(),
-                        },
-                    ],
-                    span: None,
-                    r#type: "init_declarator".to_string(),
-                    value: "".to_string(),
-                },
-                AST {
-                    children: vec![],
-                    span: None,
-                    r#type: ";".to_string(),
-                    value: ";".to_string(),
-                },
-            ],
-            span: None,
-            r#type: "declaration".to_string(),
-            value: "".to_string(),
-        };
-
-        let expected: Stmt = DeclStmt::new(
-            Some("uint32_t".into()),
-            vec![BinaryExpr::new(
-                Box::new(Ident::new("xfer".into()).into()),
-                Op::Equal,
-                Box::new(Expr::Literal("0".into())),
-            )
-            .into()],
-        )
-        .into();
-        let expected: Node = expected.into();
-
-        let actual = func_body_node(&ast).unwrap();
-
-        assert_eq!(expected, actual);
-    }
-
-    #[test]
-    fn empty_for_loop_test() {
-        let ast = AST {
-            children: vec![
-                AST {
-                    children: vec![],
-                    span: None,
-                    r#type: "for".to_string(),
-                    value: "for".to_string(),
-                },
-                AST {
-                    children: vec![],
-                    span: None,
-                    r#type: "(".to_string(),
-                    value: ")".to_string(),
-                },
-                AST {
-                    children: vec![
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "identifier".to_string(),
-                            value: "_i284".to_string(),
-                        },
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "=".to_string(),
-                            value: "=".to_string(),
-                        },
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "number_literal".to_string(),
-                            value: "0".to_string(),
-                        },
-                    ],
-                    span: None,
-                    r#type: "assignment_expression".to_string(),
-                    value: "".to_string(),
-                },
-                AST {
-                    children: vec![],
-                    span: None,
-                    r#type: ";".to_string(),
-                    value: ";".to_string(),
-                },
-                AST {
-                    children: vec![
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "identifier".to_string(),
-                            value: "_i284".to_string(),
-                        },
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "<".to_string(),
-                            value: "<".to_string(),
-                        },
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "identifier".to_string(),
-                            value: "_size280".to_string(),
-                        },
-                    ],
-                    span: None,
-                    r#type: "binary_expression".to_string(),
-                    value: "".to_string(),
-                },
-                AST {
-                    children: vec![],
-                    span: None,
-                    r#type: ";".to_string(),
-                    value: ";".to_string(),
-                },
-                AST {
-                    children: vec![
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "++".to_string(),
-                            value: "++".to_string(),
-                        },
-                        AST {
-                            children: vec![],
-                            span: None,
-                            r#type: "identifier".to_string(),
-                            value: "_i284".to_string(),
-                        },
-                    ],
-                    span: None,
-                    r#type: "update_expression".to_string(),
-                    value: "".to_string(),
-                },
-                AST {
-                    children: vec![],
-                    span: None,
-                    r#type: ")".to_string(),
-                    value: ")".to_string(),
-                },
-                AST {
-                    children: vec![],
-                    span: None,
-                    r#type: "compound_statement".to_string(),
-                    value: "".to_string(),
-                },
-            ],
-            span: None,
-            r#type: "for_statement".to_string(),
-            value: "".to_string(),
-        };
-
-        let expected: Stmt = ForStmt::new(
-            Some(
-                BinaryExpr::new(
-                    Box::new(Ident::new("_i284".into()).into()),
-                    Op::Equal,
-                    Box::new(Expr::Literal("0".into())),
-                )
-                .into(),
-            ),
-            Some(
-                BinaryExpr::new(
-                    Box::new(Ident::new("_i284".into()).into()),
-                    Op::LessThan,
-                    Box::new(Ident::new("_size280".into()).into()),
-                )
-                .into(),
-            ),
-            Some(IncDecExpr::new(true, true, Box::new(Ident::new("_i284".into()).into())).into()),
-            Block::new(vec![]).into(),
-        )
-        .into();
-        let expected: Node = expected.into();
-
-        let actual = func_body_node(&ast).unwrap();
-
-        assert_eq!(expected, actual);
     }
 }

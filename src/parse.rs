@@ -1,9 +1,8 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
-
-use itertools::Itertools;
 
 use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span, LANG,
@@ -93,13 +92,14 @@ impl AST {
             }
             lang => {
                 println!("unsupported lang: {:?}", lang);
-                todo!();
+                (vec![], Language::Unknown)
+                // todo!();
             }
         }
     }
 }
 
-pub fn parse_project_context(root_path: &Path) -> std::io::Result<JSSAContext> {
+pub fn parse_project_context(root_path: &Path) -> std::io::Result<compat::JSSAContext> {
     let path_str = root_path.to_str().unwrap_or("");
     let modules = parse_directory(&root_path)?;
     let ctx = JSSAContext {
@@ -113,7 +113,7 @@ pub fn parse_project_context(root_path: &Path) -> std::io::Result<JSSAContext> {
         root_path: path_str,
         modules,
     };
-    Ok(ctx)
+    Ok(ctx.into())
 }
 
 fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
@@ -148,6 +148,9 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
         for dir in dirs {
             // Generate module constants
             let path = dir.as_path().to_str().unwrap_or("").to_string();
+            if path.contains(".git") {
+                continue;
+            }
 
             // Generate module identifier
             let p = std::path::PathBuf::from(path.clone());
@@ -158,7 +161,7 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
             } else {
                 mod_path = String::from(path.clone());
             }
-            let module_name = format!("{}::ModuleComponent", mod_path);
+            let module_name = mod_path.clone();
 
             // Get directory
             let read_dir = std::fs::read_dir(dir.clone())?;
@@ -168,7 +171,13 @@ pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
                 let entry = entry?;
                 if !entry.path().is_dir() {
                     let mut file = File::open(entry.path())?;
-                    let (components, lang) = parse_file(&mut file, &entry.path())?;
+                    let (components, lang) = match parse_file(&mut file, &entry.path()) {
+                        Ok(res) => res,
+                        Err(err) => {
+                            eprintln!("Could not read file {:?}: {:#?}", entry.path(), err);
+                            continue;
+                        }
+                    };
                     language = lang;
 
                     for component in components.into_iter() {
@@ -229,6 +238,8 @@ pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<(Vec<Componen
         Some((ast, lang)) => (ast, lang),
         None => return Ok((vec![], Language::Unknown)),
     };
+
+    println!("Parsing file: {:?}", path.to_str().unwrap_or_default());
 
     Ok(ast.transform(lang, path.to_str().unwrap_or_default()))
 }
