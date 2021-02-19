@@ -9,7 +9,7 @@ A library for getting the analysis context and AST of source code. Languages sup
 ## source-code-parser-web
 A REST API for getting the Analysis Context of a project and raw AST of a source code file.
 
-To get the analysis context of a rpoject, To get the AST of a source code file, you should make a `POST` request to the `/ctx` endpoint with a JSON body like so:
+To get the analysis context of a project, To get the AST of a source code file, you should make a `POST` request to the `/ctx` endpoint with a JSON body like so:
 ```json
 {
     "path": "/directory/path",
