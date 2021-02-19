@@ -186,7 +186,18 @@ impl MethodComponent {
             .parameters
             .clone()
             .iter()
-            .map(|param| ComponentType::MethodParamComponent(param.clone()))
+            .map(|param| {
+                ComponentType::MethodParamComponent(MethodParamComponent {
+                    component: ComponentInfo {
+                        instance_name: format!(
+                            "{}::MethodParamComponent",
+                            param.component.instance_name
+                        ),
+                        ..param.component.clone()
+                    },
+                    ..param.clone()
+                })
+            })
             .chain(
                 other
                     .annotations
