@@ -116,7 +116,6 @@ impl ModuleComponent {
         let module = ModuleComponent {
             component: container,
             module_name: name,
-            path,
             module_stereotype: ModuleStereotype::Fabricated,
             classes: vec![],
             interfaces: vec![],

@@ -95,10 +95,19 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
         Some(identifier) => identifier.value.clone(),
         None => "".into(),
     };
+
     let component = ComponentInfo {
         path: path.into(),
         package_name: package.into(),
-        instance_name: format!("{}::ClassComponent", instance_name),
+        instance_name: format!(
+            "{}::{}",
+            instance_name,
+            match instance_type {
+                InstanceType::InterfaceComponent => "InterfaceComponent",
+                InstanceType::AnnotationComponent => "AnnotationComponent",
+                _ => "ClassComponent",
+            }
+        ),
         instance_type: instance_type,
     };
 
@@ -167,7 +176,7 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
     let component = ComponentInfo {
         path: component.path.clone(),
         package_name: component.package_name.clone(),
-        instance_name: format!("{}::MethodInfoComponent", component.instance_name),
+        instance_name: component.instance_name.clone(),
         instance_type: InstanceType::MethodComponent,
     };
 
@@ -425,7 +434,7 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
         component: ComponentInfo {
             path: component.path.clone(),
             package_name: component.package_name.clone(),
-            instance_name: format!("{}::MethodParameterComponent", component.instance_name),
+            instance_name: component.instance_name.clone(),
             instance_type: InstanceType::ParameterComponent,
         },
         annotation: fold_vec(modifier.annotations),
@@ -453,7 +462,7 @@ fn parse_type(ast: &AST) -> String {
             .clone(),
         "boolean_type" | "void_type" => ast.value.clone(),
         "dimensions" => stringify_tree_children(ast),
-        unknown => String::from("N/A"),
+        _ => String::from("N/A"),
     }
 }
 
@@ -618,7 +627,7 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> FieldComponent {
         component: ComponentInfo {
             path: component.path.clone(),
             package_name: component.package_name.clone(),
-            instance_name: format!("{}::FieldComponent", component.instance_name),
+            instance_name: component.instance_name.clone(),
             instance_type: InstanceType::FieldComponent,
         },
         annotations: modifier.annotations,
