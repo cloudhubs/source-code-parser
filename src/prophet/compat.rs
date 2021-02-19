@@ -403,7 +403,21 @@ impl ClassOrInterfaceComponent {
             declaration_type: other.declaration_type.clone(),
             annotations: other.annotations.clone(),
             constructors,
-            field_components: other.field_components.clone(),
+            field_components: Some(
+                other
+                    .field_components
+                    .as_ref()
+                    .unwrap_or(&vec![])
+                    .iter()
+                    .map(|f| FieldComponent {
+                        component: ComponentInfo {
+                            instance_name: format!("{}::FieldComponent", f.component.instance_name),
+                            ..f.component.clone()
+                        },
+                        ..f.clone()
+                    })
+                    .collect(),
+            ),
         }
     }
 
