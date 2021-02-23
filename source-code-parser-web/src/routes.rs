@@ -10,12 +10,12 @@ use std::path::PathBuf;
 
 #[derive(Deserialize)]
 pub struct AstRequest {
-    root: String,
+    file_path: String,
 }
 
 #[post("/ctx")]
-pub fn ctx(payload: web::Json<AstRequest>) -> HttpResponse {
-    match parse_project_context(&PathBuf::from(&payload.root)) {
+pub fn ctx(payload: web::Json<Directory>) -> HttpResponse {
+    match parse_project_context(&payload) {
         Ok(ctx) => ok(ctx),
         Err(err) => internal_server_error(err),
     }
@@ -24,7 +24,7 @@ pub fn ctx(payload: web::Json<AstRequest>) -> HttpResponse {
 #[post("/ast")]
 pub fn ast(payload: web::Json<AstRequest>) -> HttpResponse {
     let mut code = String::new();
-    let path = PathBuf::from(&payload.root);
+    let path = PathBuf::from(&payload.file_path);
     let mut file = match File::open(path) {
         Ok(file) => file,
         Err(err) => return internal_server_error(err),
@@ -35,7 +35,7 @@ pub fn ast(payload: web::Json<AstRequest>) -> HttpResponse {
 
     let result = parse_ast(AstPayload {
         id: "".to_owned(),
-        file_name: payload.root.clone(),
+        file_name: payload.file_path.clone(),
         code,
         comment: false,
         span: true,
