@@ -169,14 +169,6 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
 
 /// Parse the AST for a specified method
 fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
-    // Define new component info
-    let component = ComponentInfo {
-        path: component.path.clone(),
-        package_name: component.package_name.clone(),
-        instance_name: component.instance_name.clone(),
-        instance_type: InstanceType::MethodComponent,
-    };
-
     // Define fields
     let mut body = None;
     let mut modifier = Modifier::new();
@@ -203,6 +195,14 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
             unknown => println!("{} unknown", unknown),
         }
     }
+
+    // Define new component info
+    let component = ComponentInfo {
+        path: component.path.clone(),
+        package_name: component.package_name.clone(),
+        instance_name: method_name.clone(),
+        instance_type: InstanceType::MethodComponent,
+    };
 
     // Return the method component
     MethodComponent {
