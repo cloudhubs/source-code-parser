@@ -186,7 +186,18 @@ impl MethodComponent {
             .parameters
             .clone()
             .iter()
-            .map(|param| ComponentType::MethodParamComponent(param.clone()))
+            .map(|param| {
+                ComponentType::MethodParamComponent(MethodParamComponent {
+                    component: ComponentInfo {
+                        instance_name: format!(
+                            "{}::MethodParamComponent",
+                            param.component.instance_name
+                        ),
+                        ..param.component.clone()
+                    },
+                    ..param.clone()
+                })
+            })
             .chain(
                 other
                     .annotations
@@ -403,7 +414,21 @@ impl ClassOrInterfaceComponent {
             declaration_type: other.declaration_type.clone(),
             annotations: other.annotations.clone(),
             constructors,
-            field_components: other.field_components.clone(),
+            field_components: Some(
+                other
+                    .field_components
+                    .as_ref()
+                    .unwrap_or(&vec![])
+                    .iter()
+                    .map(|f| FieldComponent {
+                        component: ComponentInfo {
+                            instance_name: format!("{}::FieldComponent", f.component.instance_name),
+                            ..f.component.clone()
+                        },
+                        ..f.clone()
+                    })
+                    .collect(),
+            ),
         }
     }
 

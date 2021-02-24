@@ -99,116 +99,118 @@ impl AST {
     }
 }
 
-pub fn parse_project_context(root_path: &Path) -> std::io::Result<compat::JSSAContext> {
-    let path_str = root_path.to_str().unwrap_or("");
-    let modules = parse_directory(&root_path)?;
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Directory {
+    files: Vec<PathBuf>,
+    sub_directories: Vec<Directory>,
+    path: PathBuf,
+}
+
+pub fn parse_project_context(directory: &Directory) -> std::io::Result<compat::JSSAContext> {
+    let modules = parse_directory(directory)?;
     let ctx = JSSAContext {
         component: ComponentInfo {
-            path: path_str.to_string(),
-            package_name: "".to_string(),
-            instance_name: "context".to_string(),
+            path: "".into(),
+            package_name: "".into(),
+            instance_name: "context".into(),
             instance_type: InstanceType::AnalysisComponent,
         },
         succeeded: true,
-        root_path: path_str,
+        root_path: "".into(),
         modules,
     };
     Ok(ctx.into())
 }
 
-fn flatten_dirs(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
-    if dir.is_dir() {
-        let read_dir = std::fs::read_dir(dir.clone())?;
-        let mut dirs: Vec<PathBuf> = read_dir
-            .into_iter()
-            .filter(|entry| entry.is_ok())
-            .map(|entry| entry.unwrap())
-            .filter(|entry| entry.path().is_dir())
-            .map(|entry| entry.path().as_path().to_owned())
-            .map(|path| flatten_dirs(path.as_path()))
-            .filter(|entry| entry.is_ok())
-            .flat_map(|entry| entry)
-            .flatten()
-            .collect();
+fn flatten_dirs(dir: &Directory) -> Vec<Directory> {
+    let mut dirs: Vec<Directory> = dir
+        .sub_directories
+        .iter()
+        .flat_map(|sub_dir| flatten_dirs(&sub_dir))
+        .collect();
 
-        dirs.push(dir.to_path_buf());
-        Ok(dirs)
-    } else {
-        Ok(vec![])
-    }
+    dirs.push(dir.clone());
+    dirs
 }
 
-pub fn parse_directory(dir: &Path) -> std::io::Result<Vec<ModuleComponent>> {
+pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>> {
     let mut modules = vec![];
     let mut language = Language::Unknown;
 
-    if dir.is_dir() {
-        let dirs = flatten_dirs(dir)?;
+    let dirs = flatten_dirs(dir);
 
-        for dir in dirs {
-            // Generate module constants
-            let path = dir.as_path().to_str().unwrap_or("").to_string();
-            if path.contains(".git") {
-                continue;
-            }
+    for dir in dirs {
+        // Generate module constants
+        let path = dir.path.as_path().to_str().unwrap_or("").to_owned();
 
-            // Generate module identifier
-            let p = std::path::PathBuf::from(path.clone());
-            let mod_path;
-            if p.is_file() {
-                let p: PathBuf = p.into_iter().dropping_back(1).collect();
-                mod_path = p.into_os_string().into_string().unwrap()
-            } else {
-                mod_path = String::from(path.clone());
-            }
-            let module_name = mod_path.clone();
+        // Generate module identifier
+        let p = dir.path.clone();
+        let mod_path;
+        if p.is_file() {
+            let p: PathBuf = p.into_iter().dropping_back(1).collect();
+            mod_path = p.into_os_string().into_string().unwrap()
+        } else {
+            mod_path = path.clone();
+        }
+        let module_name = mod_path.clone();
 
-            // Get directory
-            let read_dir = std::fs::read_dir(dir.clone())?;
-            let mut module = ModuleComponent::new(module_name.to_string(), path);
+        // Get directory
+        let read_dir = std::fs::read_dir(dir.path)?;
+        let mut module = ModuleComponent::new(module_name.to_string(), path);
 
-            for entry in read_dir {
-                let entry = entry?;
-                if !entry.path().is_dir() {
-                    let mut file = File::open(entry.path())?;
-                    let (components, lang) = match parse_file(&mut file, &entry.path()) {
-                        Ok(res) => res,
-                        Err(err) => {
-                            eprintln!("Could not read file {:?}: {:#?}", entry.path(), err);
-                            continue;
-                        }
-                    };
-                    language = lang;
+        for entry in read_dir {
+            let entry = entry?;
+            if !entry.path().is_dir() {
+                if dir
+                    .files
+                    .iter()
+                    .find(|path_buf| path_buf == &&entry.path())
+                    .is_none()
+                {
+                    continue;
+                }
+                let mut file = File::open(entry.path())?;
+                let (components, lang) = match parse_file(&mut file, &entry.path()) {
+                    Ok(res) => res,
+                    Err(err) => {
+                        eprintln!("Could not read file {:?}: {:#?}", entry.path(), err);
+                        continue;
+                    }
+                };
+                language = lang;
 
-                    for component in components.into_iter() {
-                        match component {
-                            ComponentType::ClassOrInterfaceComponent(component) => {
-                                match component.declaration_type {
-                                    ContainerType::Class => {
-                                        module.classes.push(component);
-                                    }
-                                    ContainerType::Interface => {
-                                        module.interfaces.push(component);
-                                    }
-                                    r#type => {
-                                        println!("got other label when it should have been class/ifc: {:#?}", r#type);
-                                    }
+                for component in components.into_iter() {
+                    match component {
+                        ComponentType::ClassOrInterfaceComponent(component) => {
+                            match component.declaration_type {
+                                ContainerType::Class => {
+                                    module.classes.push(component);
+                                }
+                                ContainerType::Interface => {
+                                    module.interfaces.push(component);
+                                }
+                                r#type => {
+                                    println!(
+                                        "got other label when it should have been class/ifc: {:#?}",
+                                        r#type
+                                    );
                                 }
                             }
-                            ComponentType::MethodComponent(method) => {
-                                module.component.methods.push(method);
-                            }
-                            ComponentType::ModuleComponent(module) => {
-                                modules.push(module);
-                            }
-                            _ => {}
                         }
+                        ComponentType::MethodComponent(method) => {
+                            module.component.methods.push(method);
+                        }
+                        ComponentType::ModuleComponent(module) => {
+                            modules.push(module);
+                        }
+                        _ => {}
                     }
                 }
             }
-
-            modules.push(module);
         }
+
+        modules.push(module);
     }
 
     Ok(merge_modules(modules, language))
