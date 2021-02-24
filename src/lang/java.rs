@@ -84,9 +84,7 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
     let instance_type = match ast.find_child_by_type(&["class", "interface", "enum", "annotation"])
     {
         Some(r#type) => match &*r#type.value {
-            "class" | "enum" => InstanceType::ClassComponent,
             "interface" => InstanceType::InterfaceComponent,
-            "annotation" => InstanceType::AnnotationComponent,
             _ => InstanceType::ClassComponent,
         },
         None => InstanceType::ClassComponent,
@@ -104,7 +102,6 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
             instance_name,
             match instance_type {
                 InstanceType::InterfaceComponent => "InterfaceComponent",
-                InstanceType::AnnotationComponent => "AnnotationComponent",
                 _ => "ClassComponent",
             }
         ),
