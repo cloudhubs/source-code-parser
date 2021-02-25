@@ -14,6 +14,7 @@ struct Opt {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let opt = Opt::from_args();
     let addr = format!("{}:{}", opt.host, opt.port);
     HttpServer::new(|| App::new().service(ast).service(ctx).wrap(Logger::default()))
