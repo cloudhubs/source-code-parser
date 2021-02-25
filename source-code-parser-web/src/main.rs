@@ -1,4 +1,4 @@
-use actix_web::{App, HttpServer};
+use actix_web::{middleware::Logger, App, HttpServer};
 use structopt::StructOpt;
 
 mod routes;
@@ -16,7 +16,7 @@ struct Opt {
 async fn main() -> std::io::Result<()> {
     let opt = Opt::from_args();
     let addr = format!("{}:{}", opt.host, opt.port);
-    HttpServer::new(|| App::new().service(ast).service(ctx))
+    HttpServer::new(|| App::new().service(ast).service(ctx).wrap(Logger::default()))
         .bind(addr)?
         .run()
         .await
