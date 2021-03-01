@@ -149,10 +149,10 @@ fn transform_namespace_to_module(ast: AST, path: &str) -> Option<ModuleComponent
                 module.component.methods.push(method);
             }
             ComponentType::ModuleComponent(_module) => {
-                unimplemented!();
+                // unimplemented!();
             }
             _ => {
-                unimplemented!();
+                // unimplemented!();
             }
         });
 
@@ -510,10 +510,20 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
 
                 assert!(&*field.r#type == "field_declaration");
                 // Not a method if this is reached
-                let mut field_type = variable_type(field)
-                    .expect(&format!("Field declaration had no type {:#?}", field));
-                let field_name = variable_ident(field, &mut field_type)
-                    .expect("Field declaration had no identifier");
+                let mut field_type = match variable_type(field) {
+                    Some(field_type) => field_type,
+                    None => {
+                        eprintln!("Field declaration had no type {:#?}", field);
+                        return vec![];
+                    }
+                };
+                let field_name = match variable_ident(field, &mut field_type) {
+                    Some(field_name) => field_name,
+                    None => {
+                        eprintln!("Field declaration had no identifier");
+                        return vec![];
+                    }
+                };
                 let field = FieldComponent {
                     component: ComponentInfo {
                         path: path.to_string(),

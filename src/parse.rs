@@ -87,9 +87,7 @@ impl AST {
         match lang {
             LANG::Cpp => (cpp::find_components(self, path, path), lang.into()),
             LANG::Java => (java::find_components(self, path), lang.into()),
-            LANG::Python => {
-                todo!();
-            }
+            LANG::Python => (vec![], Language::Python),
             LANG::Go => (vec![], Language::Go),
             lang => {
                 println!("unsupported lang: {:?}", lang);
@@ -138,10 +136,8 @@ fn flatten_dirs(dir: &Directory) -> Vec<Directory> {
 pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>> {
     let mut modules = vec![];
     let mut language = Language::Unknown;
-    println!("dir {:#?}", dir);
 
     let dirs = flatten_dirs(dir);
-    println!("dirs {:#?}", dirs);
 
     for dir in dirs {
         // Generate module constants
