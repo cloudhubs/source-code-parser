@@ -80,16 +80,22 @@ impl From<AstResponse> for AST {
     }
 }
 
+fn printLang(lang: &str) -> () {
+    println!("The language is : {:?}" , lang);
+}
+
 impl AST {
     /// Transform the language-specific AST into generic components.
     pub fn transform(self, lang: LANG, path: &str) -> (Vec<ComponentType>, Language) {
         // Do language specific AST parsing
+        printLang(lang.get_name());
         match lang {
             LANG::Cpp => (cpp::find_components(self, path, path), lang.into()),
             LANG::Java => (java::find_components(self, path), lang.into()),
+            LANG::Go => (go::find_components(self, path), lang.into()),
             LANG::Python => {
                 todo!();
-            }
+            },
             lang => {
                 println!("unsupported lang: {:?}", lang);
                 (vec![], Language::Unknown)
@@ -170,6 +176,7 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
                 {
                     continue;
                 }
+                println!("entry in read_dir:{:?}", entry.path());
                 let mut file = File::open(entry.path())?;
                 let (components, lang) = match parse_file(&mut file, &entry.path()) {
                     Ok(res) => res,

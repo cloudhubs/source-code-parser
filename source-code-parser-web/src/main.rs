@@ -1,4 +1,8 @@
-use actix_web::{App, HttpServer};
+use env_logger;
+
+use actix_web::middleware::Logger;
+use actix_web::App;
+use actix_web::HttpServer;
 use structopt::StructOpt;
 
 mod routes;
@@ -16,8 +20,20 @@ struct Opt {
 async fn main() -> std::io::Result<()> {
     let opt = Opt::from_args();
     let addr = format!("{}:{}", opt.host, opt.port);
-    HttpServer::new(|| App::new().service(ast).service(ctx))
-        .bind(addr)?
-        .run()
-        .await
+    
+    println!("Hello, world!");
+
+    std::env::set_var("RUST_LOG", "actix_web=info");
+    env_logger::init();
+
+    HttpServer::new(|| {
+        App::new()
+            .service(ast)
+            .service(ctx)
+            .wrap(Logger::default())
+            .wrap(Logger::new("%a %{User-Agent}i"))
+    })
+    .bind(addr)?
+    .run()
+    .await
 }

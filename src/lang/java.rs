@@ -95,7 +95,7 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
     };
 
     // Define default values
-    let mut stereotype = ContainerStereotype::Entity;
+    let stereotype = ContainerStereotype::Entity;
     let mut fields = vec![];
     let mut constructors = vec![];
     let mut methods = vec![];
