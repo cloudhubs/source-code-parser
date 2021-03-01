@@ -90,6 +90,7 @@ impl AST {
             LANG::Python => {
                 todo!();
             }
+            LANG::Go => (vec![], Language::Go),
             lang => {
                 println!("unsupported lang: {:?}", lang);
                 (vec![], Language::Unknown)
@@ -137,8 +138,10 @@ fn flatten_dirs(dir: &Directory) -> Vec<Directory> {
 pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>> {
     let mut modules = vec![];
     let mut language = Language::Unknown;
+    println!("dir {:#?}", dir);
 
     let dirs = flatten_dirs(dir);
+    println!("dirs {:#?}", dirs);
 
     for dir in dirs {
         // Generate module constants
@@ -156,7 +159,14 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
         let module_name = mod_path.clone();
 
         // Get directory
-        let read_dir = std::fs::read_dir(dir.path)?;
+        println!("trying to read {:?}", dir.path);
+        let read_dir = match std::fs::read_dir(dir.path) {
+            Ok(dir) => dir,
+            Err(err) => {
+                eprintln!("Could not read directory: {:?}", err);
+                continue;
+            }
+        };
         let mut module = ModuleComponent::new(module_name.to_string(), path);
 
         for entry in read_dir {
