@@ -142,6 +142,9 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
     for dir in dirs {
         // Generate module constants
         let path = dir.path.as_path().to_str().unwrap_or("").to_owned();
+        if path == "" {
+            continue;
+        }
 
         // Generate module identifier
         let p = dir.path.clone();
