@@ -422,7 +422,7 @@ fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<Met
             path: path.to_string(),
             package_name: module_name.to_string(),
             instance_name: ident.clone(),
-            instance_type: InstanceType::FieldComponent,
+            instance_type: InstanceType::MethodParamComponent,
         },
         annotation: None,
         parameter_name: ident,
