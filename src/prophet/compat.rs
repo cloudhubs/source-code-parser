@@ -11,11 +11,11 @@ pub struct JSSAContext {
     pub succeeded: bool,
     pub class_names: Vec<String>,
     pub interface_names: Vec<String>,
-    pub containers: Vec<i64>,
+    pub containers: Vec<ClassOrInterfaceComponent>, // classes + interfaces
     pub classes: Vec<ClassOrInterfaceComponent>,
     pub interfaces: Vec<ClassOrInterfaceComponent>,
     pub modules: Vec<ModuleComponent>,
-    pub methods: Vec<i64>,
+    pub methods: Vec<MethodComponent>,
 }
 
 impl From<super::JSSAContext<'_>> for JSSAContext {
@@ -132,15 +132,17 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             succeeded: other.succeeded,
             class_names,
             interface_names,
-            containers: class_ids
-                .iter()
-                .map(|(_, id)| *id)
-                .chain(module_ids.iter().map(|(_, id)| *id))
-                .collect(),
+            containers: {
+                classes
+                    .clone()
+                    .into_iter()
+                    .chain(interfaces.clone().into_iter())
+                    .collect()
+            },
             classes,
             interfaces,
             modules,
-            methods: method_ids.iter().map(|(_, id)| *id).collect(),
+            methods,
         }
     }
 }
@@ -170,7 +172,7 @@ pub struct MethodComponent {
     #[serde(rename = "final_method")]
     pub is_final: bool,
     #[serde(rename = "subroutines")]
-    pub sub_methods: Vec<i64>,
+    pub sub_methods: Vec<MethodComponent>,
     #[serde(rename = "subComponents")]
     pub sub_components: Vec<ComponentType>,
     pub annotations: Vec<AnnotationComponent>,
@@ -265,9 +267,9 @@ pub struct ModuleComponent {
     pub module_stereotype: ModuleStereotype,
     pub class_names: Vec<String>,
     pub interface_names: Vec<String>,
-    pub containers: Vec<i64>,
-    pub classes: Vec<i64>,
-    pub interfaces: Vec<i64>,
+    pub containers: Vec<ClassOrInterfaceComponent>,
+    pub classes: Vec<ClassOrInterfaceComponent>,
+    pub interfaces: Vec<ClassOrInterfaceComponent>,
 }
 
 impl ModuleComponent {
@@ -307,7 +309,7 @@ impl ModuleComponent {
                     .find(|other_class| class.is_equiv(other_class))
                     .is_some()
             })
-            .map(|class| class.component.id)
+            .map(|class| class.clone())
             .collect();
 
         let interface_ids: Vec<_> = classes
@@ -322,7 +324,7 @@ impl ModuleComponent {
                     .find(|other_class| class.is_equiv(other_class))
                     .is_some()
             })
-            .map(|class| class.component.id)
+            .map(|class| class.clone())
             .collect();
 
         ModuleComponent {
@@ -357,7 +359,7 @@ pub struct ClassOrInterfaceComponent {
 
     // Class-specific fields
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub constructors: Option<Vec<i64>>,
+    pub constructors: Option<Vec<MethodComponent>>,
     #[serde(rename = "fieldComponents", skip_serializing_if = "Option::is_none")]
     pub field_components: Option<Vec<FieldComponent>>,
 }
@@ -377,7 +379,7 @@ impl ClassOrInterfaceComponent {
                     .is_some(),
                 None => false,
             })
-            .map(|constructor| constructor.id)
+            .map(|constructor| constructor.clone())
             .collect();
 
         let constructors = if constructors.len() > 0 {
@@ -447,7 +449,7 @@ pub struct ContainerComponent {
     pub component: ComponentInfo,
     pub accessor: AccessorType,
     pub stereotype: ContainerStereotype,
-    pub methods: Vec<i64>,
+    pub methods: Vec<MethodComponent>,
     #[serde(rename = "containerName")]
     pub container_name: String,
     #[serde(rename = "lineCount")]
@@ -479,9 +481,8 @@ impl ContainerComponent {
             .map(|method| method.clone())
             .collect();
 
-        let method_ids = methods.iter().map(|method| method.id).collect();
-
         let sub_components = methods
+            .clone()
             .into_iter()
             .map(|method| ComponentType::MethodComponent(method))
             .chain(
@@ -511,7 +512,7 @@ impl ContainerComponent {
             component,
             accessor: other.accessor.clone(),
             stereotype: other.stereotype.clone(),
-            methods: method_ids,
+            methods,
             container_name: other.container_name.clone(),
             line_count: other.line_count,
             sub_components,
