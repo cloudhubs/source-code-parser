@@ -122,6 +122,12 @@ impl ModuleComponent {
         };
         module
     }
+
+    /// Merges the provided ModuleComponent's data into this ones
+    pub fn merge_into(&mut self, mut other: ModuleComponent) {
+        self.classes.append(&mut other.classes);
+        self.interfaces.append(&mut other.interfaces);
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]

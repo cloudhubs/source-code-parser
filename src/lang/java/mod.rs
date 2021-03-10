@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::parse::AST;
 use crate::prophet::*;
 
@@ -13,8 +15,22 @@ mod vartype;
 /// Topmost level of the Java parser, provides public API
 
 pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
-    // TODO implement correctly
-    modules
+    let mut packages: HashMap<String, ModuleComponent> = HashMap::new();
+
+    for module in modules.into_iter() {
+        let name = module.module_name.clone();
+        println!("Mod. Name: {}", name);
+        if packages.contains_key(&name) {
+            println!("Merging...");
+            let orig_module = packages.get_mut(&name).expect("Contains key lied to me!");
+            orig_module.merge_into(module);
+        } else {
+            println!("New! {}", module.module_name);
+            packages.insert(name, module);
+        }
+    }
+
+    packages.into_iter().map(|kv| kv.1).collect()
 }
 
 pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
@@ -23,6 +39,7 @@ pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
 
 fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<ComponentType> {
     let mut components = vec![];
+
     for node in ast
         .find_all_children_by_type(&[
             "import_declaration",
@@ -40,6 +57,7 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
             "package_declaration" => {
                 package = parse_package(&node)
                     .expect(&*format!("Malformed package declaration {:#?}!", node));
+                println!("{}", package);
             }
             "class_declaration"
             | "interface_declaration"
@@ -60,7 +78,33 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         };
     }
 
-    components
+    // Create module this falls in
+    let module = create_module(package.as_str(), path, &components);
+    vec![module]
+}
+
+fn create_module(package: &str, path: &str, components: &Vec<ComponentType>) -> ComponentType {
+    let mut module = ModuleComponent::new(package.to_string(), path.to_string());
+
+    // get name
+    let p: PathBuf = p.into_iter().dropping_back(1).collect();
+    let module_name = p.into_os_string().into_string().unwrap();
+
+    let classes = components.iter().filter_map(|comp| match comp {
+        ComponentType::ClassOrInterfaceComponent(class_ix) => Some(class_ix),
+        _ => None,
+    });
+
+    // Get classes
+    for comp in classes {
+        if comp.declaration_type == ContainerType::Class {
+            module.classes.push(comp.clone());
+        } else if comp.declaration_type == ContainerType::Interface {
+            module.interfaces.push(comp.clone());
+        }
+    }
+
+    return ComponentType::ModuleComponent(module);
 }
 
 /// Take in the AST node containing the package declaration, and--if it is not malformed--return a string representing the package
