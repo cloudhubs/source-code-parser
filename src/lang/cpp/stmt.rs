@@ -90,11 +90,14 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
                 variable_init_declaration(init_declarator, variable_type)
             }
             "array_declarator" => {
-                let rhs = expression(init_declarator).expect(&*format!(
-                    "Malformed array_declarator {:#?}",
-                    init_declarator
-                ));
-                DeclStmt::new(Some(variable_type), vec![rhs])
+                let rhs = match expression(init_declarator) {
+                    Some(expr) => vec![expr],
+                    None => {
+                        eprintln!("Malformed array_declarator {:#?}", init_declarator);
+                        vec![]
+                    }
+                };
+                DeclStmt::new(Some(variable_type), rhs)
             }
             _ => unreachable!(),
         },
@@ -110,10 +113,13 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
 }
 
 fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -> DeclStmt {
-    let name = variable_ident(init_declarator, &mut variable_type).expect(&*format!(
-        "No identifier for init declarator {:#?}",
-        init_declarator
-    ));
+    let name = variable_ident(init_declarator, &mut variable_type).map_or_else(
+        || {
+            eprintln!("No identifier for init declarator {:#?}", init_declarator);
+            "".into()
+        },
+        |name| name,
+    );
     let decl_type = init_declarator.find_child_by_type(&["=", "argument_list", "parameter_list"]);
     let rhs = match decl_type {
         Some(decl_type) => match &*decl_type.r#type {
@@ -253,6 +259,10 @@ fn switch_case(case_statement: &AST) -> Option<CaseStmt> {
         "case" => expression(case_statement.children.iter().nth(1)?),
         "default" | _ => None,
     };
+    if case_statement.children.len() < 4 {
+        println!("Malformed case statement {:#?}", case_statement);
+        return None;
+    }
     let nodes = block_nodes_iter(&case_statement.children[3..]);
     let block = Block::new(nodes);
     let case = CaseStmt::new(expr, block);

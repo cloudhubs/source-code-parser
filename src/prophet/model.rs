@@ -21,6 +21,8 @@ pub enum InstanceType {
     FieldComponent,
     #[serde(rename = "IMPORTCOMPONENT")]
     ImportComponent,
+    #[serde(rename = "METHODPARAMCOMPONENT")]
+    MethodParamComponent,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -67,6 +69,7 @@ pub enum Language {
     Java,
     Cpp,
     Python,
+    Go,
     // ...
     #[serde(rename = "N/A")]
     Unknown,
@@ -78,6 +81,7 @@ impl Into<Language> for LANG {
             LANG::Cpp => Language::Cpp,
             LANG::Java => Language::Java,
             LANG::Python => Language::Python,
+            LANG::Go => Language::Go,
             _ => Language::Unknown,
         }
     }

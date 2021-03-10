@@ -1,4 +1,5 @@
-use actix_web::{App, HttpServer};
+use actix_web::{middleware::Logger, web, App, FromRequest, HttpServer};
+use source_code_parser::Directory;
 use structopt::StructOpt;
 
 mod routes;
@@ -14,10 +15,19 @@ struct Opt {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let opt = Opt::from_args();
     let addr = format!("{}:{}", opt.host, opt.port);
-    HttpServer::new(|| App::new().service(ast).service(ctx))
-        .bind(addr)?
-        .run()
-        .await
+    HttpServer::new(|| {
+        App::new()
+            .service(ast)
+            .service(ctx)
+            .wrap(Logger::default())
+            .app_data(web::Json::<Directory>::configure(|cfg| {
+                cfg.limit(1024 * 1024 * 4)
+            }))
+    })
+    .bind(addr)?
+    .run()
+    .await
 }
