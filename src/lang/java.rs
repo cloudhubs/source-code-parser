@@ -449,7 +449,11 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         | "decimal_floating_point_literal"
         | "string_literal"
         | "false"
-        | "true" => Some(Node::Expr(Expr::Literal(ast.value.clone()))),
+        | "true" => {
+            let literal: Literal = ast.value.clone().into();
+            let literal: Expr = literal.into();
+            Some(literal.into())
+        }
 
         "object_creation_expression" => {
             let mut name = String::new();

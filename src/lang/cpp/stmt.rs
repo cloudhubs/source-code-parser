@@ -135,7 +135,8 @@ fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -
                     .map(|arg| expression(arg))
                     .flat_map(|arg| arg)
                     .collect();
-                let init = CallExpr::new(Box::new("new".to_string().into()), args).into();
+                let new: Literal = "new".to_string().into();
+                let init = CallExpr::new(Box::new(new.into()), args).into();
                 Some(init)
             }
             _ => None,
@@ -348,7 +349,7 @@ fn for_range_statement(for_range_loop: &AST) -> Option<ForRangeStmt> {
 
     // Convert generic node to statement
     let mut r#type = match r#type {
-        Some(Expr::Literal(t)) => t,
+        Some(Expr::Literal(t)) => t.value,
         Some(Expr::Ident(ident)) => ident.name,
         _ => "".into(),
     };
