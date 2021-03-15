@@ -19,7 +19,7 @@ pub enum Expr {
     LogExpr(LogExpr),
     LambdaExpr(LambdaExpr),
     Ident(Ident),
-    Literal(String),
+    Literal(Literal),
 }
 
 impl Into<Stmt> for Expr {
@@ -156,4 +156,23 @@ pub struct LambdaExpr {
     pub body: Block,
     #[new(value = r#""lambda_expr""#)]
     r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct Literal {
+    pub value: String,
+    #[new(value = r#""literal_expr""#)]
+    r#type: &'static str,
+}
+
+impl From<&str> for Literal {
+    fn from(string: &str) -> Literal {
+        Literal::new(string.into())
+    }
+}
+
+impl From<String> for Literal {
+    fn from(string: String) -> Literal {
+        Literal::new(string)
+    }
 }

@@ -14,7 +14,7 @@ pub fn expression(node: &AST) -> Option<Expr> {
         "unary_expression" => Some(unary_expression(node)?.into()),
         "parenthesized_expression" => Some(paren_expression(node)?.into()),
         "true" | "false" | "number_literal" | "this" | "auto" | "string_literal" => {
-            Some(node.value.clone().into())
+            Some(Literal::new(node.value.clone()).into())
         }
         "condition_clause" => {
             let cond = node.children.iter().nth(1)?;
@@ -43,7 +43,7 @@ fn declarator(node: &AST) -> Option<Expr> {
     let mut ptr_symbol = String::new();
     let name = variable_ident(node, &mut ptr_symbol)?;
     let mut ident: Expr = match &*name {
-        "this" => Expr::Literal(name),
+        "this" => Literal::new(name).into(),
         _ => Ident::new(name).into(),
     };
     ptr_symbol
@@ -57,7 +57,7 @@ fn pointer_expression(ptr_expr: &AST) -> Option<Expr> {
     let mut ptr_symbol = String::new();
     let name = variable_ident_inner(ptr_expr, &mut ptr_symbol)?;
     let mut ident: Expr = match &*name {
-        "this" => Expr::Literal(name),
+        "this" => Literal::new(name).into(),
         _ => Ident::new(name).into(),
     };
     ptr_symbol
@@ -119,8 +119,8 @@ fn update_expression(update_expr: &AST) -> Option<Expr> {
 /// Converts an "array_declarator", "subscript_expression", or "new_declarator" into an IndexExpr
 fn index_expression(node: &AST) -> Option<IndexExpr> {
     // Identifier won't be found when the type is new_declarator.
-    let ident =
-        expression(node.children.iter().nth(0)?).unwrap_or(Expr::Literal("Missing Ident".into()));
+    let ident = expression(node.children.iter().nth(0)?)
+        .unwrap_or(Literal::new("Missing Ident".into()).into());
     let ndx_expr = expression(node.children.iter().nth(2)?)?;
     let ndx = IndexExpr::new(Box::new(ident), Box::new(ndx_expr));
     Some(ndx)
@@ -132,7 +132,8 @@ fn new_expression(new_expr: &AST) -> Option<CallExpr> {
     match expr {
         Expr::IndexExpr(mut ndx) => {
             ndx.expr = Box::new(r#type);
-            let init = CallExpr::new(Box::new("new".to_string().into()), vec![ndx.into()]);
+            let new: Literal = "new".into();
+            let init = CallExpr::new(Box::new(new.into()), vec![ndx.into()]);
             Some(init)
         }
         _ => None,
@@ -148,7 +149,8 @@ fn delete_expression(delete_expr: &AST) -> Option<CallExpr> {
             _ => true,
         })?;
     let expr = expression(expr)?;
-    let del = CallExpr::new(Box::new("delete".to_string().into()), vec![expr]);
+    let delete: Literal = "delete".to_string().into();
+    let del = CallExpr::new(Box::new(delete.into()), vec![expr]);
     Some(del)
 }
 
@@ -177,7 +179,8 @@ fn sizeof_expression(sizeof_expr: &AST) -> Option<CallExpr> {
             })
             .last()?,
     )?;
-    let sizeof_call = CallExpr::new(Box::new("sizeof".to_string().into()), vec![expr]);
+    let sizeof: Literal = "sizeof".to_string().into();
+    let sizeof_call = CallExpr::new(Box::new(sizeof.into()), vec![expr]);
     Some(sizeof_call)
 }
 
@@ -238,7 +241,7 @@ fn convert_binary_expr_to_log(cpp_log: BinaryExpr) -> Option<LogExpr> {
         // Printed to screen, convert Ident to CallExpr
         Expr::Ident(ident) => match &*ident.name {
             "std::cout" | "cout" => CallExpr::new(
-                Box::new("".to_string().into()),
+                Box::new(Literal::new("".into()).into()),
                 vec![Ident::new("console".into()).into()],
             ),
             _ => return None,
@@ -307,13 +310,13 @@ fn lambda_expression(lambda_expr: &AST) -> Option<LambdaExpr> {
     Some(LambdaExpr::new(parameter_list, body))
 }
 
-fn type_descriptor(type_desc: &AST) -> Option<String> {
+fn type_descriptor(type_desc: &AST) -> Option<Literal> {
     let specifier = type_desc.children.iter().next()?;
     match &*specifier.r#type {
-        "struct_specifier" => Some(format!(
+        "struct_specifier" => Some(Literal::new(format!(
             "struct {}",
             type_ident(specifier.children.iter().last()?)
-        )),
+        ))),
         _ => None,
     }
 }
