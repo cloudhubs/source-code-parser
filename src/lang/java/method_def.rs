@@ -120,7 +120,7 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
             path: component.path.clone(),
             package_name: component.package_name.clone(),
             instance_name: component.instance_name.clone(),
-            instance_type: InstanceType::ParameterComponent,
+            instance_type: InstanceType::MethodParamComponent,
         },
         annotation: fold_vec(modifier.annotations),
         r#type: param_type.into(),

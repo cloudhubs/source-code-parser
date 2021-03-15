@@ -1,10 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::parse::AST;
 use crate::prophet::*;
 
 mod class_def;
 use class_def::*;
+use itertools::Itertools;
 
 mod body;
 mod method_def;
@@ -64,10 +65,11 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
             | "enum_declaration"
             | "annotation_declaration" => match parse_class(node, &*package, path) {
                 Some(class) => {
-                    // Save the methods
-                    for method in class.component.methods.iter() {
-                        components.push(ComponentType::MethodComponent(method.clone()));
-                    }
+                    // // Save the methods
+                    // for method in class.component.methods {
+                    //     components.push(ComponentType::MethodComponent(method.clone()));
+                    // }
+                    // class.component.methods = vec![];
 
                     // Save the class itself
                     components.push(ComponentType::ClassOrInterfaceComponent(class));
@@ -87,8 +89,8 @@ fn create_module(package: &str, path: &str, components: &Vec<ComponentType>) -> 
     let mut module = ModuleComponent::new(package.to_string(), path.to_string());
 
     // get name
-    let p: PathBuf = p.into_iter().dropping_back(1).collect();
-    let module_name = p.into_os_string().into_string().unwrap();
+    let p: PathBuf = PathBuf::from(path).into_iter().dropping_back(1).collect();
+    // let module_name = p.into_os_string().into_string().unwrap();
 
     let classes = components.iter().filter_map(|comp| match comp {
         ComponentType::ClassOrInterfaceComponent(class_ix) => Some(class_ix),
