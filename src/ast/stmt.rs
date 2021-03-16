@@ -36,16 +36,24 @@ pub struct AssignStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct DeclStmt {
-    /// The type of the declared variable(s).
+    /// The declared variable(s).
+    pub variables: Vec<VarDecl>,
+    /// The expression(s) being assigned to the declared variables.
+    pub expressions: Vec<Expr>,
+    #[new(value = r#""decl_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct VarDecl {
+    /// The type of the declared variable.
     pub var_type: Option<String>,
-    /// The variable(s). These could be Idents (x, y, z), BinExprs (x = y = 32) etc.
-    pub rhs: Vec<Expr>,
+    /// The variable(s).
+    pub ident: Ident,
     #[new(default)]
     pub is_static: Option<bool>,
     #[new(default)]
     pub is_final: Option<bool>,
-    #[new(value = r#""decl_stmt""#)]
-    r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, From, new)]
