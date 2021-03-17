@@ -34,6 +34,16 @@ pub struct AssignStmt {
     r#type: &'static str,
 }
 
+/// For variable declaration statements, we can represent various situations for
+/// initialization.
+///
+/// In the example of Go variables may be delcared with a statement
+/// like `someVar, ok := os.Config("/path/to/file")` where we would represent this
+/// with two variables in the `variables` field, and one `CallExpr` in the `expressions`
+/// field.
+///
+/// For other declarations like `x, y := foo(), bar()`, we represent this just by
+/// having two variables and two call expressions in the respective `Vec` fields.
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct DeclStmt {
     /// The declared variable(s).
