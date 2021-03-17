@@ -6,7 +6,6 @@ use serde::Serialize;
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, From)]
 #[serde(untagged)]
 pub enum Stmt {
-    AssignStmt(AssignStmt),
     DeclStmt(DeclStmt),
     ExprStmt(ExprStmt),
     IfStmt(IfStmt),
@@ -23,15 +22,6 @@ pub enum Stmt {
     ThrowStmt(ThrowStmt),
     TryCatchStmt(TryCatchStmt),
     CatchStmt(CatchStmt),
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
-pub struct AssignStmt {
-    // lhs could be something like *var
-    pub lhs: Expr,
-    pub rhs: Expr,
-    #[new(value = r#""assign_stmt""#)]
-    r#type: &'static str,
 }
 
 /// For variable declaration statements, we can represent various situations for
