@@ -703,10 +703,9 @@ mod tests {
             value: "".to_string(),
         };
 
-        let init: Expr = BinaryExpr::new(
-            Box::new(Ident::new("_i284".into()).into()),
-            Op::Equal,
-            Box::new(Expr::Literal("0".into())),
+        let init: Expr = AssignExpr::new(
+            vec![Ident::new("_i284".into()).into()],
+            vec![Expr::Literal("0".into())],
         )
         .into();
         let init: Stmt = init.into();
