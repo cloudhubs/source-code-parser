@@ -217,11 +217,19 @@ fn binary_expression(node: &AST) -> Option<Expr> {
             log.args.push(rhs);
             return Some(log.into());
         }
-        _ => BinaryExpr::new(Box::new(lhs), op, Box::new(rhs)).into(),
+        _ => match op {
+            Op::Equal => AssignExpr::new(vec![lhs], vec![rhs]).into(),
+            _ => BinaryExpr::new(Box::new(lhs), op, Box::new(rhs)).into(),
+        },
     };
 
     if is_log {
-        let log = convert_binary_expr_to_log(expr)?;
+        // C++ logs should not be AssignExpr since they use the << operator
+        let binary_expr = match expr {
+            Expr::BinaryExpr(binary_expr) => binary_expr,
+            _ => unreachable!(),
+        };
+        let log = convert_binary_expr_to_log(binary_expr)?;
         Some(log.into())
     } else {
         Some(expr.into())
