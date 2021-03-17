@@ -8,6 +8,7 @@ use serde::Serialize;
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, From)]
 #[serde(untagged)]
 pub enum Expr {
+    AssignExpr(AssignExpr),
     BinaryExpr(BinaryExpr),
     UnaryExpr(UnaryExpr),
     CallExpr(CallExpr),
@@ -26,6 +27,14 @@ impl Into<Stmt> for Expr {
     fn into(self) -> Stmt {
         Stmt::ExprStmt(ExprStmt::new(self))
     }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct AssignExpr {
+    pub lhs: Vec<Expr>,
+    pub rhs: Vec<Expr>,
+    #[new(value = r#""assign_expr""#)]
+    r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]

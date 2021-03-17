@@ -34,18 +34,36 @@ pub struct AssignStmt {
     r#type: &'static str,
 }
 
+/// For variable declaration statements, we can represent various situations for
+/// initialization.
+///
+/// In the example of Go variables may be delcared with a statement
+/// like `someVar, ok := os.Config("/path/to/file")` where we would represent this
+/// with two variables in the `variables` field, and one `CallExpr` in the `expressions`
+/// field.
+///
+/// For other declarations like `x, y := foo(), bar()`, we represent this just by
+/// having two variables and two call expressions in the respective `Vec` fields.
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct DeclStmt {
-    /// The type of the declared variable(s).
+    /// The declared variable(s).
+    pub variables: Vec<VarDecl>,
+    /// The expression(s) being assigned to the declared variables.
+    pub expressions: Vec<Expr>,
+    #[new(value = r#""decl_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct VarDecl {
+    /// The type of the declared variable.
     pub var_type: Option<String>,
-    /// The variable(s). These could be Idents (x, y, z), BinExprs (x = y = 32) etc.
-    pub rhs: Vec<Expr>,
+    /// The variable(s).
+    pub ident: Ident,
     #[new(default)]
     pub is_static: Option<bool>,
     #[new(default)]
     pub is_final: Option<bool>,
-    #[new(value = r#""decl_stmt""#)]
-    r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, From, new)]
