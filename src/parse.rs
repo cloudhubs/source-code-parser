@@ -81,7 +81,7 @@ impl From<AstResponse> for AST {
 }
 
 fn printLang(lang: &str) -> () {
-    println!("The language is : {:?}" , lang);
+    println!("The language is : {:?}", lang);
 }
 
 impl AST {
@@ -93,9 +93,7 @@ impl AST {
             LANG::Cpp => (cpp::find_components(self, path, path), lang.into()),
             LANG::Java => (java::find_components(self, path), lang.into()),
             LANG::Go => (go::find_components(self, path), lang.into()),
-            LANG::Python => {
-                todo!();
-            },
+            LANG::Python => (vec![], Language::Python),
             lang => {
                 println!("unsupported lang: {:?}", lang);
                 (vec![], Language::Unknown)
@@ -151,6 +149,9 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
     for dir in dirs {
         // Generate module constants
         let path = dir.path.as_path().to_str().unwrap_or("").to_owned();
+        if path == "" {
+            continue;
+        }
 
         // Generate module identifier
         let p = dir.path.clone();
@@ -164,7 +165,14 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
         let module_name = mod_path.clone();
 
         // Get directory
-        let read_dir = std::fs::read_dir(dir.path)?;
+        println!("trying to read {:?}", dir.path);
+        let read_dir = match std::fs::read_dir(dir.path) {
+            Ok(dir) => dir,
+            Err(err) => {
+                eprintln!("Could not read directory: {:?}", err);
+                continue;
+            }
+        };
         let mut module = ModuleComponent::new(module_name.to_string(), path);
 
         for entry in read_dir {
