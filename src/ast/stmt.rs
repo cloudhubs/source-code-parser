@@ -23,6 +23,7 @@ pub enum Stmt {
     ThrowStmt(ThrowStmt),
     TryCatchStmt(TryCatchStmt),
     CatchStmt(CatchStmt),
+    DeferStmt(DeferStmt)
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -37,7 +38,7 @@ pub struct AssignStmt {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct DeclStmt {
     /// The type of the declared variable(s).
-    pub var_type: Option<String>,
+    pub var_type: Option<Vec<String>>,
     /// The variable(s). These could be Idents (x, y, z), BinExprs (x = y = 32) etc.
     pub rhs: Vec<Expr>,
     #[new(default)]
@@ -167,5 +168,12 @@ pub struct CatchStmt {
     pub exc: DeclStmt,
     pub body: Block,
     #[new(value = r#""catch_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct DeferStmt {
+    pub body: Block,
+    #[new(value = r#""defer_stmt""#)]
     r#type: &'static str,
 }

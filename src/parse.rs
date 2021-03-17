@@ -89,7 +89,7 @@ impl AST {
     pub fn transform(self, lang: LANG, path: &str) -> (Vec<ComponentType>, Language) {
         // Do language specific AST parsing
         printLang(lang.get_name());
-        match lang {
+        let format = match lang {
             LANG::Cpp => (cpp::find_components(self, path, path), lang.into()),
             LANG::Java => (java::find_components(self, path), lang.into()),
             LANG::Go => (go::find_components(self, path), lang.into()),
@@ -101,7 +101,9 @@ impl AST {
                 (vec![], Language::Unknown)
                 // todo!();
             }
-        }
+        };
+
+        return format;
     }
 }
 
@@ -215,6 +217,7 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
                     }
                 }
             }
+            // println!("Parsed Module: {:?}", module)
         }
 
         modules.push(module);
@@ -227,6 +230,7 @@ fn merge_modules(modules: Vec<ModuleComponent>, lang: Language) -> Vec<ModuleCom
     match lang {
         Language::Cpp => cpp::merge_modules(modules),
         Language::Java => java::merge_modules(modules),
+        Language::Go => go::merge_modules(modules),
         _ => modules,
     }
 }

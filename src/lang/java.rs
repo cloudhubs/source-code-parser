@@ -394,7 +394,7 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
                 .collect();
 
             // TODO: Use name
-            let mut decl = DeclStmt::new(r#type, rhs);
+            let mut decl = DeclStmt::new(Some(vec![r#type?]), rhs);
             decl.is_static = Some(modifier.is_static);
             decl.is_final = Some(modifier.is_final);
             let decl: Stmt = decl.into();

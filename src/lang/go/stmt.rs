@@ -1,11 +1,15 @@
+use std::vec;
+
 use super::*;
 use crate::ast::*;
 use crate::parse::AST;
 
 /// Takes child of compound_statement and turns it into a Node
 pub fn body_node(node: &AST) -> Option<Node> {
+    println!("\nnode type: {}\n", &*node.r#type);
     match &*node.r#type {
-        "declaration" => {
+        "declaration" | "var_declaration" => {
+            //short_var_declaration
             let decl: Stmt = variable_declaration(node).into();
             Some(decl.into())
         }
@@ -62,8 +66,13 @@ pub fn body_node(node: &AST) -> Option<Node> {
             let block = Block::new(nodes);
             Some(block.into())
         }
+        "defer_statement" => {
+            let def: Stmt = defer_statement(node)?.into();
+            Some(def.into())
+        }
         // ...
         _ => {
+            println!("ERROR: COULD NOT IDENTIFY NODE TYPE: {}", node.r#type);
             let expr: Stmt = expression(node)?.into();
             Some(expr.into())
         }
@@ -72,6 +81,13 @@ pub fn body_node(node: &AST) -> Option<Node> {
 
 /// Takes in node type "declaration" and converts it to a DeclStmt
 pub fn variable_declaration(node: &AST) -> DeclStmt {
+    // // some variables are multi assignment i.e. x,y := function
+    // if node.children[0].r#type == "expression_list" {
+    //     return DeclStmt::new(
+    //         Some(multiple_variable_lhs_builder(&node.children[0])),
+    //         multiple_variable_rhs_builder(&node.children[2]),
+    //     );
+    // } else {
     let mut variable_type = node
         .find_child_by_type(&[
             "primitive_type",
@@ -107,7 +123,39 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
             DeclStmt::new(Some(vec![variable_type]), vec![ident.into()])
         }
     }
+    // }
 }
+
+// fn multiple_variable_lhs_builder(node: &AST) -> Vec<String> {
+//     let mut var_list = vec![];
+
+//     for child in &node.children {
+//         if (child.r#type == "identifier") {
+//             var_list.push(child.value.clone())
+//         }
+//     }
+
+//     var_list
+// }
+
+// fn multiple_variable_rhs_builder(node: &AST) -> Vec<Expr> {
+//     let mut exprList = vec![];
+//     match node.find_all_children_by_type(&["call_expression"]) {
+//         Some(express) => {
+//             for expres in express {
+//                 match expression(expres) {
+//                     Some(expr) => exprList.push(expr),
+//                     None => println!(
+//                         "Malformed, expression advertised, no data stored {:?}",
+//                         expres
+//                     ),
+//                 };
+//             }
+//         }
+//         None => {}
+//     }
+//     exprList
+// }
 
 fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -> DeclStmt {
     let name = variable_ident(init_declarator, &mut variable_type).expect(&*format!(
@@ -198,7 +246,7 @@ fn try_catch_statement(try_catch_stmt: &AST) -> Option<TryCatchStmt> {
 
 fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
     let cond = if_stmt
-        .find_child_by_type(&["condition_clause"])
+        .find_child_by_type(&["binary_expression"])
         .map(|cond| expression(cond))??;
     let mut blocks = if_stmt
         .children
@@ -378,6 +426,10 @@ fn catch_statement(catch_clause: &AST) -> Option<CatchStmt> {
         catch_clause.find_child_by_type(&["compound_statement"])?,
     ));
     Some(CatchStmt::new(decl, body))
+}
+
+fn defer_statement(node: &AST) -> Option<DeferStmt> {
+    Some(DeferStmt::new(Block::new(block_nodes(node))))
 }
 
 #[cfg(test)]

@@ -6,7 +6,7 @@
       {
         "type": "shell",
         "label": "build-rust",
-        "command": "cargo build"
+        "command": "cargo build -p source-code-parser-web"
       }
     ]
   }
