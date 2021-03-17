@@ -25,7 +25,6 @@ async fn main() -> std::io::Result<()> {
             .service(ast)
             .service(ctx)
             .wrap(Logger::default())
-            .wrap(Logger::new("%a %{User-Agent}i"))
             .app_data(web::Json::<Directory>::configure(|cfg| {
                 cfg.limit(1024 * 1024 * 4)
             }))
