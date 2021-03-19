@@ -96,8 +96,8 @@ pub(crate) fn parse_class(
         },
         declaration_type: ContainerType::Class,
         annotations: modifier.annotations,
-        constructors: fold_vec(constructors),
-        field_components: fold_vec(fields),
+        constructors: constructors,
+        field_components: fields,
     })
 }
 

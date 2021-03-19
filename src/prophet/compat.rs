@@ -32,7 +32,6 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             let constructors: Vec<_> = classes
                 .iter()
                 .flat_map(|class| class.constructors.clone())
-                .flat_map(|constructors| constructors)
                 .collect();
 
             let module_functions: Vec<_> = other
@@ -51,16 +50,18 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
 
         let class_names = classes
             .iter()
-            .filter(|component| {
-                component.constructors.is_some() && component.field_components.is_some()
+            .filter(|component| match component.declaration_type {
+                ContainerType::Class => true,
+                _ => false,
             })
             .map(|class| class.component.container_name.clone())
             .collect();
 
         let interface_names = classes
             .iter()
-            .filter(|component| {
-                component.constructors.is_none() && component.field_components.is_none()
+            .filter(|component| match component.declaration_type {
+                ContainerType::Interface => true,
+                _ => false,
             })
             .map(|class| class.component.container_name.clone())
             .collect();
@@ -87,12 +88,11 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
                     "Ivalid index {} into funcs classes during prophet compat conversion",
                     ndx
                 ));
-                if interface.constructors.is_none() && interface.field_components.is_none() {
-                    Some(ClassOrInterfaceComponent::convert_compat(
+                match interface.declaration_type {
+                    ContainerType::Interface => Some(ClassOrInterfaceComponent::convert_compat(
                         interface, *id, &methods,
-                    ))
-                } else {
-                    None
+                    )),
+                    _ => None,
                 }
             })
             .flat_map(|interface| interface)
@@ -102,15 +102,14 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             .iter()
             .map(|(ndx, id)| {
                 let class = classes.get(*ndx).expect(&*format!(
-                    "Ivalid index {} into funcs classes during prophet compat conversion",
+                    "Invalid index {} into funcs classes during prophet compat conversion",
                     ndx
                 ));
-                if class.constructors.is_some() && class.field_components.is_some() {
-                    Some(ClassOrInterfaceComponent::convert_compat(
+                match class.declaration_type {
+                    ContainerType::Class => Some(ClassOrInterfaceComponent::convert_compat(
                         class, *id, &methods,
-                    ))
-                } else {
-                    None
+                    )),
+                    _ => None,
                 }
             })
             .flat_map(|class| class)
@@ -282,8 +281,9 @@ impl ModuleComponent {
         let class_names = other
             .classes
             .iter()
-            .filter(|component| {
-                component.constructors.is_some() && component.field_components.is_some()
+            .filter(|component| match component.declaration_type {
+                ContainerType::Class => true,
+                _ => false,
             })
             .map(|class| class.component.container_name.clone())
             .collect();
@@ -291,8 +291,9 @@ impl ModuleComponent {
         let interface_names = other
             .classes
             .iter()
-            .filter(|component| {
-                component.constructors.is_none() && component.field_components.is_none()
+            .filter(|component| match component.declaration_type {
+                ContainerType::Interface => true,
+                _ => false,
             })
             .map(|class| class.component.container_name.clone())
             .collect();
@@ -303,8 +304,9 @@ impl ModuleComponent {
                 other
                     .classes
                     .iter()
-                    .filter(|other_class| {
-                        other_class.constructors.is_some() && other_class.field_components.is_some()
+                    .filter(|other_class| match other_class.declaration_type {
+                        ContainerType::Class => true,
+                        _ => false,
                     })
                     .find(|other_class| class.is_equiv(other_class))
                     .is_some()
@@ -318,8 +320,9 @@ impl ModuleComponent {
                 other
                     .classes
                     .iter()
-                    .filter(|other_class| {
-                        other_class.constructors.is_none() && other_class.field_components.is_none()
+                    .filter(|other_class| match other_class.declaration_type {
+                        ContainerType::Interface => true,
+                        _ => false,
                     })
                     .find(|other_class| class.is_equiv(other_class))
                     .is_some()
@@ -357,11 +360,9 @@ pub struct ClassOrInterfaceComponent {
     pub declaration_type: ContainerType,
     pub annotations: Vec<AnnotationComponent>,
 
-    // Class-specific fields
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub constructors: Option<Vec<MethodComponent>>,
-    #[serde(rename = "fieldComponents", skip_serializing_if = "Option::is_none")]
-    pub field_components: Option<Vec<FieldComponent>>,
+    pub constructors: Vec<MethodComponent>,
+    #[serde(rename = "fieldComponents")]
+    pub field_components: Vec<FieldComponent>,
 }
 
 impl ClassOrInterfaceComponent {
@@ -372,21 +373,15 @@ impl ClassOrInterfaceComponent {
     ) -> ClassOrInterfaceComponent {
         let constructors: Vec<_> = methods
             .iter()
-            .filter(|method| match &other.constructors {
-                Some(constructors) => constructors
+            .filter(|method| {
+                other
+                    .constructors
                     .iter()
                     .find(|constructor| method.is_equiv(constructor))
-                    .is_some(),
-                None => false,
+                    .is_some()
             })
             .map(|constructor| constructor.clone())
             .collect();
-
-        let constructors = if constructors.len() > 0 {
-            Some(constructors)
-        } else {
-            None
-        };
 
         let methods: Vec<_> = methods
             .iter()
@@ -416,21 +411,17 @@ impl ClassOrInterfaceComponent {
             declaration_type: other.declaration_type.clone(),
             annotations: other.annotations.clone(),
             constructors,
-            field_components: Some(
-                other
-                    .field_components
-                    .as_ref()
-                    .unwrap_or(&vec![])
-                    .iter()
-                    .map(|f| FieldComponent {
-                        component: ComponentInfo {
-                            instance_name: format!("{}::FieldComponent", f.component.instance_name),
-                            ..f.component.clone()
-                        },
-                        ..f.clone()
-                    })
-                    .collect(),
-            ),
+            field_components: other
+                .field_components
+                .iter()
+                .map(|f| FieldComponent {
+                    component: ComponentInfo {
+                        instance_name: format!("{}::FieldComponent", f.component.instance_name),
+                        ..f.component.clone()
+                    },
+                    ..f.clone()
+                })
+                .collect(),
         }
     }
 
@@ -438,7 +429,7 @@ impl ClassOrInterfaceComponent {
         self.component.is_equiv(&other.component)
             && self.declaration_type == other.declaration_type
             && self.field_components == other.field_components
-            && self.constructors.is_some() == other.constructors.is_some()
+            && self.constructors.len() == other.constructors.len()
     }
 }
 
