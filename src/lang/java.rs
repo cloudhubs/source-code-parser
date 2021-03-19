@@ -139,8 +139,8 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
         },
         declaration_type: ContainerType::Class,
         annotations: modifier.annotations,
-        constructors: fold_vec(constructors),
-        field_components: fold_vec(fields),
+        constructors,
+        field_components: fields,
     })
 }
 

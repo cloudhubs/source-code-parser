@@ -481,8 +481,8 @@ fn transform_into_class(
         },
         declaration_type: ContainerType::Class,
         annotations: vec![],
-        constructors: Some(vec![]),
-        field_components: Some(fields),
+        constructors: vec![],
+        field_components: fields,
     })
 }
 
