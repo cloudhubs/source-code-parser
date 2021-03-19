@@ -32,14 +32,16 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
                     Node::Expr(expr) => Some(expr),
                     _ => None,
                 })
-                .filter(|expr| expr.is_some())
                 .flat_map(|expr| expr)
                 .collect();
 
             // TODO: Use name
-            let decl = DeclStmt::new(vec![], rhs);
-            // decl.is_static = Some(modifier.is_static);
-            // decl.is_final = Some(modifier.is_final);
+            let mut decl = DeclStmt::new(vec![], rhs);
+            for var_decl in decl.variables.iter_mut() {
+                var_decl.is_final = Some(modifier.is_final);
+                var_decl.is_static = Some(modifier.is_static);
+                var_decl.var_type = Some(r#type.clone());
+            }
             let decl: Stmt = decl.into();
             Some(decl.into())
         }

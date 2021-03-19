@@ -1,11 +1,10 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 
 use crate::parse::AST;
 use crate::prophet::*;
 
 mod class_def;
 use class_def::*;
-use itertools::Itertools;
 
 mod body;
 mod method_def;
@@ -31,7 +30,11 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
         }
     }
 
-    packages.into_iter().map(|kv| kv.1).collect()
+    let tmp: Vec<ModuleComponent> = packages.into_iter().map(|kv| kv.1).collect();
+    for v in tmp.iter() {
+        println!("{:#?}", v);
+    }
+    tmp
 }
 
 pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
@@ -45,10 +48,10 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         .find_all_children_by_type(&[
             "import_declaration",
             "package_declaration",
-             "class_declaration",
+            "class_declaration",
             "interface_declaration",
-             "enum_declaration",
-             "annotation_declaration",
+            "enum_declaration",
+            "annotation_declaration",
         ])
         .expect("Provided an invalid Java file, no class, interface, annotation, enum, packages, or imports found!")
          .iter()
@@ -65,10 +68,10 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
             | "enum_declaration"
             | "annotation_declaration" => match parse_class(node, &*package, path) {
                 Some(class) => {
-                    // // Save the methods
-                    // for method in class.component.methods {
-                    //     components.push(ComponentType::MethodComponent(method.clone()));
-                    // }
+                    // Save the methods
+                    for method in class.component.methods.iter() {
+                        components.push(ComponentType::MethodComponent(method.clone()));
+                    }
                     // class.component.methods = vec![];
 
                     // Save the class itself
@@ -80,18 +83,16 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         };
     }
 
-    // Create module this falls in
+    // Create module this falls in. If default package, use "default" (no name collisions possible, it's a reserved word)
+    if package == "" {
+        package = "default".into();
+    }
     let module = create_module(package.as_str(), path, &components);
     vec![module]
 }
 
 fn create_module(package: &str, path: &str, components: &Vec<ComponentType>) -> ComponentType {
     let mut module = ModuleComponent::new(package.to_string(), path.to_string());
-
-    // get name
-    let p: PathBuf = PathBuf::from(path).into_iter().dropping_back(1).collect();
-    // let module_name = p.into_os_string().into_string().unwrap();
-
     let classes = components.iter().filter_map(|comp| match comp {
         ComponentType::ClassOrInterfaceComponent(class_ix) => Some(class_ix),
         _ => None,
@@ -111,7 +112,7 @@ fn create_module(package: &str, path: &str, components: &Vec<ComponentType>) -> 
 
 /// Take in the AST node containing the package declaration, and--if it is not malformed--return a string representing the package
 fn parse_package(ast: &AST) -> Option<String> {
-    let result = ast.find_child_by_type(&["scoped_identifier"])?;
+    let result = ast.find_child_by_type(&["identifier", "scoped_identifier"])?;
     let mut buffer = String::new();
     for member in result.children.iter() {
         if member.r#type == "scoped_identifier" {
