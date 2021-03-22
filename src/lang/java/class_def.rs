@@ -1,6 +1,5 @@
 use crate::java::method_def::parse_method;
 use crate::java::modifier::{find_modifier, parse_modifiers, Modifier};
-use crate::java::util::fold_vec;
 use crate::java::vartype::find_type;
 use crate::parse::AST;
 use crate::prophet::*;
