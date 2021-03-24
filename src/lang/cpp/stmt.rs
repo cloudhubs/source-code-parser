@@ -90,23 +90,14 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
                 variable_init_declaration(init_declarator, variable_type)
             }
             "array_declarator" => {
-                let (variables, expressions) = match expression(init_declarator) {
-                    Some(index_expr) => match index_expr {
-                        Expr::IndexExpr(index_expr) => match *index_expr.expr.clone() {
-                            Expr::Ident(ident) => (
-                                vec![VarDecl::new(Some(variable_type), ident)],
-                                vec![index_expr.into()],
-                            ),
-                            _ => (vec![], vec![index_expr.into()]),
-                        },
-                        _ => (vec![], vec![]),
-                    },
+                let rhs = match expression(init_declarator) {
+                    Some(expr) => vec![expr],
                     None => {
                         eprintln!("Malformed array_declarator {:#?}", init_declarator);
                         (vec![], vec![])
                     }
                 };
-                DeclStmt::new(variables, expressions)
+                DeclStmt::new(Some(vec![variable_type]), rhs)
             }
             _ => unreachable!(),
         },

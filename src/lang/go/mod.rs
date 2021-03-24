@@ -11,7 +11,6 @@ mod stmt;
 pub use stmt::*;
 
 pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
-
     // for mut module in modules {
     //     println!("\n\nNEXT MODULE{:?}", module)
     // }
@@ -64,11 +63,9 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
             // "import_declaration" => println!("{:?}", components.push(parse_import(node))),
             // "function_declaration" => println!("{:?}", components.push(parse_function(node, package_name, path))),
             // "type_declaration" => println!("{:?}", components.push(parse_type(node))),
-            "method_declaration" | "function_declaration" => components.push(ComponentType::MethodComponent(parse_method(
-                node,
-                package_name,
-                path,
-            ))),
+            "method_declaration" | "function_declaration" => components.push(
+                ComponentType::MethodComponent(parse_method(node, package_name, path)),
+            ),
             tag => println!("Cannot identify provided tag {:#?}", tag),
         };
     }
@@ -154,7 +151,7 @@ fn parse_method(ast: &AST, package_name: &str, path: &str) -> MethodComponent {
     // get line count = line_end  - line_begin + 1
     // get line_begin
     //get line_end
-     let(line_begin, line_end) = match body {
+    let (line_begin, line_end) = match body {
         None => (0, 0),
         Some(body) => match body.span {
             Some((line_start, _col_start, line_end, _col_end)) => {
@@ -164,13 +161,14 @@ fn parse_method(ast: &AST, package_name: &str, path: &str) -> MethodComponent {
         },
     };
 
-    let body = body.map_or_else(|| None, |body| Some(body::func_body(body)));
+    // let body = body.map_or_else(|| None, |body| Some(body::func_body(body)));
+    let body = None;
 
     let method = MethodComponent {
         component: ComponentInfo {
             path: path.to_string(),
             package_name: package_name.to_string(),
-            instance_name: "".to_string(),
+            instance_name: function_name.to_string(),
             instance_type: InstanceType::MethodComponent,
         },
         accessor: AccessorType::Default,

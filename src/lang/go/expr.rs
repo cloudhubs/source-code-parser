@@ -14,7 +14,8 @@ pub fn expression(node: &AST) -> Option<Expr> {
         "unary_expression" => Some(unary_expression(node)?.into()),
         "parenthesized_expression" => Some(paren_expression(node)?.into()),
         "true" | "false" | "number_literal" | "this" | "auto" | "string_literal" => {
-            Some(node.value.clone().into())
+            let literal: Literal = node.value.clone().into();
+            Some(literal.into())
         }
         "condition_clause" => {
             let cond = node.children.iter().nth(1)?;
@@ -34,7 +35,10 @@ pub fn expression(node: &AST) -> Option<Expr> {
         "initializer_list" => Some(init_list_expression(node).into()),
         "sizeof_expression" => Some(sizeof_expression(node)?.into()),
         "lambda_expression" => Some(lambda_expression(node)?.into()),
-        "type_descriptor" => Some(type_descriptor(node)?.into()),
+        "type_descriptor" => {
+            let descriptor: Literal = type_descriptor(node)?.into();
+            Some(descriptor.into())
+        }
         _ => None,
     }
 }
@@ -43,7 +47,7 @@ fn declarator(node: &AST) -> Option<Expr> {
     let mut ptr_symbol = String::new();
     let name = variable_ident(node, &mut ptr_symbol)?;
     let mut ident: Expr = match &*name {
-        "this" => Expr::Literal(name),
+        "this" => Expr::Literal(name.into()),
         _ => Ident::new(name).into(),
     };
     ptr_symbol
@@ -57,7 +61,7 @@ fn pointer_expression(ptr_expr: &AST) -> Option<Expr> {
     let mut ptr_symbol = String::new();
     let name = variable_ident_inner(ptr_expr, &mut ptr_symbol)?;
     let mut ident: Expr = match &*name {
-        "this" => Expr::Literal(name),
+        "this" => Expr::Literal(name.into()),
         _ => Ident::new(name).into(),
     };
     ptr_symbol
@@ -132,7 +136,8 @@ fn new_expression(new_expr: &AST) -> Option<CallExpr> {
     match expr {
         Expr::IndexExpr(mut ndx) => {
             ndx.expr = Box::new(r#type);
-            let init = CallExpr::new(Box::new("new".to_string().into()), vec![ndx.into()]);
+            let new: Literal = "new".to_string().into();
+            let init = CallExpr::new(Box::new(new.into()), vec![ndx.into()]);
             Some(init)
         }
         _ => None,
@@ -148,7 +153,8 @@ fn delete_expression(delete_expr: &AST) -> Option<CallExpr> {
             _ => true,
         })?;
     let expr = expression(expr)?;
-    let del = CallExpr::new(Box::new("delete".to_string().into()), vec![expr]);
+    let delete: Literal = "delete".to_string().into();
+    let del = CallExpr::new(Box::new(delete.into()), vec![expr]);
     Some(del)
 }
 
@@ -177,7 +183,8 @@ fn sizeof_expression(sizeof_expr: &AST) -> Option<CallExpr> {
             })
             .last()?,
     )?;
-    let sizeof_call = CallExpr::new(Box::new("sizeof".to_string().into()), vec![expr]);
+    let sizeof: Literal = "sizeof".to_string().into();
+    let sizeof_call = CallExpr::new(Box::new(sizeof.into()), vec![expr]);
     Some(sizeof_call)
 }
 
@@ -238,7 +245,7 @@ fn convert_binary_expr_to_log(cpp_log: BinaryExpr) -> Option<LogExpr> {
         // Printed to screen, convert Ident to CallExpr
         Expr::Ident(ident) => match &*ident.name {
             "std::cout" | "cout" => CallExpr::new(
-                Box::new("".to_string().into()),
+                Box::new(Literal::new("".to_string()).into()),
                 vec![Ident::new("console".into()).into()],
             ),
             _ => return None,

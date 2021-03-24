@@ -81,7 +81,7 @@ impl From<AstResponse> for AST {
 }
 
 fn printLang(lang: &str) -> () {
-    println!("The language is : {:?}" , lang);
+    println!("The language is : {:?}", lang);
 }
 
 impl AST {
@@ -93,9 +93,7 @@ impl AST {
             LANG::Cpp => (cpp::find_components(self, path, path), lang.into()),
             LANG::Java => (java::find_components(self, path), lang.into()),
             LANG::Go => (go::find_components(self, path), lang.into()),
-            LANG::Python => {
-                todo!();
-            },
+            LANG::Python => (vec![], Language::Python),
             lang => {
                 println!("unsupported lang: {:?}", lang);
                 (vec![], Language::Unknown)
