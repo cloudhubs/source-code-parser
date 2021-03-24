@@ -90,8 +90,8 @@ mod tests {
                 },
                 declaration_type: ContainerType::Class,
                 annotations: vec![],
-                constructors: None,
-                field_components: Some(vec![FieldComponent {
+                constructors: vec![],
+                field_components: vec![FieldComponent {
                     component: ComponentInfo {
                         path: "/path/module_name/class".to_string(),
                         package_name: "module_name".to_string(),
@@ -106,7 +106,7 @@ mod tests {
                     is_final: false,
                     default_value: "".to_string(),
                     r#type: "String".to_string(),
-                }]),
+                }],
             }],
             interfaces: vec![],
         }];

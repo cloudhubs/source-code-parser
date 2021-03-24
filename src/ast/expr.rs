@@ -8,6 +8,7 @@ use serde::Serialize;
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, From)]
 #[serde(untagged)]
 pub enum Expr {
+    AssignExpr(AssignExpr),
     BinaryExpr(BinaryExpr),
     UnaryExpr(UnaryExpr),
     CallExpr(CallExpr),
@@ -19,13 +20,21 @@ pub enum Expr {
     LogExpr(LogExpr),
     LambdaExpr(LambdaExpr),
     Ident(Ident),
-    Literal(String),
+    Literal(Literal),
 }
 
 impl Into<Stmt> for Expr {
     fn into(self) -> Stmt {
         Stmt::ExprStmt(ExprStmt::new(self))
     }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct AssignExpr {
+    pub lhs: Vec<Expr>,
+    pub rhs: Vec<Expr>,
+    #[new(value = r#""assign_expr""#)]
+    r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -156,4 +165,23 @@ pub struct LambdaExpr {
     pub body: Block,
     #[new(value = r#""lambda_expr""#)]
     r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct Literal {
+    pub value: String,
+    #[new(value = r#""literal_expr""#)]
+    r#type: &'static str,
+}
+
+impl From<&str> for Literal {
+    fn from(string: &str) -> Literal {
+        Literal::new(string.into())
+    }
+}
+
+impl From<String> for Literal {
+    fn from(string: String) -> Literal {
+        Literal::new(string)
+    }
 }

@@ -90,11 +90,23 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
                 variable_init_declaration(init_declarator, variable_type)
             }
             "array_declarator" => {
-                let rhs = expression(init_declarator).expect(&*format!(
-                    "Malformed array_declarator {:#?}",
-                    init_declarator
-                ));
-                DeclStmt::new(Some(vec![variable_type]), vec![rhs])
+                let (variables, expressions) = match expression(init_declarator) {
+                    Some(index_expr) => match index_expr {
+                        Expr::IndexExpr(index_expr) => match *index_expr.expr.clone() {
+                            Expr::Ident(ident) => (
+                                vec![VarDecl::new(Some(variable_type), ident)],
+                                vec![index_expr.into()],
+                            ),
+                            _ => (vec![], vec![index_expr.into()]),
+                        },
+                        _ => (vec![], vec![]),
+                    },
+                    None => {
+                        eprintln!("Malformed array_declarator {:#?}", init_declarator);
+                        (vec![], vec![])
+                    }
+                };
+                DeclStmt::new(variables, expressions)
             }
             _ => unreachable!(),
         },
@@ -104,16 +116,19 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
                 node,
             ));
             let ident = Ident::new(name);
-            DeclStmt::new(Some(vec![variable_type]), vec![ident.into()])
+            DeclStmt::new(vec![VarDecl::new(Some(variable_type), ident)], vec![])
         }
     }
 }
 
 fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -> DeclStmt {
-    let name = variable_ident(init_declarator, &mut variable_type).expect(&*format!(
-        "No identifier for init declarator {:#?}",
-        init_declarator
-    ));
+    let name = variable_ident(init_declarator, &mut variable_type).map_or_else(
+        || {
+            eprintln!("No identifier for init declarator {:#?}", init_declarator);
+            "".into()
+        },
+        |name| name,
+    );
     let decl_type = init_declarator.find_child_by_type(&["=", "argument_list", "parameter_list"]);
     let rhs = match decl_type {
         Some(decl_type) => match &*decl_type.r#type {
@@ -129,7 +144,8 @@ fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -
                     .map(|arg| expression(arg))
                     .flat_map(|arg| arg)
                     .collect();
-                let init = CallExpr::new(Box::new("new".to_string().into()), args).into();
+                let new: Literal = "new".to_string().into();
+                let init = CallExpr::new(Box::new(new.into()), args).into();
                 Some(init)
             }
             _ => None,
@@ -137,15 +153,12 @@ fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -
         None => None,
     };
     let ident = Ident::new(name);
+    let var_decl = VarDecl::new(Some(variable_type), ident);
     let rhs = match rhs {
-        Some(rhs) => {
-            let init: Expr =
-                BinaryExpr::new(Box::new(ident.into()), Op::Equal, Box::new(rhs)).into();
-            vec![init]
-        }
-        None => vec![ident.into()],
+        Some(rhs) => vec![rhs],
+        None => vec![],
     };
-    DeclStmt::new(Some(vec![variable_type]), rhs)
+    DeclStmt::new(vec![var_decl], rhs)
 }
 
 fn expression_statement(node: &AST) -> Option<Stmt> {
@@ -253,6 +266,10 @@ fn switch_case(case_statement: &AST) -> Option<CaseStmt> {
         "case" => expression(case_statement.children.iter().nth(1)?),
         "default" | _ => None,
     };
+    if case_statement.children.len() < 4 {
+        println!("Malformed case statement {:#?}", case_statement);
+        return None;
+    }
     let nodes = block_nodes_iter(&case_statement.children[3..]);
     let block = Block::new(nodes);
     let case = CaseStmt::new(expr, block);
@@ -338,7 +355,7 @@ fn for_range_statement(for_range_loop: &AST) -> Option<ForRangeStmt> {
 
     // Convert generic node to statement
     let mut r#type = match r#type {
-        Some(Expr::Literal(t)) => t,
+        Some(Expr::Literal(t)) => t.value,
         Some(Expr::Ident(ident)) => ident.name,
         _ => "".into(),
     };
@@ -357,7 +374,12 @@ fn for_range_statement(for_range_loop: &AST) -> Option<ForRangeStmt> {
             _ => is_unary = false,
         }
     }
-    let decl = DeclStmt::new(Some(vec![r#type]), vec![decl?]);
+    // let decl = DeclStmt::new(Some(r#type), vec![decl?]);
+    let variables = match decl {
+        Some(Expr::Ident(ident)) => vec![VarDecl::new(Some(r#type), ident)],
+        _ => vec![],
+    };
+    let decl = DeclStmt::new(variables, vec![]);
     let for_range_stmt = ForRangeStmt::new(Box::new(decl.into()), iterator, block);
     Some(for_range_stmt)
 }
@@ -373,7 +395,7 @@ fn catch_statement(catch_clause: &AST) -> Option<CatchStmt> {
             _ => None,
         })
         .flatten()
-        .unwrap_or(DeclStmt::new(None, vec![]));
+        .unwrap_or(DeclStmt::new(vec![], vec![]));
     let body = Block::new(block_nodes(
         catch_clause.find_child_by_type(&["compound_statement"])?,
     ));
@@ -552,13 +574,11 @@ mod tests {
         };
 
         let expected: Stmt = DeclStmt::new(
-            Some(vec!["uint32_t".into()]),
-            vec![BinaryExpr::new(
-                Box::new(Ident::new("xfer".into()).into()),
-                Op::Equal,
-                Box::new(Expr::Literal("0".into())),
-            )
-            .into()],
+            vec![VarDecl::new(
+                Some("uint32_t".into()),
+                Ident::new("xfer".into()),
+            )],
+            vec![Literal::new("0".into()).into()],
         )
         .into();
         let expected: Node = expected.into();
@@ -683,10 +703,9 @@ mod tests {
             value: "".to_string(),
         };
 
-        let init: Expr = BinaryExpr::new(
-            Box::new(Ident::new("_i284".into()).into()),
-            Op::Equal,
-            Box::new(Expr::Literal("0".into())),
+        let init: Expr = AssignExpr::new(
+            vec![Ident::new("_i284".into()).into()],
+            vec![Expr::Literal("0".into())],
         )
         .into();
         let init: Stmt = init.into();

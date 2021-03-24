@@ -139,8 +139,8 @@ fn parse_class(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceC
         },
         declaration_type: ContainerType::Class,
         annotations: modifier.annotations,
-        constructors: fold_vec(constructors),
-        field_components: fold_vec(fields),
+        constructors,
+        field_components: fields,
     })
 }
 
@@ -394,9 +394,9 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
                 .collect();
 
             // TODO: Use name
-            let mut decl = DeclStmt::new(Some(vec![r#type?]), rhs);
-            decl.is_static = Some(modifier.is_static);
-            decl.is_final = Some(modifier.is_final);
+            let mut decl = DeclStmt::new(vec![], rhs);
+            // decl.is_static = Some(modifier.is_static);
+            // decl.is_final = Some(modifier.is_final);
             let decl: Stmt = decl.into();
             Some(decl.into())
         }
@@ -449,7 +449,11 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         | "decimal_floating_point_literal"
         | "string_literal"
         | "false"
-        | "true" => Some(Node::Expr(Expr::Literal(ast.value.clone()))),
+        | "true" => {
+            let literal: Literal = ast.value.clone().into();
+            let literal: Expr = literal.into();
+            Some(literal.into())
+        }
 
         "object_creation_expression" => {
             let mut name = String::new();

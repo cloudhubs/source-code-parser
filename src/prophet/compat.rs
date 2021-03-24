@@ -11,11 +11,11 @@ pub struct JSSAContext {
     pub succeeded: bool,
     pub class_names: Vec<String>,
     pub interface_names: Vec<String>,
-    pub containers: Vec<i64>,
+    pub containers: Vec<ClassOrInterfaceComponent>, // classes + interfaces
     pub classes: Vec<ClassOrInterfaceComponent>,
     pub interfaces: Vec<ClassOrInterfaceComponent>,
     pub modules: Vec<ModuleComponent>,
-    pub methods: Vec<i64>,
+    pub methods: Vec<MethodComponent>,
 }
 
 impl From<super::JSSAContext<'_>> for JSSAContext {
@@ -32,7 +32,6 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             let constructors: Vec<_> = classes
                 .iter()
                 .flat_map(|class| class.constructors.clone())
-                .flat_map(|constructors| constructors)
                 .collect();
 
             let module_functions: Vec<_> = other
@@ -51,16 +50,18 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
 
         let class_names = classes
             .iter()
-            .filter(|component| {
-                component.constructors.is_some() && component.field_components.is_some()
+            .filter(|component| match component.declaration_type {
+                ContainerType::Class => true,
+                _ => false,
             })
             .map(|class| class.component.container_name.clone())
             .collect();
 
         let interface_names = classes
             .iter()
-            .filter(|component| {
-                component.constructors.is_none() && component.field_components.is_none()
+            .filter(|component| match component.declaration_type {
+                ContainerType::Interface => true,
+                _ => false,
             })
             .map(|class| class.component.container_name.clone())
             .collect();
@@ -87,12 +88,11 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
                     "Ivalid index {} into funcs classes during prophet compat conversion",
                     ndx
                 ));
-                if interface.constructors.is_none() && interface.field_components.is_none() {
-                    Some(ClassOrInterfaceComponent::convert_compat(
+                match interface.declaration_type {
+                    ContainerType::Interface => Some(ClassOrInterfaceComponent::convert_compat(
                         interface, *id, &methods,
-                    ))
-                } else {
-                    None
+                    )),
+                    _ => None,
                 }
             })
             .flat_map(|interface| interface)
@@ -102,15 +102,14 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             .iter()
             .map(|(ndx, id)| {
                 let class = classes.get(*ndx).expect(&*format!(
-                    "Ivalid index {} into funcs classes during prophet compat conversion",
+                    "Invalid index {} into funcs classes during prophet compat conversion",
                     ndx
                 ));
-                if class.constructors.is_some() && class.field_components.is_some() {
-                    Some(ClassOrInterfaceComponent::convert_compat(
+                match class.declaration_type {
+                    ContainerType::Class => Some(ClassOrInterfaceComponent::convert_compat(
                         class, *id, &methods,
-                    ))
-                } else {
-                    None
+                    )),
+                    _ => None,
                 }
             })
             .flat_map(|class| class)
@@ -132,15 +131,17 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             succeeded: other.succeeded,
             class_names,
             interface_names,
-            containers: class_ids
-                .iter()
-                .map(|(_, id)| *id)
-                .chain(module_ids.iter().map(|(_, id)| *id))
-                .collect(),
+            containers: {
+                classes
+                    .clone()
+                    .into_iter()
+                    .chain(interfaces.clone().into_iter())
+                    .collect()
+            },
             classes,
             interfaces,
             modules,
-            methods: method_ids.iter().map(|(_, id)| *id).collect(),
+            methods,
         }
     }
 }
@@ -170,7 +171,7 @@ pub struct MethodComponent {
     #[serde(rename = "final_method")]
     pub is_final: bool,
     #[serde(rename = "subroutines")]
-    pub sub_methods: Vec<i64>,
+    pub sub_methods: Vec<MethodComponent>,
     #[serde(rename = "subComponents")]
     pub sub_components: Vec<ComponentType>,
     pub annotations: Vec<AnnotationComponent>,
@@ -265,9 +266,9 @@ pub struct ModuleComponent {
     pub module_stereotype: ModuleStereotype,
     pub class_names: Vec<String>,
     pub interface_names: Vec<String>,
-    pub containers: Vec<i64>,
-    pub classes: Vec<i64>,
-    pub interfaces: Vec<i64>,
+    pub containers: Vec<ClassOrInterfaceComponent>,
+    pub classes: Vec<ClassOrInterfaceComponent>,
+    pub interfaces: Vec<ClassOrInterfaceComponent>,
 }
 
 impl ModuleComponent {
@@ -280,8 +281,9 @@ impl ModuleComponent {
         let class_names = other
             .classes
             .iter()
-            .filter(|component| {
-                component.constructors.is_some() && component.field_components.is_some()
+            .filter(|component| match component.declaration_type {
+                ContainerType::Class => true,
+                _ => false,
             })
             .map(|class| class.component.container_name.clone())
             .collect();
@@ -289,8 +291,9 @@ impl ModuleComponent {
         let interface_names = other
             .classes
             .iter()
-            .filter(|component| {
-                component.constructors.is_none() && component.field_components.is_none()
+            .filter(|component| match component.declaration_type {
+                ContainerType::Interface => true,
+                _ => false,
             })
             .map(|class| class.component.container_name.clone())
             .collect();
@@ -301,13 +304,14 @@ impl ModuleComponent {
                 other
                     .classes
                     .iter()
-                    .filter(|other_class| {
-                        other_class.constructors.is_some() && other_class.field_components.is_some()
+                    .filter(|other_class| match other_class.declaration_type {
+                        ContainerType::Class => true,
+                        _ => false,
                     })
                     .find(|other_class| class.is_equiv(other_class))
                     .is_some()
             })
-            .map(|class| class.component.id)
+            .map(|class| class.clone())
             .collect();
 
         let interface_ids: Vec<_> = classes
@@ -316,13 +320,14 @@ impl ModuleComponent {
                 other
                     .classes
                     .iter()
-                    .filter(|other_class| {
-                        other_class.constructors.is_none() && other_class.field_components.is_none()
+                    .filter(|other_class| match other_class.declaration_type {
+                        ContainerType::Interface => true,
+                        _ => false,
                     })
                     .find(|other_class| class.is_equiv(other_class))
                     .is_some()
             })
-            .map(|class| class.component.id)
+            .map(|class| class.clone())
             .collect();
 
         ModuleComponent {
@@ -355,11 +360,9 @@ pub struct ClassOrInterfaceComponent {
     pub declaration_type: ContainerType,
     pub annotations: Vec<AnnotationComponent>,
 
-    // Class-specific fields
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub constructors: Option<Vec<i64>>,
-    #[serde(rename = "fieldComponents", skip_serializing_if = "Option::is_none")]
-    pub field_components: Option<Vec<FieldComponent>>,
+    pub constructors: Vec<MethodComponent>,
+    #[serde(rename = "fieldComponents")]
+    pub field_components: Vec<FieldComponent>,
 }
 
 impl ClassOrInterfaceComponent {
@@ -370,21 +373,15 @@ impl ClassOrInterfaceComponent {
     ) -> ClassOrInterfaceComponent {
         let constructors: Vec<_> = methods
             .iter()
-            .filter(|method| match &other.constructors {
-                Some(constructors) => constructors
+            .filter(|method| {
+                other
+                    .constructors
                     .iter()
                     .find(|constructor| method.is_equiv(constructor))
-                    .is_some(),
-                None => false,
+                    .is_some()
             })
-            .map(|constructor| constructor.id)
+            .map(|constructor| constructor.clone())
             .collect();
-
-        let constructors = if constructors.len() > 0 {
-            Some(constructors)
-        } else {
-            None
-        };
 
         let methods: Vec<_> = methods
             .iter()
@@ -414,21 +411,17 @@ impl ClassOrInterfaceComponent {
             declaration_type: other.declaration_type.clone(),
             annotations: other.annotations.clone(),
             constructors,
-            field_components: Some(
-                other
-                    .field_components
-                    .as_ref()
-                    .unwrap_or(&vec![])
-                    .iter()
-                    .map(|f| FieldComponent {
-                        component: ComponentInfo {
-                            instance_name: format!("{}::FieldComponent", f.component.instance_name),
-                            ..f.component.clone()
-                        },
-                        ..f.clone()
-                    })
-                    .collect(),
-            ),
+            field_components: other
+                .field_components
+                .iter()
+                .map(|f| FieldComponent {
+                    component: ComponentInfo {
+                        instance_name: format!("{}::FieldComponent", f.component.instance_name),
+                        ..f.component.clone()
+                    },
+                    ..f.clone()
+                })
+                .collect(),
         }
     }
 
@@ -436,7 +429,7 @@ impl ClassOrInterfaceComponent {
         self.component.is_equiv(&other.component)
             && self.declaration_type == other.declaration_type
             && self.field_components == other.field_components
-            && self.constructors.is_some() == other.constructors.is_some()
+            && self.constructors.len() == other.constructors.len()
     }
 }
 
@@ -447,7 +440,7 @@ pub struct ContainerComponent {
     pub component: ComponentInfo,
     pub accessor: AccessorType,
     pub stereotype: ContainerStereotype,
-    pub methods: Vec<i64>,
+    pub methods: Vec<MethodComponent>,
     #[serde(rename = "containerName")]
     pub container_name: String,
     #[serde(rename = "lineCount")]
@@ -479,9 +472,8 @@ impl ContainerComponent {
             .map(|method| method.clone())
             .collect();
 
-        let method_ids = methods.iter().map(|method| method.id).collect();
-
         let sub_components = methods
+            .clone()
             .into_iter()
             .map(|method| ComponentType::MethodComponent(method))
             .chain(
@@ -511,7 +503,7 @@ impl ContainerComponent {
             component,
             accessor: other.accessor.clone(),
             stereotype: other.stereotype.clone(),
-            methods: method_ids,
+            methods,
             container_name: other.container_name.clone(),
             line_count: other.line_count,
             sub_components,

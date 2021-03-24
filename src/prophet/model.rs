@@ -21,6 +21,8 @@ pub enum InstanceType {
     FieldComponent,
     #[serde(rename = "IMPORTCOMPONENT")]
     ImportComponent,
+    #[serde(rename = "METHODPARAMCOMPONENT")]
+    MethodParamComponent,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
