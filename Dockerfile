@@ -1,5 +1,3 @@
-FROM rust:1.45
-
 # BUILD CACHING
 FROM lukemathwalker/cargo-chef as planner
 WORKDIR app
