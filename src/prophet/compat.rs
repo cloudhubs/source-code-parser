@@ -360,9 +360,11 @@ pub struct ClassOrInterfaceComponent {
     pub declaration_type: ContainerType,
     pub annotations: Vec<AnnotationComponent>,
 
-    pub constructors: Vec<MethodComponent>,
-    #[serde(rename = "fieldComponents")]
-    pub field_components: Vec<FieldComponent>,
+    // Class-specific fields
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub constructors: Option<Vec<MethodComponent>>,
+    #[serde(rename = "fieldComponents", skip_serializing_if = "Option::is_none")]
+    pub field_components: Option<Vec<FieldComponent>>,
 }
 
 impl ClassOrInterfaceComponent {

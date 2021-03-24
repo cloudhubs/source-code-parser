@@ -94,7 +94,7 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
                     Some(expr) => vec![expr],
                     None => {
                         eprintln!("Malformed array_declarator {:#?}", init_declarator);
-                        (vec![], vec![])
+                        vec![]
                     }
                 };
                 DeclStmt::new(Some(vec![variable_type]), rhs)
