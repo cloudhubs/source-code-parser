@@ -8,7 +8,7 @@ use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span, LANG,
 };
 
-use crate::{lang::*, *};
+use crate::{ast::*, communication::*, lang::*, *};
 
 /// Information on an `AST` node.
 /// Taken directly from the `rust_code_analysis` crate with additional serde macros for deserialization.
@@ -226,11 +226,34 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
 }
 
 fn merge_modules(modules: Vec<ModuleComponent>, lang: Language) -> Vec<ModuleComponent> {
-    match lang {
+    let modules = match lang {
         Language::Cpp => cpp::merge_modules(modules),
         Language::Java => java::merge_modules(modules),
         _ => modules,
+    };
+
+    convert_rpc_and_rest_calls(modules)
+}
+
+fn convert_rpc_and_rest_calls(mut modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
+    let modules_old = modules.clone();
+
+    for module in modules.iter_mut() {
+        for class in module.classes.iter_mut() {
+            for method in class.component.methods.iter_mut() {
+                if let Some(body) = method.body.as_mut() {
+                    body.replace_communication_call(&modules_old);
+                }
+            }
+        }
+        for method in module.component.methods.iter_mut() {
+            if let Some(body) = method.body.as_mut() {
+                body.replace_communication_call(&modules_old);
+            }
+        }
     }
+
+    modules
 }
 
 pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<(Vec<ComponentType>, Language)> {
