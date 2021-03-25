@@ -128,8 +128,8 @@ pub struct SwitchStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct CaseStmt {
-    cond: Option<Expr>,
-    body: Block,
+    pub cond: Option<Expr>,
+    pub body: Block,
     #[new(value = r#""case_stmt""#)]
     r#type: &'static str,
 }
@@ -159,7 +159,7 @@ pub struct ContinueStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ThrowStmt {
-    expr: Option<Expr>,
+    pub expr: Option<Expr>,
     #[new(value = r#""throw_stmt""#)]
     r#type: &'static str,
 }
