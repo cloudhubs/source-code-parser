@@ -281,25 +281,13 @@ impl MethodParamComponent {
 pub struct AnnotationComponent {
     pub id: i64,
     #[serde(flatten)]
-    pub component: ComponentInfo,
-    pub name: String,
-    #[serde(rename = "annotationMetaModel")]
-    pub annotation_meta_model: String,
-    #[serde(rename = "metaModelFieldName")]
-    pub meta_model_field_name: String,
-    pub key_value_pairs: Vec<AnnotationValuePair>,
-    pub value: String,
+    pub annotation: super::AnnotationComponent,
 }
 impl AnnotationComponent {
     fn convert_compat(other: &super::AnnotationComponent, id: i64) -> AnnotationComponent {
         AnnotationComponent {
             id,
-            component: other.component.clone(),
-            name: other.name.clone(),
-            annotation_meta_model: other.annotation_meta_model.clone(),
-            meta_model_field_name: other.meta_model_field_name.clone(),
-            key_value_pairs: other.key_value_pairs.clone(),
-            value: other.value.clone(),
+            annotation: other.clone(),
         }
     }
 
