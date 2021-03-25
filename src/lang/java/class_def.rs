@@ -27,6 +27,10 @@ pub(crate) fn parse_class(
         None => "".into(),
     };
 
+    let declaration_type = match instance_type {
+        InstanceType::InterfaceComponent => ContainerType::Interface,
+        _ => ContainerType::Class,
+    };
     let component = ComponentInfo {
         path: path.into(),
         package_name: package.into(),
@@ -93,7 +97,7 @@ pub(crate) fn parse_class(
             container_name: instance_name,
             line_count: end - start + 1,
         },
-        declaration_type: ContainerType::Class,
+        declaration_type,
         annotations: modifier.annotations,
         constructors: constructors,
         field_components: fields,

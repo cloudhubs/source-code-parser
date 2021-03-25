@@ -183,28 +183,22 @@ pub struct MethodComponent {
 
 impl MethodComponent {
     fn convert_compat(other: &super::MethodComponent, id: i64) -> MethodComponent {
-        let sub_components = other
+        let annotations = AnnotationComponent::convert_all(&other.annotations);
+        let parameters: Vec<MethodParamComponent> = other
             .parameters
             .clone()
             .iter()
-            .map(|param| {
-                ComponentType::MethodParamComponent(MethodParamComponent {
-                    component: ComponentInfo {
-                        instance_name: format!(
-                            "{}::MethodParamComponent",
-                            param.component.instance_name
-                        ),
-                        ..param.component.clone()
-                    },
-                    ..param.clone()
-                })
-            })
+            .map(|param| MethodParamComponent::convert_compat(param))
+            .collect();
+        let sub_components = parameters
+            .clone()
+            .into_iter()
+            .map(|annotation| ComponentType::MethodParamComponent(annotation))
             .chain(
-                other
-                    .annotations
+                annotations
                     .clone()
-                    .iter()
-                    .map(|annotation| ComponentType::AnnotationComponent(annotation.clone())),
+                    .into_iter()
+                    .map(|annotation| ComponentType::AnnotationComponent(annotation)),
             )
             .collect();
 
@@ -225,13 +219,13 @@ impl MethodComponent {
             accessor: other.accessor.clone(),
             method_name: other.method_name.clone(),
             return_type: other.return_type.clone(),
-            parameters: other.parameters.clone(), // add to subcomponents as well
+            parameters, // add to subcomponents as well
             is_static: other.is_static,
             is_abstract: other.is_abstract,
             is_final: other.is_final,
             sub_methods: vec![],
             sub_components,
-            annotations: other.annotations.clone(), // add to subcomponents as well
+            annotations, // add to subcomponents as well
             line_count: other.line_count,
             line_begin: other.line_begin,
             line_end: other.line_end,
@@ -244,15 +238,79 @@ impl MethodComponent {
             && self.accessor == other.accessor
             && self.method_name == other.method_name
             && self.return_type == other.return_type
-            && self.parameters == other.parameters
+            // && self.parameters == other.parameters
             && self.is_static == other.is_static
             && self.is_abstract == other.is_abstract
             && self.is_final == other.is_final
-            && self.annotations == other.annotations
+            // && self.annotations == other.annotations
             && self.line_count == other.line_count
             && self.line_begin == other.line_begin
             && self.line_end == other.line_end
             && self.body == other.body
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Clone)]
+pub struct MethodParamComponent {
+    #[serde(flatten)]
+    pub component: ComponentInfo,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotation: Option<Vec<AnnotationComponent>>,
+    pub r#type: String,
+    pub parameter_name: String,
+}
+impl MethodParamComponent {
+    fn convert_compat(param: &super::MethodParamComponent) -> MethodParamComponent {
+        let annotation = match &param.annotation {
+            Some(annotation_list) => Some(AnnotationComponent::convert_all(&annotation_list)),
+            _ => Some(vec![]),
+        };
+        MethodParamComponent {
+            component: ComponentInfo {
+                instance_name: format!("{}::MethodParamComponent", param.component.instance_name),
+                ..param.component.clone()
+            },
+            annotation,
+            r#type: param.r#type.clone(),
+            parameter_name: param.parameter_name.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Eq, PartialEq, Clone)]
+pub struct AnnotationComponent {
+    pub id: i64,
+    #[serde(flatten)]
+    pub component: ComponentInfo,
+    pub name: String,
+    #[serde(rename = "annotationMetaModel")]
+    pub annotation_meta_model: String,
+    #[serde(rename = "metaModelFieldName")]
+    pub meta_model_field_name: String,
+    pub key_value_pairs: Vec<AnnotationValuePair>,
+    pub value: String,
+}
+impl AnnotationComponent {
+    fn convert_compat(other: &super::AnnotationComponent, id: i64) -> AnnotationComponent {
+        AnnotationComponent {
+            id,
+            component: other.component.clone(),
+            name: other.name.clone(),
+            annotation_meta_model: other.annotation_meta_model.clone(),
+            meta_model_field_name: other.meta_model_field_name.clone(),
+            key_value_pairs: other.key_value_pairs.clone(),
+            value: other.value.clone(),
+        }
+    }
+
+    fn convert_all(annotations: &Vec<super::AnnotationComponent>) -> Vec<AnnotationComponent> {
+        let mut result: Vec<_> = vec![];
+        let mut id = -1;
+        for annotation in annotations.iter() {
+            id = id + 1;
+            result.push(AnnotationComponent::convert_compat(&annotation, id));
+        }
+        result
     }
 }
 
@@ -398,6 +456,8 @@ impl ClassOrInterfaceComponent {
             })
             .collect();
 
+        let annotations: Vec<_> = AnnotationComponent::convert_all(&other.annotations);
+
         // The instance_name should have already been adjusted to
         // name::ClassComponent or name::InterfaceComponent
         ClassOrInterfaceComponent {
@@ -405,11 +465,11 @@ impl ClassOrInterfaceComponent {
                 &other.component,
                 id,
                 &methods,
-                &other.annotations,
+                &annotations,
                 false,
             ),
             declaration_type: other.declaration_type.clone(),
-            annotations: other.annotations.clone(),
+            annotations,
             constructors,
             field_components: other
                 .field_components
