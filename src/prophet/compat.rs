@@ -126,7 +126,7 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             })
             .collect();
 
-        JSSAContext {
+        let ctx = JSSAContext {
             instance_type: other.component.instance_type,
             succeeded: other.succeeded,
             class_names,
@@ -142,7 +142,9 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             interfaces,
             modules,
             methods,
-        }
+        };
+        println!("{:#?}", ctx);
+        ctx
     }
 }
 
@@ -400,12 +402,28 @@ impl ModuleComponent {
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+pub struct FieldComponent {
+    #[serde(flatten)]
+    pub component: ComponentInfo,
+    pub annotations: Vec<AnnotationComponent>,
+    pub variables: Vec<String>,
+    pub field_name: String,
+    pub accessor: AccessorType,
+    #[serde(rename = "static")]
+    pub is_static: bool,
+    #[serde(rename = "final")]
+    pub is_final: bool,
+    #[serde(rename = "default_value_string")]
+    pub default_value: String,
+    pub r#type: String,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ClassOrInterfaceComponent {
     #[serde(flatten)]
     pub component: ContainerComponent,
     pub declaration_type: ContainerType,
     pub annotations: Vec<AnnotationComponent>,
-
     pub constructors: Vec<MethodComponent>,
     #[serde(rename = "fieldComponents")]
     pub field_components: Vec<FieldComponent>,
@@ -467,7 +485,14 @@ impl ClassOrInterfaceComponent {
                         instance_name: format!("{}::FieldComponent", f.component.instance_name),
                         ..f.component.clone()
                     },
-                    ..f.clone()
+                    annotations: AnnotationComponent::convert_all(&(f.annotations)),
+                    variables: f.variables.clone(),
+                    field_name: f.field_name.clone(),
+                    accessor: f.accessor.clone(),
+                    is_static: f.is_static.clone(),
+                    is_final: f.is_final.clone(),
+                    default_value: f.default_value.clone(),
+                    r#type: f.r#type.clone(),
                 })
                 .collect(),
         }
@@ -476,7 +501,7 @@ impl ClassOrInterfaceComponent {
     fn is_equiv(&self, other: &super::ClassOrInterfaceComponent) -> bool {
         self.component.is_equiv(&other.component)
             && self.declaration_type == other.declaration_type
-            && self.field_components == other.field_components
+            && self.field_components.len() == other.field_components.len()
             && self.constructors.len() == other.constructors.len()
     }
 }
