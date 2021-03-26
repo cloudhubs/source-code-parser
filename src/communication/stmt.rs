@@ -13,6 +13,33 @@ pub trait CommunicationReplacerStmt {
     ) -> Option<Node>;
 }
 
+#[macro_export]
+macro_rules! comm_repl_stmt_impl {
+    ( $( $struct_name:ty ),+ ) => {
+        $(
+            impl CommunicationReplacerStmt for $struct_name {
+                fn replace_communication_call_stmt(
+                    &mut self,
+                    _module: &ModuleComponent,
+                    _class: Option<&ClassOrInterfaceComponent>,
+                    _method: &MethodComponent,
+                ) -> Option<Node> {
+                    None
+                }
+            }
+        )*
+    };
+}
+
+comm_repl_stmt_impl!(
+    ReturnStmt,
+    ImportStmt,
+    BreakStmt,
+    ContinueStmt,
+    ThrowStmt,
+    CatchStmt
+);
+
 impl CommunicationReplacerStmt for DeclStmt {
     fn replace_communication_call_stmt(
         &mut self,
@@ -40,7 +67,8 @@ impl CommunicationReplacerStmt for ExprStmt {
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
-        self.expr.replace_communication_call(module, class, method)
+        self.expr
+            .replace_communication_call_expr(module, class, method)
     }
 }
 
@@ -100,16 +128,7 @@ impl CommunicationReplacerStmt for DoWhileStmt {
         self.body.replace_communication_call(module, class, method)
     }
 }
-impl CommunicationReplacerStmt for ReturnStmt {
-    fn replace_communication_call_stmt(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
+
 impl CommunicationReplacerStmt for SwitchStmt {
     fn replace_communication_call_stmt(
         &mut self,
@@ -123,6 +142,7 @@ impl CommunicationReplacerStmt for SwitchStmt {
         None
     }
 }
+
 impl CommunicationReplacerStmt for CaseStmt {
     fn replace_communication_call_stmt(
         &mut self,
@@ -133,46 +153,7 @@ impl CommunicationReplacerStmt for CaseStmt {
         self.body.replace_communication_call(module, class, method)
     }
 }
-impl CommunicationReplacerStmt for ImportStmt {
-    fn replace_communication_call_stmt(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
-impl CommunicationReplacerStmt for BreakStmt {
-    fn replace_communication_call_stmt(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
-impl CommunicationReplacerStmt for ContinueStmt {
-    fn replace_communication_call_stmt(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
-impl CommunicationReplacerStmt for ThrowStmt {
-    fn replace_communication_call_stmt(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
+
 impl CommunicationReplacerStmt for TryCatchStmt {
     fn replace_communication_call_stmt(
         &mut self,
@@ -182,15 +163,5 @@ impl CommunicationReplacerStmt for TryCatchStmt {
     ) -> Option<Node> {
         self.try_body
             .replace_communication_call(module, class, method)
-    }
-}
-impl CommunicationReplacerStmt for CatchStmt {
-    fn replace_communication_call_stmt(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
     }
 }

@@ -13,6 +13,28 @@ pub trait CommunicationReplacerExpr {
     ) -> Option<Node>;
 }
 
+#[macro_export]
+macro_rules! comm_repl_expr_impl {
+    ( $( $struct_name:ty ),+ ) => {
+        $(
+            impl CommunicationReplacerExpr for $struct_name {
+                fn replace_communication_call_expr(
+                    &mut self,
+                    _module: &ModuleComponent,
+                    _class: Option<&ClassOrInterfaceComponent>,
+                    _method: &MethodComponent,
+                ) -> Option<Node> {
+                    None
+                }
+            }
+        )*
+    };
+}
+
+comm_repl_expr_impl!(
+    BinaryExpr, UnaryExpr, ParenExpr, DotExpr, IncDecExpr, LogExpr, Ident, Literal, IndexExpr
+);
+
 impl CommunicationReplacerExpr for AssignExpr {
     fn replace_communication_call_expr(
         &mut self,
@@ -30,26 +52,7 @@ impl CommunicationReplacerExpr for AssignExpr {
         None
     }
 }
-impl CommunicationReplacerExpr for BinaryExpr {
-    fn replace_communication_call_expr(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
-impl CommunicationReplacerExpr for UnaryExpr {
-    fn replace_communication_call_expr(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
+
 impl CommunicationReplacerExpr for CallExpr {
     fn replace_communication_call_expr(
         &mut self,
@@ -63,46 +66,7 @@ impl CommunicationReplacerExpr for CallExpr {
         None
     }
 }
-impl CommunicationReplacerExpr for IndexExpr {
-    fn replace_communication_call_expr(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
-impl CommunicationReplacerExpr for ParenExpr {
-    fn replace_communication_call_expr(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
-impl CommunicationReplacerExpr for DotExpr {
-    fn replace_communication_call_expr(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
-impl CommunicationReplacerExpr for IncDecExpr {
-    fn replace_communication_call_expr(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
+
 impl CommunicationReplacerExpr for InitListExpr {
     fn replace_communication_call_expr(
         &mut self,
@@ -120,16 +84,7 @@ impl CommunicationReplacerExpr for InitListExpr {
         None
     }
 }
-impl CommunicationReplacerExpr for LogExpr {
-    fn replace_communication_call_expr(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
+
 impl CommunicationReplacerExpr for LambdaExpr {
     fn replace_communication_call_expr(
         &mut self,
@@ -138,25 +93,5 @@ impl CommunicationReplacerExpr for LambdaExpr {
         method: &MethodComponent,
     ) -> Option<Node> {
         self.body.replace_communication_call(module, class, method)
-    }
-}
-impl CommunicationReplacerExpr for Ident {
-    fn replace_communication_call_expr(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
-    }
-}
-impl CommunicationReplacerExpr for Literal {
-    fn replace_communication_call_expr(
-        &mut self,
-        _module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
-        _method: &MethodComponent,
-    ) -> Option<Node> {
-        None
     }
 }
