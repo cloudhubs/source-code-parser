@@ -1,4 +1,4 @@
-use super::{stmt::CommunicationReplacerStmt, CommunicationReplacer};
+use super::CommunicationReplacer;
 use crate::{ast::*, ClassOrInterfaceComponent};
 use crate::{prophet::ModuleComponent, MethodComponent};
 use enum_dispatch::enum_dispatch;
@@ -44,7 +44,7 @@ impl CommunicationReplacerExpr for AssignExpr {
     ) -> Option<Node> {
         for expr in self.rhs.iter_mut() {
             if let Some(Node::Expr(replacement)) =
-                expr.replace_communication_call(module, class, method)
+                expr.replace_communication_call_expr(module, class, method)
             {
                 *expr = replacement;
             }
