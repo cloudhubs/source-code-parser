@@ -236,19 +236,19 @@ fn merge_modules(modules: Vec<ModuleComponent>, lang: Language) -> Vec<ModuleCom
 }
 
 fn convert_rpc_and_rest_calls(mut modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
-    let modules_old = modules.clone();
-
     for module in modules.iter_mut() {
+        let module_view = module.clone();
         for class in module.classes.iter_mut() {
+            let class_view = class.clone();
             for method in class.component.methods.iter_mut() {
                 if let Some(body) = method.body.as_mut() {
-                    body.replace_communication_call(&modules_old);
+                    body.replace_communication_call(&module_view, Some(&class_view));
                 }
             }
         }
         for method in module.component.methods.iter_mut() {
             if let Some(body) = method.body.as_mut() {
-                body.replace_communication_call(&modules_old);
+                body.replace_communication_call(&module_view, None);
             }
         }
     }
