@@ -28,7 +28,6 @@ macro_rules! comm_repl_default_impl {
                     _class: Option<&ClassOrInterfaceComponent>,
                     _method: &MethodComponent,
                 ) -> Option<Node> {
-
                     None
                 }
             }

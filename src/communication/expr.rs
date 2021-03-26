@@ -33,8 +33,18 @@ impl CommunicationReplacer for CallExpr {
         method: &MethodComponent,
     ) -> Option<Node> {
         // TODO: convert call expressions that are REST or RPC calls.
-        // I might need to pass more context information throughout these trait calls to know where
-        // we might find the type information for a method call.
+
+        // Get name -- could be Ident, or DotExpr where the left hand is the identifier.
+        // For REST and RPC calls, it should be a DotExpr most likely since it will be using
+        // some kind of Client object to actually make the calls.
+
+        // Use the identifier from the DotExpr and look for a declaration with that same name.
+        // This could be in the module itself (unlikely???), in the class definition's fields,
+        // or as a local variable defined in your current function.
+
+        // Once we have the declaration we can try to use the type information to guess if it
+        // is an RPC or REST call or a normal call expression.
+
         None
     }
 }
