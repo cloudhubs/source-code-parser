@@ -1,42 +1,14 @@
 use super::CommunicationReplacer;
+use crate::comm_repl_default_impl;
 use crate::{ast::*, ClassOrInterfaceComponent};
 use crate::{prophet::ModuleComponent, MethodComponent};
-use enum_dispatch::enum_dispatch;
 
-#[enum_dispatch(Expr)]
-pub trait CommunicationReplacerExpr {
-    fn replace_communication_call_expr(
-        &mut self,
-        module: &ModuleComponent,
-        class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
-    ) -> Option<Node>;
-}
-
-#[macro_export]
-macro_rules! comm_repl_expr_impl {
-    ( $( $struct_name:ty ),+ ) => {
-        $(
-            impl CommunicationReplacerExpr for $struct_name {
-                fn replace_communication_call_expr(
-                    &mut self,
-                    _module: &ModuleComponent,
-                    _class: Option<&ClassOrInterfaceComponent>,
-                    _method: &MethodComponent,
-                ) -> Option<Node> {
-                    None
-                }
-            }
-        )*
-    };
-}
-
-comm_repl_expr_impl!(
+comm_repl_default_impl!(
     BinaryExpr, UnaryExpr, ParenExpr, DotExpr, IncDecExpr, LogExpr, Ident, Literal, IndexExpr
 );
 
-impl CommunicationReplacerExpr for AssignExpr {
-    fn replace_communication_call_expr(
+impl CommunicationReplacer for AssignExpr {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
@@ -44,7 +16,7 @@ impl CommunicationReplacerExpr for AssignExpr {
     ) -> Option<Node> {
         for expr in self.rhs.iter_mut() {
             if let Some(Node::Expr(replacement)) =
-                expr.replace_communication_call_expr(module, class, method)
+                expr.replace_communication_call(module, class, method)
             {
                 *expr = replacement;
             }
@@ -53,8 +25,8 @@ impl CommunicationReplacerExpr for AssignExpr {
     }
 }
 
-impl CommunicationReplacerExpr for CallExpr {
-    fn replace_communication_call_expr(
+impl CommunicationReplacer for CallExpr {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
@@ -67,8 +39,8 @@ impl CommunicationReplacerExpr for CallExpr {
     }
 }
 
-impl CommunicationReplacerExpr for InitListExpr {
-    fn replace_communication_call_expr(
+impl CommunicationReplacer for InitListExpr {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
@@ -76,7 +48,7 @@ impl CommunicationReplacerExpr for InitListExpr {
     ) -> Option<Node> {
         for expr in self.exprs.iter_mut() {
             if let Some(Node::Expr(replacement)) =
-                expr.replace_communication_call_expr(module, class, method)
+                expr.replace_communication_call(module, class, method)
             {
                 *expr = replacement;
             }
@@ -85,8 +57,8 @@ impl CommunicationReplacerExpr for InitListExpr {
     }
 }
 
-impl CommunicationReplacerExpr for LambdaExpr {
-    fn replace_communication_call_expr(
+impl CommunicationReplacer for LambdaExpr {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,

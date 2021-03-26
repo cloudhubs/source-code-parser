@@ -3,12 +3,11 @@ use crate::{prophet::ModuleComponent, MethodComponent};
 use enum_dispatch::enum_dispatch;
 
 mod expr;
-use expr::*;
-
 mod stmt;
-use stmt::*;
 
 #[enum_dispatch(Node)]
+#[enum_dispatch(Expr)]
+#[enum_dispatch(Stmt)]
 pub trait CommunicationReplacer {
     fn replace_communication_call(
         &mut self,
@@ -18,27 +17,25 @@ pub trait CommunicationReplacer {
     ) -> Option<Node>;
 }
 
-impl CommunicationReplacer for Expr {
-    fn replace_communication_call(
-        &mut self,
-        module: &ModuleComponent,
-        class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
-    ) -> Option<Node> {
-        self.replace_communication_call_expr(module, class, method)
-    }
+#[macro_export]
+macro_rules! comm_repl_default_impl {
+    ( $( $struct_name:ty ),+ ) => {
+        $(
+            impl CommunicationReplacer for $struct_name {
+                fn replace_communication_call(
+                    &mut self,
+                    _module: &ModuleComponent,
+                    _class: Option<&ClassOrInterfaceComponent>,
+                    _method: &MethodComponent,
+                ) -> Option<Node> {
+
+                    None
+                }
+            }
+        )*
+    };
 }
 
-impl CommunicationReplacer for Stmt {
-    fn replace_communication_call(
-        &mut self,
-        module: &ModuleComponent,
-        class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
-    ) -> Option<Node> {
-        self.replace_communication_call_stmt(module, class, method)
-    }
-}
 impl CommunicationReplacer for Block {
     fn replace_communication_call(
         &mut self,

@@ -1,37 +1,9 @@
-use super::{expr::CommunicationReplacerExpr, CommunicationReplacer};
+use super::CommunicationReplacer;
+use crate::comm_repl_default_impl;
 use crate::{ast::*, ClassOrInterfaceComponent};
 use crate::{prophet::ModuleComponent, MethodComponent};
-use enum_dispatch::enum_dispatch;
 
-#[enum_dispatch(Stmt)]
-pub trait CommunicationReplacerStmt {
-    fn replace_communication_call_stmt(
-        &mut self,
-        module: &ModuleComponent,
-        class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
-    ) -> Option<Node>;
-}
-
-#[macro_export]
-macro_rules! comm_repl_stmt_impl {
-    ( $( $struct_name:ty ),+ ) => {
-        $(
-            impl CommunicationReplacerStmt for $struct_name {
-                fn replace_communication_call_stmt(
-                    &mut self,
-                    _module: &ModuleComponent,
-                    _class: Option<&ClassOrInterfaceComponent>,
-                    _method: &MethodComponent,
-                ) -> Option<Node> {
-                    None
-                }
-            }
-        )*
-    };
-}
-
-comm_repl_stmt_impl!(
+comm_repl_default_impl!(
     ReturnStmt,
     ImportStmt,
     BreakStmt,
@@ -40,8 +12,8 @@ comm_repl_stmt_impl!(
     CatchStmt
 );
 
-impl CommunicationReplacerStmt for DeclStmt {
-    fn replace_communication_call_stmt(
+impl CommunicationReplacer for DeclStmt {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
@@ -60,20 +32,19 @@ impl CommunicationReplacerStmt for DeclStmt {
     }
 }
 
-impl CommunicationReplacerStmt for ExprStmt {
-    fn replace_communication_call_stmt(
+impl CommunicationReplacer for ExprStmt {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
-        self.expr
-            .replace_communication_call_expr(module, class, method)
+        self.expr.replace_communication_call(module, class, method)
     }
 }
 
-impl CommunicationReplacerStmt for IfStmt {
-    fn replace_communication_call_stmt(
+impl CommunicationReplacer for IfStmt {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
@@ -87,8 +58,8 @@ impl CommunicationReplacerStmt for IfStmt {
     }
 }
 
-impl CommunicationReplacerStmt for ForStmt {
-    fn replace_communication_call_stmt(
+impl CommunicationReplacer for ForStmt {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
@@ -97,29 +68,8 @@ impl CommunicationReplacerStmt for ForStmt {
         self.body.replace_communication_call(module, class, method)
     }
 }
-impl CommunicationReplacerStmt for ForRangeStmt {
-    fn replace_communication_call_stmt(
-        &mut self,
-        module: &ModuleComponent,
-        class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
-    ) -> Option<Node> {
-        self.body.replace_communication_call(module, class, method)
-    }
-}
-
-impl CommunicationReplacerStmt for WhileStmt {
-    fn replace_communication_call_stmt(
-        &mut self,
-        module: &ModuleComponent,
-        class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
-    ) -> Option<Node> {
-        self.body.replace_communication_call(module, class, method)
-    }
-}
-impl CommunicationReplacerStmt for DoWhileStmt {
-    fn replace_communication_call_stmt(
+impl CommunicationReplacer for ForRangeStmt {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
@@ -129,22 +79,43 @@ impl CommunicationReplacerStmt for DoWhileStmt {
     }
 }
 
-impl CommunicationReplacerStmt for SwitchStmt {
-    fn replace_communication_call_stmt(
+impl CommunicationReplacer for WhileStmt {
+    fn replace_communication_call(
+        &mut self,
+        module: &ModuleComponent,
+        class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
+    ) -> Option<Node> {
+        self.body.replace_communication_call(module, class, method)
+    }
+}
+impl CommunicationReplacer for DoWhileStmt {
+    fn replace_communication_call(
+        &mut self,
+        module: &ModuleComponent,
+        class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
+    ) -> Option<Node> {
+        self.body.replace_communication_call(module, class, method)
+    }
+}
+
+impl CommunicationReplacer for SwitchStmt {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
         for case in self.cases.iter_mut() {
-            case.replace_communication_call_stmt(module, class, method);
+            case.replace_communication_call(module, class, method);
         }
         None
     }
 }
 
-impl CommunicationReplacerStmt for CaseStmt {
-    fn replace_communication_call_stmt(
+impl CommunicationReplacer for CaseStmt {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
@@ -154,8 +125,8 @@ impl CommunicationReplacerStmt for CaseStmt {
     }
 }
 
-impl CommunicationReplacerStmt for TryCatchStmt {
-    fn replace_communication_call_stmt(
+impl CommunicationReplacer for TryCatchStmt {
+    fn replace_communication_call(
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
