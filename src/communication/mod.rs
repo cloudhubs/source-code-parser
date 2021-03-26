@@ -1,5 +1,5 @@
-use crate::prophet::ModuleComponent;
 use crate::{ast::*, ClassOrInterfaceComponent};
+use crate::{prophet::ModuleComponent, MethodComponent};
 use enum_dispatch::enum_dispatch;
 
 #[enum_dispatch(Node)]
@@ -8,6 +8,7 @@ pub trait CommunicationReplacer {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node>;
 }
 
@@ -17,6 +18,7 @@ pub trait CommunicationReplacerExpr {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node>;
 }
 
@@ -26,6 +28,7 @@ pub trait CommunicationReplacerStmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node>;
 }
 
@@ -34,8 +37,9 @@ impl CommunicationReplacer for Expr {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
-        self.replace_communication_call(module, class)
+        self.replace_communication_call(module, class, method)
     }
 }
 
@@ -44,8 +48,9 @@ impl CommunicationReplacer for Stmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
-        self.replace_communication_call(module, class)
+        self.replace_communication_call(module, class, method)
     }
 }
 impl CommunicationReplacer for Block {
@@ -53,9 +58,10 @@ impl CommunicationReplacer for Block {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         for node in self.nodes.iter_mut() {
-            if let Some(replacement) = node.replace_communication_call(module, class) {
+            if let Some(replacement) = node.replace_communication_call(module, class, method) {
                 *node = replacement;
             }
         }
@@ -68,9 +74,12 @@ impl CommunicationReplacerStmt for DeclStmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         for expr in self.expressions.iter_mut() {
-            if let Some(Node::Expr(replacement)) = expr.replace_communication_call(module, class) {
+            if let Some(Node::Expr(replacement)) =
+                expr.replace_communication_call(module, class, method)
+            {
                 // TODO: make sure for other replacements that if it's just an Expr it becomes an ExprStmt
                 // Maybe make the different traits return Option of their own type.
                 *expr = replacement;
@@ -85,8 +94,9 @@ impl CommunicationReplacerStmt for ExprStmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
-        self.expr.replace_communication_call(module, class)
+        self.expr.replace_communication_call(module, class, method)
     }
 }
 
@@ -95,10 +105,11 @@ impl CommunicationReplacerStmt for IfStmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
-        self.body.replace_communication_call(module, class);
+        self.body.replace_communication_call(module, class, method);
         if let Some(else_body) = self.else_body.as_mut() {
-            else_body.replace_communication_call(module, class);
+            else_body.replace_communication_call(module, class, method);
         }
         None
     }
@@ -109,8 +120,9 @@ impl CommunicationReplacerStmt for ForStmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
-        self.body.replace_communication_call(module, class)
+        self.body.replace_communication_call(module, class, method)
     }
 }
 impl CommunicationReplacerStmt for ForRangeStmt {
@@ -118,8 +130,9 @@ impl CommunicationReplacerStmt for ForRangeStmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
-        self.body.replace_communication_call(module, class)
+        self.body.replace_communication_call(module, class, method)
     }
 }
 
@@ -128,8 +141,9 @@ impl CommunicationReplacerStmt for WhileStmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
-        self.body.replace_communication_call(module, class)
+        self.body.replace_communication_call(module, class, method)
     }
 }
 impl CommunicationReplacerStmt for DoWhileStmt {
@@ -137,8 +151,9 @@ impl CommunicationReplacerStmt for DoWhileStmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
-        self.body.replace_communication_call(module, class)
+        self.body.replace_communication_call(module, class, method)
     }
 }
 impl CommunicationReplacerStmt for ReturnStmt {
@@ -146,6 +161,7 @@ impl CommunicationReplacerStmt for ReturnStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -155,9 +171,10 @@ impl CommunicationReplacerStmt for SwitchStmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         for case in self.cases.iter_mut() {
-            case.replace_communication_call_stmt(module, class);
+            case.replace_communication_call_stmt(module, class, method);
         }
         None
     }
@@ -167,8 +184,9 @@ impl CommunicationReplacerStmt for CaseStmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
-        self.body.replace_communication_call(module, class)
+        self.body.replace_communication_call(module, class, method)
     }
 }
 impl CommunicationReplacerStmt for ImportStmt {
@@ -176,6 +194,7 @@ impl CommunicationReplacerStmt for ImportStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -185,6 +204,7 @@ impl CommunicationReplacerStmt for BreakStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -194,6 +214,7 @@ impl CommunicationReplacerStmt for ContinueStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -203,6 +224,7 @@ impl CommunicationReplacerStmt for ThrowStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -212,8 +234,10 @@ impl CommunicationReplacerStmt for TryCatchStmt {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
-        self.try_body.replace_communication_call(module, class)
+        self.try_body
+            .replace_communication_call(module, class, method)
     }
 }
 impl CommunicationReplacerStmt for CatchStmt {
@@ -221,6 +245,7 @@ impl CommunicationReplacerStmt for CatchStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -231,9 +256,12 @@ impl CommunicationReplacerExpr for AssignExpr {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         for expr in self.rhs.iter_mut() {
-            if let Some(Node::Expr(replacement)) = expr.replace_communication_call(module, class) {
+            if let Some(Node::Expr(replacement)) =
+                expr.replace_communication_call(module, class, method)
+            {
                 *expr = replacement;
             }
         }
@@ -245,6 +273,7 @@ impl CommunicationReplacerExpr for BinaryExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -254,6 +283,7 @@ impl CommunicationReplacerExpr for UnaryExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -263,6 +293,7 @@ impl CommunicationReplacerExpr for CallExpr {
         &mut self,
         module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         // TODO: convert call expressions that are REST or RPC calls.
         // I might need to pass more context information throughout these trait calls to know where
@@ -275,6 +306,7 @@ impl CommunicationReplacerExpr for IndexExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -284,6 +316,7 @@ impl CommunicationReplacerExpr for ParenExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -293,6 +326,7 @@ impl CommunicationReplacerExpr for DotExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -302,6 +336,7 @@ impl CommunicationReplacerExpr for IncDecExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -311,10 +346,11 @@ impl CommunicationReplacerExpr for InitListExpr {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         for expr in self.exprs.iter_mut() {
             if let Some(Node::Expr(replacement)) =
-                expr.replace_communication_call_expr(module, class)
+                expr.replace_communication_call_expr(module, class, method)
             {
                 *expr = replacement;
             }
@@ -327,6 +363,7 @@ impl CommunicationReplacerExpr for LogExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -336,8 +373,9 @@ impl CommunicationReplacerExpr for LambdaExpr {
         &mut self,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
-        self.body.replace_communication_call(module, class)
+        self.body.replace_communication_call(module, class, method)
     }
 }
 impl CommunicationReplacerExpr for Ident {
@@ -345,6 +383,7 @@ impl CommunicationReplacerExpr for Ident {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -354,6 +393,7 @@ impl CommunicationReplacerExpr for Literal {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
     ) -> Option<Node> {
         None
     }

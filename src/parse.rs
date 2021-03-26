@@ -241,14 +241,16 @@ fn convert_rpc_and_rest_calls(mut modules: Vec<ModuleComponent>) -> Vec<ModuleCo
         for class in module.classes.iter_mut() {
             let class_view = class.clone();
             for method in class.component.methods.iter_mut() {
+                let method_view = method.clone();
                 if let Some(body) = method.body.as_mut() {
-                    body.replace_communication_call(&module_view, Some(&class_view));
+                    body.replace_communication_call(&module_view, Some(&class_view), &method_view);
                 }
             }
         }
         for method in module.component.methods.iter_mut() {
+            let method_view = method.clone();
             if let Some(body) = method.body.as_mut() {
-                body.replace_communication_call(&module_view, None);
+                body.replace_communication_call(&module_view, None, &method_view);
             }
         }
     }
