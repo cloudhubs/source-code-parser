@@ -39,7 +39,7 @@ impl CommunicationReplacer for Expr {
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
-        self.replace_communication_call(module, class, method)
+        self.replace_communication_call_expr(module, class, method)
     }
 }
 
@@ -50,7 +50,7 @@ impl CommunicationReplacer for Stmt {
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
-        self.replace_communication_call(module, class, method)
+        self.replace_communication_call_stmt(module, class, method)
     }
 }
 impl CommunicationReplacer for Block {
@@ -161,7 +161,7 @@ impl CommunicationReplacerStmt for ReturnStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -194,7 +194,7 @@ impl CommunicationReplacerStmt for ImportStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -204,7 +204,7 @@ impl CommunicationReplacerStmt for BreakStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -214,7 +214,7 @@ impl CommunicationReplacerStmt for ContinueStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -224,7 +224,7 @@ impl CommunicationReplacerStmt for ThrowStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -245,7 +245,7 @@ impl CommunicationReplacerStmt for CatchStmt {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -273,7 +273,7 @@ impl CommunicationReplacerExpr for BinaryExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -283,7 +283,7 @@ impl CommunicationReplacerExpr for UnaryExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -292,7 +292,7 @@ impl CommunicationReplacerExpr for CallExpr {
     fn replace_communication_call_expr(
         &mut self,
         module: &ModuleComponent,
-        _class: Option<&ClassOrInterfaceComponent>,
+        class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
         // TODO: convert call expressions that are REST or RPC calls.
@@ -306,7 +306,7 @@ impl CommunicationReplacerExpr for IndexExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -316,7 +316,7 @@ impl CommunicationReplacerExpr for ParenExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -326,7 +326,7 @@ impl CommunicationReplacerExpr for DotExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -336,7 +336,7 @@ impl CommunicationReplacerExpr for IncDecExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -363,7 +363,7 @@ impl CommunicationReplacerExpr for LogExpr {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -383,7 +383,7 @@ impl CommunicationReplacerExpr for Ident {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
@@ -393,7 +393,7 @@ impl CommunicationReplacerExpr for Literal {
         &mut self,
         _module: &ModuleComponent,
         _class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
+        _method: &MethodComponent,
     ) -> Option<Node> {
         None
     }
