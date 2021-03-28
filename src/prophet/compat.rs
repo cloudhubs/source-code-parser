@@ -1,7 +1,6 @@
 use super::*;
 use crate::ast::Block;
 use serde::Serialize;
-use std::collections::HashMap;
 
 #[derive(Debug, Serialize)]
 pub struct JSSAContext {
@@ -66,65 +65,31 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             .map(|class| class.component.container_name.clone())
             .collect();
 
-        let method_ids = map_ids(&funcs, &mut id);
-        let class_ids = map_ids(&classes, &mut id);
-        let module_ids = map_ids(&other.modules, &mut id);
-
-        let methods: Vec<_> = method_ids
-            .iter()
-            .map(|(ndx, id)| {
-                let func = funcs.get(*ndx).expect(&*format!(
-                    "Ivalid index {} into funcs array during prophet compat conversion",
-                    ndx
-                ));
-                MethodComponent::convert_compat(func, *id)
+        let methods: Vec<_> = add_ids(&funcs, &mut id, |func, id| {
+            MethodComponent::convert_compat(func, id)
+        });
+        let class_ix_list = add_ids(&classes, &mut id, |interface, id| {
+            ClassOrInterfaceComponent::convert_compat(interface, id, &methods)
+        });
+        let interfaces: Vec<ClassOrInterfaceComponent> = class_ix_list
+            .clone()
+            .into_iter()
+            .filter(|interface| match interface.declaration_type {
+                ContainerType::Interface => true,
+                _ => false,
             })
             .collect();
-
-        let interfaces: Vec<_> = class_ids
-            .iter()
-            .map(|(ndx, id)| {
-                let interface = classes.get(*ndx).expect(&*format!(
-                    "Ivalid index {} into funcs classes during prophet compat conversion",
-                    ndx
-                ));
-                match interface.declaration_type {
-                    ContainerType::Interface => Some(ClassOrInterfaceComponent::convert_compat(
-                        interface, *id, &methods,
-                    )),
-                    _ => None,
-                }
-            })
-            .flat_map(|interface| interface)
-            .collect();
-
-        let classes: Vec<_> = class_ids
-            .iter()
-            .map(|(ndx, id)| {
-                let class = classes.get(*ndx).expect(&*format!(
-                    "Invalid index {} into funcs classes during prophet compat conversion",
-                    ndx
-                ));
-                match class.declaration_type {
-                    ContainerType::Class => Some(ClassOrInterfaceComponent::convert_compat(
-                        class, *id, &methods,
-                    )),
-                    _ => None,
-                }
-            })
-            .flat_map(|class| class)
-            .collect();
-
-        let modules: Vec<_> = module_ids
-            .iter()
-            .map(|(ndx, id)| {
-                let module = other.modules.get(*ndx).expect(&*format!(
-                    "Ivalid index {} into modules array during prophet compat conversion",
-                    ndx
-                ));
-                ModuleComponent::convert_compat(module, *id, &methods, &classes)
+        let classes: Vec<ClassOrInterfaceComponent> = class_ix_list
+            .clone()
+            .into_iter()
+            .filter(|class| match class.declaration_type {
+                ContainerType::Class => true,
+                _ => false,
             })
             .collect();
+        let modules: Vec<_> = add_ids(&other.modules, &mut id, |module, id| {
+            ModuleComponent::convert_compat(module, *id, &methods, &classes)
+        });
 
         let ctx = JSSAContext {
             instance_type: other.component.instance_type,
@@ -143,18 +108,23 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             modules,
             methods,
         };
-        println!("{:#?}", ctx);
+        // println!("{:#?}", ctx);
         ctx
     }
 }
 
-fn map_ids<T>(components: &Vec<T>, id: &mut i64) -> HashMap<usize, i64> {
-    let mut ids = HashMap::new();
-    for (i, _) in components.iter().enumerate() {
-        ids.insert(i, *id);
-        *id += 1;
-    }
-    ids
+fn add_ids<T, F, R>(components: &Vec<T>, id: &mut i64, id_adder: F) -> Vec<R>
+where
+    F: Fn(&T, &mut i64) -> R,
+{
+    components
+        .iter()
+        .map(|comp| {
+            let ret = id_adder(comp, id);
+            *id += 1;
+            ret
+        })
+        .collect()
 }
 
 #[derive(Debug, Serialize, Eq, PartialEq, Clone)]
@@ -184,13 +154,14 @@ pub struct MethodComponent {
 }
 
 impl MethodComponent {
-    fn convert_compat(other: &super::MethodComponent, id: i64) -> MethodComponent {
-        let annotations = AnnotationComponent::convert_all(&other.annotations);
+    fn convert_compat(other: &super::MethodComponent, id: &mut i64) -> MethodComponent {
+        let annotations = AnnotationComponent::convert_all(&other.annotations, id);
+
         let parameters: Vec<MethodParamComponent> = other
             .parameters
             .clone()
             .iter()
-            .map(|param| MethodParamComponent::convert_compat(param))
+            .map(|param| MethodParamComponent::convert_compat(param, id))
             .collect();
         let sub_components = parameters
             .clone()
@@ -216,7 +187,7 @@ impl MethodComponent {
         };
 
         MethodComponent {
-            id,
+            id: *id,
             component,
             accessor: other.accessor.clone(),
             method_name: other.method_name.clone(),
@@ -240,11 +211,11 @@ impl MethodComponent {
             && self.accessor == other.accessor
             && self.method_name == other.method_name
             && self.return_type == other.return_type
-            // && self.parameters == other.parameters
+            && self.parameters.len() == other.parameters.len()
             && self.is_static == other.is_static
             && self.is_abstract == other.is_abstract
             && self.is_final == other.is_final
-            // && self.annotations == other.annotations
+            && self.annotations.len() == other.annotations.len()
             && self.line_count == other.line_count
             && self.line_begin == other.line_begin
             && self.line_end == other.line_end
@@ -256,16 +227,15 @@ impl MethodComponent {
 pub struct MethodParamComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub annotation: Option<Vec<AnnotationComponent>>,
+    pub annotation: Vec<AnnotationComponent>,
     pub r#type: String,
     pub parameter_name: String,
 }
 impl MethodParamComponent {
-    fn convert_compat(param: &super::MethodParamComponent) -> MethodParamComponent {
+    fn convert_compat(param: &super::MethodParamComponent, id: &mut i64) -> MethodParamComponent {
         let annotation = match &param.annotation {
-            Some(annotation_list) => Some(AnnotationComponent::convert_all(&annotation_list)),
-            _ => Some(vec![]),
+            Some(annotation_list) => AnnotationComponent::convert_all(&annotation_list, id),
+            _ => vec![],
         };
         MethodParamComponent {
             component: ComponentInfo {
@@ -286,21 +256,20 @@ pub struct AnnotationComponent {
     pub annotation: super::AnnotationComponent,
 }
 impl AnnotationComponent {
-    fn convert_compat(other: &super::AnnotationComponent, id: i64) -> AnnotationComponent {
+    fn convert_compat(other: &super::AnnotationComponent, id: &i64) -> AnnotationComponent {
         AnnotationComponent {
-            id,
+            id: *id,
             annotation: other.clone(),
         }
     }
 
-    fn convert_all(annotations: &Vec<super::AnnotationComponent>) -> Vec<AnnotationComponent> {
-        let mut result: Vec<_> = vec![];
-        let mut id = -1;
-        for annotation in annotations.iter() {
-            id = id + 1;
-            result.push(AnnotationComponent::convert_compat(&annotation, id));
-        }
-        result
+    fn convert_all(
+        annotations: &Vec<super::AnnotationComponent>,
+        id: &mut i64,
+    ) -> Vec<AnnotationComponent> {
+        add_ids(annotations, id, |anno, id| {
+            AnnotationComponent::convert_compat(anno, id)
+        })
     }
 }
 
@@ -432,7 +401,7 @@ pub struct ClassOrInterfaceComponent {
 impl ClassOrInterfaceComponent {
     fn convert_compat(
         other: &super::ClassOrInterfaceComponent,
-        id: i64,
+        id: &mut i64,
         methods: &Vec<MethodComponent>,
     ) -> ClassOrInterfaceComponent {
         let constructors: Vec<_> = methods
@@ -462,14 +431,14 @@ impl ClassOrInterfaceComponent {
             })
             .collect();
 
-        let annotations: Vec<_> = AnnotationComponent::convert_all(&other.annotations);
+        let annotations: Vec<_> = AnnotationComponent::convert_all(&other.annotations, id);
 
         // The instance_name should have already been adjusted to
         // name::ClassComponent or name::InterfaceComponent
         ClassOrInterfaceComponent {
             component: ContainerComponent::convert_compat(
                 &other.component,
-                id,
+                *id,
                 &methods,
                 &annotations,
                 false,
@@ -485,7 +454,7 @@ impl ClassOrInterfaceComponent {
                         instance_name: format!("{}::FieldComponent", f.component.instance_name),
                         ..f.component.clone()
                     },
-                    annotations: AnnotationComponent::convert_all(&(f.annotations)),
+                    annotations: AnnotationComponent::convert_all(&f.annotations, id),
                     variables: f.variables.clone(),
                     field_name: f.field_name.clone(),
                     accessor: f.accessor.clone(),
