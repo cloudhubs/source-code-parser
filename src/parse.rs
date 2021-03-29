@@ -236,6 +236,7 @@ fn merge_modules(modules: Vec<ModuleComponent>, lang: Language) -> Vec<ModuleCom
 }
 
 fn convert_rpc_and_rest_calls(mut modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
+    let modules_view = modules.clone();
     for module in modules.iter_mut() {
         let module_view = module.clone();
         for class in module.classes.iter_mut() {
@@ -243,14 +244,19 @@ fn convert_rpc_and_rest_calls(mut modules: Vec<ModuleComponent>) -> Vec<ModuleCo
             for method in class.component.methods.iter_mut() {
                 let method_view = method.clone();
                 if let Some(body) = method.body.as_mut() {
-                    body.replace_communication_call(&module_view, Some(&class_view), &method_view);
+                    body.replace_communication_call(
+                        &modules_view,
+                        &module_view,
+                        Some(&class_view),
+                        &method_view,
+                    );
                 }
             }
         }
         for method in module.component.methods.iter_mut() {
             let method_view = method.clone();
             if let Some(body) = method.body.as_mut() {
-                body.replace_communication_call(&module_view, None, &method_view);
+                body.replace_communication_call(&modules_view, &module_view, None, &method_view);
             }
         }
     }

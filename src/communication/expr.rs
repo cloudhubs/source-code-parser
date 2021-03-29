@@ -10,13 +10,14 @@ comm_repl_default_impl!(
 impl CommunicationReplacer for AssignExpr {
     fn replace_communication_call(
         &mut self,
+        modules: &Vec<ModuleComponent>,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
         for expr in self.rhs.iter_mut() {
             if let Some(Node::Expr(replacement)) =
-                expr.replace_communication_call(module, class, method)
+                expr.replace_communication_call(modules, module, class, method)
             {
                 *expr = replacement;
             }
@@ -28,6 +29,7 @@ impl CommunicationReplacer for AssignExpr {
 impl CommunicationReplacer for CallExpr {
     fn replace_communication_call(
         &mut self,
+        modules: &Vec<ModuleComponent>,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -52,13 +54,14 @@ impl CommunicationReplacer for CallExpr {
 impl CommunicationReplacer for InitListExpr {
     fn replace_communication_call(
         &mut self,
+        modules: &Vec<ModuleComponent>,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
         for expr in self.exprs.iter_mut() {
             if let Some(Node::Expr(replacement)) =
-                expr.replace_communication_call(module, class, method)
+                expr.replace_communication_call(modules, module, class, method)
             {
                 *expr = replacement;
             }
@@ -70,10 +73,12 @@ impl CommunicationReplacer for InitListExpr {
 impl CommunicationReplacer for LambdaExpr {
     fn replace_communication_call(
         &mut self,
+        modules: &Vec<ModuleComponent>,
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
-        self.body.replace_communication_call(module, class, method)
+        self.body
+            .replace_communication_call(modules, module, class, method)
     }
 }
