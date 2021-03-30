@@ -31,7 +31,7 @@ impl CommunicationReplacer for CallExpr {
         &mut self,
         modules: &Vec<ModuleComponent>,
         module: &ModuleComponent,
-        class: Option<&ClassOrInterfaceComponent>,
+        callee_class: Option<&ClassOrInterfaceComponent>,
         callee_method: &MethodComponent,
     ) -> Option<Node> {
         // TODO: convert call expressions that are REST or RPC calls.
@@ -60,59 +60,49 @@ impl CommunicationReplacer for CallExpr {
             .replace("client", "")
             .replace("pool", "")
             .replace("_", "");
-        // println!("class {:?}", class?.component.container_name);
-        for field in class?.field_components.iter() {
-            let field_name = field.field_name.to_lowercase();
-            // println!("field {}", field_name);
+        for field in callee_class?.field_components.iter() {
+            let field_name = if field.r#type != "" {
+                field.r#type.to_lowercase()
+            } else {
+                field.field_name.to_lowercase()
+            };
             if field_name.contains("client") {
                 // println!("before first split {}", field_name);
-                let mut field_name = field_name.split("client").next()?;
+                let mut field_name = if field_name.contains("client>") {
+                    field_name.split("client>").next()?
+                } else {
+                    field_name.split("client").next()?
+                };
                 if field_name.contains("<") {
                     // println!("before 2nd split {}", field_name);
                     field_name = field_name.split("<").last()?;
                 }
                 // println!("{} -> {}", client_name, field_name);
-                client_name = field_name.replace("_", "").into();
+                client_name = field_name.replace("_", "").replace("service", "").into();
             }
         }
 
-        if client_ident.contains("client") && client_name.len() > 0 {
-            println!(
-                "looking for {} {}->{} in {}",
-                client_name, client_ident, method_ident.name, callee_method.component.path
-            );
-            for module in modules.iter().filter(|module| {
-                module
-                    .component
-                    .component
-                    .path
-                    .to_lowercase()
-                    .contains(&*client_name)
-            }) {
-                println!("checking moudle {}", module.component.component.path);
-                if method_ident.name == "UploadUserMentions" {
-                    println!("classes {}", module.classes.len());
-                }
-                // Iterate through class methods looking for a matching endpoint declarations
+        if client_ident.contains("client")
+            && client_name.len() > 0
+            && match &*method_ident.name.to_lowercase() {
+                "push" | "pop" | "getclient" => false,
+                _ => true,
+            }
+        {
+            println!("find {} {}", client_name, &*method_ident.name);
+            for module in modules.iter() {
                 for class in module.classes.iter() {
-                    if method_ident.name == "UploadUserMentions" {
-                        println!(
-                            "class {} has {} methods",
-                            class.component.container_name,
-                            class.component.methods.len()
-                        );
-                        for method in class.component.methods.iter() {
-                            println!("has method {}", method.method_name);
-                        }
-                    }
                     for method in class.component.methods.iter() {
                         // Same method name and parameter count
                         if method.method_name == method_ident.name
                             && self.args.len() == method.parameters.len()
+                            && callee_method.component.path != class.component.component.path
+                            && callee_class?.component.container_name
+                                != class.component.container_name
                         {
                             // Found it
                             println!(
-                                "found {} in class {} --- from {} {}->{} -- file={}",
+                                "found {} in class {} --- from {} {}->{} -- from file={}",
                                 method.method_name,
                                 class.component.container_name,
                                 client_name,
@@ -120,6 +110,14 @@ impl CommunicationReplacer for CallExpr {
                                 method_ident.name,
                                 callee_method.component.path
                             );
+                            if class
+                                .component
+                                .container_name
+                                .to_lowercase()
+                                .contains(&client_name)
+                            {
+                                // prefer this method over any previously chosen ones.
+                            }
                             // println!("comm method? {:#?}", method);
                             break;
                         }
