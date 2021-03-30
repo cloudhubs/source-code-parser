@@ -54,42 +54,12 @@ impl CommunicationReplacer for CallExpr {
 
         let client_ident = match_ident_or(&*client_call.expr)?.name.to_lowercase();
         let method_ident = match_ident_or(&*client_call.selected)?;
+        let client_name = get_service_name(callee_class?, &client_ident)?;
 
         // Search through the modules pertaining to the client using the client name
-        let mut client_name = client_ident
-            .replace("client", "")
-            .replace("pool", "")
-            .replace("_", "");
-        for field in callee_class?.field_components.iter() {
-            let field_name = if field.r#type != "" {
-                field.r#type.to_lowercase()
-            } else {
-                field.field_name.to_lowercase()
-            };
-            if field_name.contains("client") {
-                // println!("before first split {}", field_name);
-                let mut field_name = if field_name.contains("client>") {
-                    field_name.split("client>").next()?
-                } else {
-                    field_name.split("client").next()?
-                };
-                if field_name.contains("<") {
-                    // println!("before 2nd split {}", field_name);
-                    field_name = field_name.split("<").last()?;
-                }
-                // println!("{} -> {}", client_name, field_name);
-                client_name = field_name.replace("_", "").replace("service", "").into();
-            }
-        }
-
-        if client_ident.contains("client")
-            && client_name.len() > 0
-            && match &*method_ident.name.to_lowercase() {
-                "push" | "pop" | "getclient" => false,
-                _ => true,
-            }
-        {
-            println!("find {} {}", client_name, &*method_ident.name);
+        if is_communication_call(&client_ident, method_ident, &client_name) {
+            let mut done = false;
+            let mut result = None;
             for module in modules.iter() {
                 for class in module.classes.iter() {
                     for method in class.component.methods.iter() {
@@ -101,7 +71,7 @@ impl CommunicationReplacer for CallExpr {
                                 != class.component.container_name
                         {
                             // Found it
-                            println!(
+                            result = Some(format!(
                                 "found {} in class {} --- from {} {}->{} -- from file={}",
                                 method.method_name,
                                 class.component.container_name,
@@ -109,20 +79,28 @@ impl CommunicationReplacer for CallExpr {
                                 client_ident,
                                 method_ident.name,
                                 callee_method.component.path
-                            );
-                            if class
-                                .component
-                                .container_name
-                                .to_lowercase()
-                                .contains(&client_name)
-                            {
-                                // prefer this method over any previously chosen ones.
-                            }
-                            // println!("comm method? {:#?}", method);
+                            ));
                             break;
                         }
                     }
+                    if class
+                        .component
+                        .container_name
+                        .to_lowercase()
+                        .contains(&client_name)
+                        && result.is_some()
+                    {
+                        // prefer this method over any previously chosen ones.
+                        done = true;
+                        break;
+                    }
                 }
+                if done {
+                    break;
+                }
+            }
+            if result.is_some() {
+                println!("{}", result?);
             }
         }
 
@@ -135,6 +113,45 @@ fn match_ident_or(expr: &Expr) -> Option<&Ident> {
         Expr::Ident(ident) => Some(ident),
         _ => None,
     }
+}
+
+fn get_service_name(class: &ClassOrInterfaceComponent, client_ident: &str) -> Option<String> {
+    // Search through the modules pertaining to the client using the client name
+    let mut client_name = client_ident
+        .replace("client", "")
+        .replace("pool", "")
+        .replace("_", "");
+    for field in class.field_components.iter() {
+        let field_name = if field.r#type != "" {
+            field.r#type.to_lowercase()
+        } else {
+            field.field_name.to_lowercase()
+        };
+        if field_name.contains("client") {
+            // println!("before first split {}", field_name);
+            let mut field_name = if field_name.contains("client>") {
+                field_name.split("client>").next()?
+            } else {
+                field_name.split("client").next()?
+            };
+            if field_name.contains("<") {
+                // println!("before 2nd split {}", field_name);
+                field_name = field_name.split("<").last()?;
+            }
+            // println!("{} -> {}", client_name, field_name);
+            client_name = field_name.replace("_", "").replace("service", "").into();
+        }
+    }
+    Some(client_name)
+}
+
+fn is_communication_call(client_ident: &str, method_ident: &Ident, client_name: &str) -> bool {
+    client_ident.contains("client")
+        && client_name.len() > 0
+        && match &*method_ident.name.to_lowercase() {
+            "push" | "pop" | "getclient" => false,
+            _ => true,
+        }
 }
 
 impl CommunicationReplacer for InitListExpr {
