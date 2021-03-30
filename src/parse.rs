@@ -187,7 +187,10 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
                         continue;
                     }
                 };
-                language = lang;
+                match lang {
+                    Language::Unknown => {}
+                    lang => language = lang,
+                }
 
                 for component in components.into_iter() {
                     match component {
