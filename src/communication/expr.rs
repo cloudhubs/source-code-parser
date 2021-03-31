@@ -84,17 +84,18 @@ impl CommunicationReplacer for CallExpr {
                 for class in module.classes.iter() {
                     for method in class.component.methods.iter() {
                         // Same method name and parameter count
-                        if method.method_name == method_ident.name
+                        let class_name_equiv = match callee_class {
+                            Some(callee_class) => {
+                                callee_class.component.container_name
+                                    != class.component.container_name
+                            }
+                            _ => true,
+                        };
+                        let equiv = method.method_name == method_ident.name
                             && self.args.len() == method.parameters.len()
                             && callee_method.component.path != class.component.component.path
-                            && match callee_class {
-                                Some(callee_class) => {
-                                    callee_class.component.container_name
-                                        != class.component.container_name
-                                }
-                                _ => true,
-                            }
-                        {
+                            && class_name_equiv;
+                        if equiv {
                             // Found it
                             result = Some(format!(
                                 "found {} in class {} --- from {} {}->{} -- from file={}",
