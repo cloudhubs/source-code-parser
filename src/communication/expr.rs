@@ -49,12 +49,32 @@ impl CommunicationReplacer for CallExpr {
 
         let client_call = match &*self.name {
             Expr::DotExpr(dot_expr) => Some(dot_expr),
-            _ => None,
+            _ => {
+                self.args.iter_mut().for_each(|arg| {
+                    // println!("arg");
+                    if let Some(Node::Expr(replacement)) =
+                        arg.replace_communication_call(modules, module, callee_class, callee_method)
+                    {
+                        *arg = replacement;
+                    }
+                });
+                None
+            }
         }?;
 
         let client_ident = match_ident_or(&*client_call.expr)?.name.to_lowercase();
         let method_ident = match_ident_or(&*client_call.selected)?;
-        let client_name = get_service_name(callee_class?, &client_ident)?;
+        let client_name = get_service_name(callee_class?, &client_ident);
+        if let None = client_name {
+            self.args.iter_mut().for_each(|arg| {
+                if let Some(Node::Expr(replacement)) =
+                    arg.replace_communication_call(modules, module, callee_class, callee_method)
+                {
+                    *arg = replacement;
+                }
+            });
+        }
+        let client_name = client_name?;
 
         // Search through the modules pertaining to the client using the client name
         if is_communication_call(&client_ident, method_ident, &client_name) {
