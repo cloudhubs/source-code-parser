@@ -157,23 +157,24 @@ fn get_service_name(
         .replace("_", "");
     if let Some(class) = class {
         for field in class.field_components.iter() {
+            // Go by type information for finding the service name. If not available
+            // use naming convention.
             let field_name = if field.r#type != "" {
                 field.r#type.to_lowercase()
             } else {
                 field.field_name.to_lowercase()
             };
+
             if field_name.contains("client") {
-                // println!("before first split {}", field_name);
+                // Strip excess type information and unneeded naming like "client" and underscores
                 let mut field_name = if field_name.contains("client>") {
                     field_name.split("client>").next()?
                 } else {
                     field_name.split("client").next()?
                 };
                 if field_name.contains("<") {
-                    // println!("before 2nd split {}", field_name);
                     field_name = field_name.split("<").last()?;
                 }
-                // println!("{} -> {}", client_name, field_name);
                 client_name = field_name.replace("_", "").replace("service", "").into();
             }
         }
@@ -182,6 +183,7 @@ fn get_service_name(
 }
 
 fn is_communication_call(client_ident: &str, method_ident: &Ident, client_name: &str) -> bool {
+    // Filter out common client utility methods that aren't endpoints
     client_ident.contains("client")
         && client_name.len() > 0
         && match &*method_ident.name.to_lowercase() {

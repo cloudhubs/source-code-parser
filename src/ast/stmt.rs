@@ -5,7 +5,7 @@ use enum_dispatch::enum_dispatch;
 use serde::Serialize;
 
 #[enum_dispatch]
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)] //, From)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(untagged)]
 pub enum Stmt {
     DeclStmt(DeclStmt),

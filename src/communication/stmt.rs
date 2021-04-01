@@ -24,8 +24,6 @@ impl CommunicationReplacer for DeclStmt {
             if let Some(Node::Expr(replacement)) =
                 expr.replace_communication_call(modules, module, class, method)
             {
-                // TODO: make sure for other replacements that if it's just an Expr it becomes an ExprStmt
-                // Maybe make the different traits return Option of their own type.
                 *expr = replacement;
             }
         }
