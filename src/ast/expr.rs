@@ -14,6 +14,7 @@ pub enum Expr {
     BinaryExpr(BinaryExpr),
     UnaryExpr(UnaryExpr),
     CallExpr(CallExpr),
+    EndpointCallExpr(EndpointCallExpr),
     IndexExpr(IndexExpr),
     ParenExpr(ParenExpr),
     DotExpr(DotExpr),
@@ -62,6 +63,16 @@ pub struct CallExpr {
     pub name: Box<Expr>,
     pub args: Vec<Expr>,
     #[new(value = r#""call_expr""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct EndpointCallExpr {
+    pub service_module_name: String,
+    pub service_class_name: Option<String>,
+    pub endpoint_method_name: String,
+    pub call_expr: CallExpr,
+    #[new(value = r#""endpoint_call_expr""#)]
     r#type: &'static str,
 }
 

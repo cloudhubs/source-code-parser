@@ -4,7 +4,16 @@ use crate::{ast::*, ClassOrInterfaceComponent};
 use crate::{prophet::ModuleComponent, MethodComponent};
 
 comm_repl_default_impl!(
-    BinaryExpr, UnaryExpr, ParenExpr, DotExpr, IncDecExpr, LogExpr, Ident, Literal, IndexExpr
+    BinaryExpr,
+    UnaryExpr,
+    ParenExpr,
+    DotExpr,
+    IncDecExpr,
+    LogExpr,
+    Ident,
+    Literal,
+    IndexExpr,
+    EndpointCallExpr
 );
 
 impl CommunicationReplacer for AssignExpr {
@@ -34,77 +43,79 @@ impl CommunicationReplacer for CallExpr {
         callee_class: Option<&ClassOrInterfaceComponent>,
         callee_method: &MethodComponent,
     ) -> Option<Node> {
-        // TODO: convert found call expressions that are REST or RPC calls.
+        let mut endpoint_call = None;
+        let map_endpoint_call = |endpoint_call: Option<EndpointCallExpr>| {
+            endpoint_call.map_or_else(
+                || None,
+                |call| {
+                    let call: Expr = call.into();
+                    Some(call.into())
+                },
+            )
+        };
 
-        // Get name -- could be Ident, or DotExpr where the left hand is the identifier.
-        // For REST and RPC calls, it should be a DotExpr most likely since it will be using
-        // some kind of Client object to actually make the calls.
+        // Helper for placing an endpoint or RPC call into an Expr
+        let replace_node = |arg: &mut Expr| {
+            if let Some(Node::Expr(replacement)) =
+                arg.replace_communication_call(modules, module, callee_class, callee_method)
+            {
+                *arg = replacement;
+            }
+        };
 
-        // Use the identifier from the DotExpr and look for a declaration with that same name.
-        // This could be in the module itself (unlikely???), in the class definition's fields,
-        // or as a local variable defined in your current function.
-
-        // Once we have the declaration we can try to use the type information to guess if it
-        // is an RPC or REST call or a normal call expression.
-
+        // Client calls should be DotExpr's (e.g. compose_client->UploadUserId(...) in C++ or s.geoClient.Nearby(...) in Go)
         let client_call = match &*self.name {
             Expr::DotExpr(dot_expr) => Some(dot_expr),
             _ => {
-                self.args.iter_mut().for_each(|arg| {
-                    // println!("arg");
-                    if let Some(Node::Expr(replacement)) =
-                        arg.replace_communication_call(modules, module, callee_class, callee_method)
-                    {
-                        *arg = replacement;
-                    }
-                });
+                self.args.iter_mut().for_each(replace_node);
                 None
             }
         }?;
 
+        // Go a second level deep in the selector expression for Go's case
+        let client_call = match &*client_call.selected {
+            Expr::DotExpr(dot_expr) => Some(dot_expr),
+            _ => Some(client_call),
+        }?;
+
+        // Deduce information about the service being called by the client type or alternatively
+        // the client variable's naming convention
         let client_ident = match_ident_or(&*client_call.expr)?.name.to_lowercase();
         let method_ident = match_ident_or(&*client_call.selected)?;
         let client_name = get_service_name(callee_class, &client_ident);
         if client_name.is_none() {
-            self.args.iter_mut().for_each(|arg| {
-                if let Some(Node::Expr(replacement)) =
-                    arg.replace_communication_call(modules, module, callee_class, callee_method)
-                {
-                    *arg = replacement;
-                }
-            });
+            self.args.iter_mut().for_each(replace_node);
         }
         let client_name = client_name?;
 
+        // Helper to see whether the endpoint has been found
+        let found_endpoint =
+            |class: &ClassOrInterfaceComponent, method: &MethodComponent, method_ident: &Ident| {
+                // Same method name and parameter count
+                let class_name_equiv = match callee_class {
+                    Some(callee_class) => {
+                        callee_class.component.container_name != class.component.container_name
+                    }
+                    _ => true,
+                };
+                method.method_name == method_ident.name
+                    && self.args.len() == method.parameters.len()
+                    && callee_method.component.path != class.component.component.path
+                    && class_name_equiv
+            };
+
         // Search through the modules pertaining to the client using the client name
         if is_communication_call(&client_ident, method_ident, &client_name) {
-            let mut done = false;
-            let mut result = None;
             for module in modules.iter() {
                 for class in module.classes.iter() {
                     for method in class.component.methods.iter() {
-                        // Same method name and parameter count
-                        let class_name_equiv = match callee_class {
-                            Some(callee_class) => {
-                                callee_class.component.container_name
-                                    != class.component.container_name
-                            }
-                            _ => true,
-                        };
-                        let equiv = method.method_name == method_ident.name
-                            && self.args.len() == method.parameters.len()
-                            && callee_method.component.path != class.component.component.path
-                            && class_name_equiv;
-                        if equiv {
-                            // Found it
-                            result = Some(format!(
-                                "found {} in class {} --- from {} {}->{} -- from file={}",
-                                method.method_name,
-                                class.component.container_name,
-                                client_name,
-                                client_ident,
-                                method_ident.name,
-                                callee_method.component.path
+                        if found_endpoint(class, method, method_ident) {
+                            // Found the endpoint definition
+                            endpoint_call = Some(EndpointCallExpr::new(
+                                module.module_name.clone(),
+                                Some(class.component.container_name.clone()),
+                                method.method_name.clone(),
+                                self.clone(),
                             ));
                             break;
                         }
@@ -114,23 +125,17 @@ impl CommunicationReplacer for CallExpr {
                         .container_name
                         .to_lowercase()
                         .contains(&client_name)
-                        && result.is_some()
+                        && endpoint_call.is_some()
                     {
-                        // prefer this method over any previously chosen ones.
-                        done = true;
-                        break;
+                        // Prefer this method over any previously chosen ones because
+                        // we found a closely named Service module and updated the endpoint call.
+                        return map_endpoint_call(endpoint_call);
                     }
                 }
-                if done {
-                    break;
-                }
-            }
-            if result.is_some() {
-                println!("{}", result?);
             }
         }
 
-        None
+        map_endpoint_call(endpoint_call)
     }
 }
 
