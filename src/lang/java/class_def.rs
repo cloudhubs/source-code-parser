@@ -79,10 +79,10 @@ pub(crate) fn parse_class(
                 );
             }
             unknown_type => {
-                eprintln!(
-                    "{} tag unhandled. This may or may not be an issue.",
-                    unknown_type
-                );
+                // eprintln!(
+                //     "{} tag unhandled. This may or may not be an issue.",
+                //     unknown_type
+                // );
             }
         };
     }
@@ -119,23 +119,24 @@ fn parse_class_body(
                 constructors.push(parse_method(member, component))
             }
             "method_declaration" => methods.push(parse_method(member, component)),
-            "field_declaration" => fields.push(parse_field(member, component)),
+            "field_declaration" => fields.append(&mut parse_field(member, component)),
             "class_declaration"
             | "interface_declaration"
             | "enum_declaration"
             | "annotation_declaration" => { /* None, since these were extracted + handled elsewhere */
             }
-            unknown => eprintln!(
-                "Attempting to parse {}, not currently supported. TODO implement fully!",
-                unknown
-            ),
+            unknown => {}
+            // eprintln!(
+            //     "Attempting to parse {}, not currently supported. TODO implement fully!",
+            //     unknown
+            // ),
         }
     }
 }
 
 /// Parses a single field in a class
-fn parse_field(ast: &AST, component: &ComponentInfo) -> FieldComponent {
-    let variables = ast
+fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
+    let variables: Vec<String> = ast
         .find_all_children_by_type(&["variable_declarator"])
         .get_or_insert(vec![])
         .iter()
@@ -145,22 +146,31 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> FieldComponent {
         .collect();
     let modifier = find_modifier(ast, &*component.path, &*component.package_name);
     let r#type = find_type(ast);
+    let component = ComponentInfo {
+        path: component.path.clone(),
+        package_name: component.package_name.clone(),
+        instance_name: component.instance_name.clone(),
+        instance_type: InstanceType::FieldComponent,
+    };
 
     // TODO: How to handle field_name, default_value?
-    FieldComponent {
-        component: ComponentInfo {
-            path: component.path.clone(),
-            package_name: component.package_name.clone(),
-            instance_name: component.instance_name.clone(),
-            instance_type: InstanceType::FieldComponent,
-        },
-        annotations: modifier.annotations,
-        variables,
-        field_name: String::new(),
-        accessor: modifier.accessor,
-        is_static: modifier.is_static,
-        is_final: modifier.is_final,
-        default_value: String::new(),
-        r#type,
-    }
+    variables
+        .into_iter()
+        .map(|field_name| FieldComponent {
+            component: ComponentInfo {
+                path: component.path.clone(),
+                package_name: component.package_name.clone(),
+                instance_name: field_name.clone(),
+                instance_type: InstanceType::FieldComponent,
+            },
+            annotations: modifier.annotations.clone(),
+            variables: vec![],
+            field_name,
+            accessor: modifier.accessor.clone(),
+            is_static: modifier.is_static.clone(),
+            is_final: modifier.is_final.clone(),
+            default_value: String::new(),
+            r#type: r#type.clone(),
+        })
+        .collect()
 }

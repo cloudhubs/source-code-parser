@@ -17,3 +17,8 @@ pub(crate) fn stringify_tree_children(ast: &AST) -> String {
     }
     buffer
 }
+
+/// Logs an unknown tag was encountered. You better not think too much about that.
+pub(crate) fn log_unknown_tag(tag: &str, parent: &str) {
+    // eprintln!("Unknown tag {} encountered while parsing {}!", tag, parent);
+}

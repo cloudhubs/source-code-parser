@@ -22,6 +22,16 @@ pub(crate) fn parse_type(ast: &AST) -> String {
             .clone(),
         "boolean_type" | "void_type" => ast.value.clone(),
         "dimensions" => stringify_tree_children(ast),
+        "generic_type" => {
+            let mut generic = find_type(ast);
+            generic.push('<');
+            generic.push_str(&*find_type(
+                ast.find_child_by_type(&["type_arguments"])
+                    .expect("No type"),
+            ));
+            generic.push('>');
+            generic
+        }
         _ => String::from("N/A"),
     }
 }
@@ -36,6 +46,7 @@ pub(crate) fn find_type(ast: &AST) -> String {
         "boolean_type",
         "void_type",
         "dimensions",
+        "generic_type",
     ]);
     if let Some(r#type) = r#type {
         parse_type(r#type)
