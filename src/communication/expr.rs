@@ -82,14 +82,18 @@ impl CommunicationReplacer for CallExpr {
         // the client variable's naming convention
         let client_ident = match_ident_or(&*client_call.expr)?.name.to_lowercase();
         let method_ident = match_ident_or(&*client_call.selected)?;
-        let client_name = get_service_name(callee_class, &client_ident);
+        let client_name = get_rpc_service_name(callee_class, &client_ident);
+        let client_name = match get_rest_service_name(callee_class, self.args.iter().next()) {
+            Some(rest_name) => Some(rest_name),
+            None => client_name,
+        };
         if client_name.is_none() {
             self.args.iter_mut().for_each(replace_node);
         }
         let client_name = client_name?;
 
         // Helper to see whether the endpoint has been found
-        let found_endpoint =
+        let found_rpc_endpoint =
             |class: &ClassOrInterfaceComponent, method: &MethodComponent, method_ident: &Ident| {
                 // Same method name and parameter count
                 let class_name_equiv = match callee_class {
@@ -104,12 +108,56 @@ impl CommunicationReplacer for CallExpr {
                     && class_name_equiv
             };
 
+        let found_rest_endpoint =
+            |class: &ClassOrInterfaceComponent, method: &MethodComponent, client_name: &str| {
+                // Same method name and parameter count
+                let service_name_equiv = client_name.contains(
+                    &class
+                        .component
+                        .container_name
+                        .clone()
+                        .replace("service", "")
+                        .to_lowercase(),
+                );
+
+                let base = class
+                    .annotations
+                    .iter()
+                    .find(|a| a.name.contains("RequestMapping"))
+                    .map(|a| a.value.clone());
+                let tail = method
+                    .annotations
+                    .iter()
+                    .find(|a| {
+                        let name = a.name.to_lowercase();
+                        name.contains("get")
+                            || name.contains("post")
+                            || name.contains("put")
+                            || name.contains("delete")
+                    })
+                    .map(|a| a.value.clone());
+                if tail.is_none() {
+                    return false;
+                }
+                let tail = tail.unwrap();
+
+                // let endpoint = format!("{}{}", base.unwrap_or("".into()), tail);
+
+                let endpoint_config_equiv = client_name.contains(&tail.replace("/", ""));
+
+                callee_method.component.path != class.component.component.path
+                    && service_name_equiv
+                    && endpoint_config_equiv
+            };
+
         // Search through the modules pertaining to the client using the client name
         if is_communication_call(&client_ident, method_ident, &client_name) {
             for module in modules.iter() {
                 for class in module.classes.iter() {
                     for method in class.component.methods.iter() {
-                        if found_endpoint(class, method, method_ident) {
+                        if found_rpc_endpoint(class, method, method_ident)
+                            || found_rest_endpoint(class, method, &client_name)
+                        {
                             // Found the endpoint definition
                             endpoint_call = Some(EndpointCallExpr::new(
                                 module.module_name.clone(),
@@ -146,7 +194,7 @@ fn match_ident_or(expr: &Expr) -> Option<&Ident> {
     }
 }
 
-fn get_service_name(
+fn get_rpc_service_name(
     class: Option<&ClassOrInterfaceComponent>,
     client_ident: &str,
 ) -> Option<String> {
@@ -182,14 +230,49 @@ fn get_service_name(
     Some(client_name)
 }
 
+fn get_rest_service_name(
+    class: Option<&ClassOrInterfaceComponent>,
+    arg: Option<&Expr>,
+) -> Option<String> {
+    let config_name = get_rest_config_name(arg?)?;
+    for field in class?.field_components.iter() {
+        if field.field_name == config_name {
+            for annotation in field.annotations.iter() {
+                if annotation.name == "@Value" {
+                    return Some(annotation.value.clone());
+                }
+            }
+        }
+    }
+    None
+}
+
+fn get_rest_config_name(expr: &Expr) -> Option<String> {
+    match expr {
+        Expr::BinaryExpr(expr) => match expr.rhs.as_ref() {
+            Expr::BinaryExpr(expr) => match expr.lhs.as_ref() {
+                Expr::Ident(name) => Some(name.name.clone()),
+                _ => None,
+            },
+            Expr::Ident(name) => Some(name.name.clone()),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 fn is_communication_call(client_ident: &str, method_ident: &Ident, client_name: &str) -> bool {
     // Filter out common client utility methods that aren't endpoints
-    client_ident.contains("client")
+    let is_rpc_call = client_ident.contains("client")
         && client_name.len() > 0
         && match &*method_ident.name.to_lowercase() {
             "push" | "pop" | "getclient" => false,
             _ => true,
-        }
+        };
+
+    let is_rest_call = client_ident.contains("rest") && !client_name.contains("rest");
+
+    is_rpc_call || is_rest_call
 }
 
 impl CommunicationReplacer for InitListExpr {
