@@ -22,6 +22,7 @@ pub enum Stmt {
     ThrowStmt(ThrowStmt),
     TryCatchStmt(TryCatchStmt),
     CatchStmt(CatchStmt),
+    WithResourceStmt(WithResourceStmt),
 }
 
 /// For variable declaration statements, we can represent various situations for
@@ -166,6 +167,8 @@ pub struct ThrowStmt {
 pub struct TryCatchStmt {
     pub try_body: Block,
     pub catch_bodies: Vec<CatchStmt>,
+    #[new(value = "None")]
+    pub finally_body: Option<Block>,
     #[new(value = r#""try_catch_stmt""#)]
     r#type: &'static str,
 }
@@ -175,5 +178,13 @@ pub struct CatchStmt {
     pub exc: DeclStmt,
     pub body: Block,
     #[new(value = r#""catch_stmt""#)]
+    r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct WithResourceStmt {
+    pub resources: DeclStmt,
+    pub body: Block,
+    #[new(value = r#""with_resources_stmt""#)]
     r#type: &'static str,
 }

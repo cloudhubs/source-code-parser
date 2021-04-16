@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 use crate::java::util::stringify_tree_children;
 use crate::AST;
 
@@ -22,16 +24,7 @@ pub(crate) fn parse_type(ast: &AST) -> String {
             .clone(),
         "boolean_type" | "void_type" => ast.value.clone(),
         "dimensions" => stringify_tree_children(ast),
-        "generic_type" => {
-            let mut generic = find_type(ast);
-            generic.push('<');
-            generic.push_str(&*find_type(
-                ast.find_child_by_type(&["type_arguments"])
-                    .expect("No type"),
-            ));
-            generic.push('>');
-            generic
-        }
+        "generic_type" => parse_type_args(ast),
         _ => String::from("N/A"),
     }
 }
@@ -53,4 +46,18 @@ pub(crate) fn find_type(ast: &AST) -> String {
     } else {
         String::from("N/A")
     }
+}
+
+/// Parse the a `type_arguments` node
+pub(crate) fn parse_type_args(ast: &AST) -> String {
+    let mut generic = find_type(ast);
+    if let Some(args) = ast.find_all_children_by_type(&["type_arguments"]) {
+        for param in args[0].children.iter() {
+            match &*param.r#value {
+                "," | "<" | ">" => generic.push_str(&*param.r#value),
+                _ => generic.push_str(&*parse_type(param)),
+            }
+        }
+    }
+    generic
 }

@@ -1,6 +1,7 @@
 use crate::ast::*;
 use crate::java::modifier::find_modifier;
 use crate::java::vartype::find_type;
+use crate::java::vartype::parse_type_args;
 use crate::ComponentInfo;
 use crate::AST;
 
@@ -15,7 +16,6 @@ fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Node> {
     ast.children
         .iter()
         .map(|member| parse_node(member, component))
-        .filter(|option| option.is_some())
         .flat_map(|some| some)
         .collect()
 }
@@ -24,8 +24,19 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     match &*ast.r#type {
         // Variables an initialization
         "local_variable_declaration" | "field_declaration" => {
-            Some(parse_var(ast, component).into())
+            Some(Node::Stmt(parse_var(ast, component).into()))
         }
+        "try_with_resources_statement" => try_catch(ast, component),
+        _ => {
+            let expr: Stmt = parse_expr(ast, component)?.into();
+            Some(expr.into())
+        }
+    }
+}
+
+fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    match &*ast.r#type {
+        // Variables an initialization
         "variable_declarator" | "assignment_expression" => parse_assignment(ast, component),
         "identifier" => {
             let ident: Expr = Ident::new(ast.value.clone()).into();
@@ -35,7 +46,7 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         | "decimal_floating_point_literal"
         | "string_literal"
         | "false"
-        | "true" => Some(Node::Expr(Expr::Literal(ast.value.clone().into()))),
+        | "true" => Some(Expr::Literal(ast.value.clone().into())),
         "object_creation_expression" => Some(parse_object_creation(ast, component)),
         "array_creation_expression" => {
             let ident: Expr = Ident::new("AN_ARRAY_HANDLE".into()).into();
@@ -43,8 +54,7 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         }
 
         // Language statements
-        // "method_invocation" => Some(method_invoke(ast, component).into()),
-        // "try_with_resources_statement" => Some(try_catch(ast, component).into()),
+        "method_invocation" => method_invoke(ast, component).into(),
 
         // Base case
         unknown => {
@@ -54,48 +64,82 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     }
 }
 
-// fn method_invoke(ast: &AST, component: &ComponentInfo) -> Expr {
-//     let lhs: Ident;
-//     let children = &ast.children;
+fn method_invoke(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let mut lhs: Option<Expr> = None;
+    let mut generic: Option<String>;
+    let mut args: Vec<Expr> = vec![];
 
-//     for comp in ast.children.iter() {
-//         match &*comp.r#type {
-//             "identifier" => {
-//                 lhs = Ident::new(ast.value.clone());
-//             }
-//             _ => {
-//                 println!("{}", comp.r#type);
-//             }
-//         }
-//     }
-//     CallExpr::new(Box::new(lhs)).into()
-// }
+    for comp in ast.children.iter() {
+        match &*comp.r#type {
+            "type_arguments" => generic = Some(parse_type_args(ast)),
+            "argument_list" => {
+                args.append(
+                    &mut comp
+                        .children
+                        .iter()
+                        .flat_map(|e| parse_expr(e, component))
+                        .collect::<Vec<Expr>>(),
+                );
+            }
+            "identifier" => {
+                lhs = Some(Ident::new(ast.value.clone()).into());
+            }
+            unknown => log_unknown_tag(unknown, "method_invoke"),
+        }
+    }
 
-// fn try_catch(ast: &AST, component: &ComponentInfo) -> Stmt {
-//     let try_body: Block;
-//     let mut resources = None;
+    // If no lhs, assume this
+    if lhs == None {
+        lhs = Some(Literal::new("this".to_string()).into());
+    }
+    // TODO add in generic
+    Some(CallExpr::new(Box::new(lhs.expect("impossible")), args).into())
+}
 
-//     for comp in ast.children.iter() {
-//         match &*comp.r#type {
-//             "resource_specification" => {
-//                 let rss = comp
-//                     .children
-//                     .iter()
-//                     .filter(|resource| match &*resource.r#type {
-//                         "resource" => true,
-//                         _ => false,
-//                     })
-//                     .map(|resource| parse_assignment(resource, component))
-//                     .collect();
-//                 // resources = Some(DeclStmt::new(rss.iter().map(), expressions));
-//             }
-//             unknown => log_unknown_tag(unknown, "try/catch"),
-//         }
-//     }
+fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+    let mut try_body = None;
+    let mut catch_clauses = vec![];
+    let mut finally_clause = None;
+    // let mut resources = None;
 
-//     // Generated wrappers and return
-//     TryCatchStmt::new(try_body, catch_bodies).into()
-// }
+    for comp in ast.children.iter() {
+        match &*comp.r#type {
+            "resource_specification" => {
+                let rss: Vec<Expr> = comp
+                    .children
+                    .iter()
+                    .filter(|resource| match &*resource.r#type {
+                        "resource" => true,
+                        _ => false,
+                    })
+                    .map(|resource| parse_assignment(resource, component))
+                    .flat_map(|n| n)
+                    .collect();
+                // resources = Some(DeclStmt::new(rss.iter().map(), expressions));
+            }
+            "block" => try_body = Some(parse_block(ast, component)),
+            "catch_clause" => match parse_catch(comp, component) {
+                Some(catch) => catch_clauses.push(catch),
+                None => {}
+            },
+            "finally_clause" => finally_clause = Some(parse_block(ast, component)),
+            unknown => log_unknown_tag(unknown, "try/catch"),
+        }
+    }
+
+    // Generated wrappers and return
+    let mut try_catch =
+        TryCatchStmt::new(try_body.expect("Try/Catch with no body!"), catch_clauses);
+    if finally_clause.is_some() {
+        try_catch.finally_body = finally_clause;
+    }
+    Some(Node::Stmt(try_catch.into()))
+}
+
+fn parse_catch(ast: &AST, component: &ComponentInfo) -> Option<CatchStmt> {
+    // TODO
+    None
+}
 
 /// Parse an AST section containing a variable declaration
 fn parse_var(ast: &AST, component: &ComponentInfo) -> Stmt {
@@ -124,7 +168,7 @@ fn parse_var(ast: &AST, component: &ComponentInfo) -> Stmt {
 }
 
 /// Parse an assignment expression. May contain a variable declaration
-fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     // Define attributes
     let mut name = "";
     let mut rhs = None;
@@ -135,36 +179,28 @@ fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             "identifier" => name = &*node.value,
             "=" => {}
             unknown => {
-                if let Some(Node::Expr(parsed_rhs)) = parse_node(node, component) {
-                    rhs = Some(parsed_rhs);
+                rhs = if let Some(parsed_rhs) = parse_expr(node, component) {
+                    Some(parsed_rhs)
                 } else {
-                    // eprintln!(
-                    //     "Encountered unknown tag {} while parsing variable assignment",
-                    //     unknown
-                    // );
-                    rhs = None;
+                    log_unknown_tag(unknown, "parse_assignment");
+                    None
                 }
             }
         }
     }
 
     // Assemble
+    let lhs = Ident::new(name.into());
     if let Some(rhs) = rhs {
-        let bin: Expr = BinaryExpr::new(
-            Box::new(Ident::new(name.into()).into()),
-            "=".into(),
-            Box::new(rhs),
-        )
-        .into();
+        let bin: Expr = BinaryExpr::new(Box::new(lhs.into()), "=".into(), Box::new(rhs)).into();
         Some(bin.into())
     } else {
-        let expr: Expr = Ident::new(name.into()).into();
-        Some(expr.into())
+        Some(lhs.into())
     }
 }
 
 /// Parse instantiation using 'new'
-fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Node {
+fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Expr {
     let mut name = String::new();
     let mut arg_list = vec![];
     for child in ast.children.iter() {
@@ -180,7 +216,9 @@ fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Node {
                     .flat_map(|expr| expr)
                     .collect()
             }
-            _ => {}
+            unknown => {
+                log_unknown_tag(unknown, "parse_object_creation");
+            }
         }
     }
 

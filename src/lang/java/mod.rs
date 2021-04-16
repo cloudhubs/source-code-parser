@@ -17,6 +17,7 @@ mod vartype;
 pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
     let mut packages: HashMap<String, ModuleComponent> = HashMap::new();
 
+    // Merge same-name modules
     for module in modules.into_iter() {
         let name = module.module_name.clone();
         println!("Mod. Name: {}", name);
@@ -29,12 +30,7 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
             packages.insert(name, module);
         }
     }
-
-    let tmp: Vec<ModuleComponent> = packages.into_iter().map(|kv| kv.1).collect();
-    for v in tmp.iter() {
-        println!("{:#?}", v);
-    }
-    tmp
+    packages.into_iter().map(|kv| kv.1).collect()
 }
 
 pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
@@ -53,15 +49,15 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
             "enum_declaration",
             "annotation_declaration",
         ])
-        .expect("Provided an invalid Java file, no class, interface, annotation, enum, packages, or imports found!")
-         .iter()
+        .get_or_insert(vec![])
+        .iter()
     {
         match &*node.r#type {
             "import_declaration" => println!("{}", parse_import(&node)),
             "package_declaration" => {
                 package = parse_package(&node)
                     .expect(&*format!("Malformed package declaration {:#?}!", node));
-                println!("{}", package);
+                // println!("{}", package);
             }
             "class_declaration"
             | "interface_declaration"
@@ -87,8 +83,9 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
     if package == "" {
         package = "default".into();
     }
-    let module = create_module(package.as_str(), path, &components);
-    vec![module]
+    // let module = create_module(package.as_str(), path, &components);
+    // vec![module]
+    components
 }
 
 fn create_module(package: &str, path: &str, components: &Vec<ComponentType>) -> ComponentType {

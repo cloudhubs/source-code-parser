@@ -187,7 +187,10 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
                         continue;
                     }
                 };
-                language = lang;
+                match lang {
+                    Language::Unknown => {}
+                    lang => language = lang,
+                }
 
                 for component in components.into_iter() {
                     match component {
@@ -222,6 +225,7 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
         modules.push(module);
     }
 
+    println!("Finished parsing file!");
     Ok(merge_modules(modules, language))
 }
 
@@ -229,7 +233,10 @@ fn merge_modules(modules: Vec<ModuleComponent>, lang: Language) -> Vec<ModuleCom
     match lang {
         Language::Cpp => cpp::merge_modules(modules),
         Language::Java => java::merge_modules(modules),
-        _ => modules,
+        lang => {
+            println!("Unknown lang {:?}", lang);
+            modules
+        }
     }
 }
 
