@@ -24,7 +24,7 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     match &*ast.r#type {
         // Variables an initialization
         "local_variable_declaration" | "field_declaration" => {
-            Some(Node::Stmt(parse_var(ast, component).into()))
+            Some(Node::Stmt(parse_decl(ast, component).into()))
         }
         "try_catch" | "try_with_resources_statement" => try_catch(ast, component),
         _ => {
@@ -38,9 +38,7 @@ fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     println!("{}::{}", ast.r#type, ast.value);
     match &*ast.r#type {
         // Variables an initialization
-        "type_identifier" | "variable_declarator" | "assignment_expression" => {
-            parse_assignment(ast, component)
-        }
+        "variable_declarator" | "assignment_expression" => parse_assignment(ast, component),
         "identifier" => {
             let ident: Expr = Ident::new(ast.value.clone()).into();
             Some(ident.into())
@@ -58,7 +56,6 @@ fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
 
         // Language statements
         "method_invocation" => method_invoke(ast, component).into(),
-        "local_variable_declaration" => parse_expr(ast, component),
 
         // Base case
         unknown => {
@@ -185,23 +182,48 @@ fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
 }
 
 /// Parse an AST section containing a variable declaration
-fn parse_var(ast: &AST, component: &ComponentInfo) -> Stmt {
+fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
     // Extract informtion about the variable
     let r#type = find_type(ast);
     let modifier = find_modifier(ast, &*component.path, &*component.package_name);
 
     // Determine the value it was set to
-    let rhs = parse_child_nodes(ast, component)
-        .into_iter()
-        .map(|node| match node {
-            Node::Expr(expr) => Some(expr),
-            _ => None,
-        })
-        .flat_map(|expr| expr)
-        .collect();
+    let rhs = parse_child_nodes(ast, component);
+
+    let mut decl = DeclStmt::new(vec![], vec![]);
+    for var in rhs.iter() {
+        let base;
+
+        // Extract expression from the hierarchy
+        if let Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. })) = var {
+            base = expr;
+        } else if let Node::Expr(expr) = var {
+            base = expr;
+        } else {
+            eprintln!("Unable to interpret as variable: {:#?}", var);
+            continue;
+        }
+
+        // Parse variable
+        match base {
+            Expr::BinaryExpr(expr) => match expr.lhs.as_ref() {
+                Expr::Ident(lhs) => {
+                    decl.variables
+                        .push(VarDecl::new(Some(r#type.clone()), lhs.clone()));
+                    decl.expressions.push(expr.rhs.as_ref().clone());
+                }
+                unknown => eprintln!("Expected Ident got {:#?}", unknown),
+            },
+            Expr::Ident(id) => decl
+                .variables
+                .push(VarDecl::new(Some(r#type.clone()), id.clone())),
+            unknown => {
+                eprintln!("Expected BinaryExpr or Ident, got {:#?}", unknown);
+            }
+        }
+    }
 
     // TODO: Use name
-    let mut decl = DeclStmt::new(vec![], rhs);
     for var_decl in decl.variables.iter_mut() {
         var_decl.is_final = Some(modifier.is_final);
         var_decl.is_static = Some(modifier.is_static);
