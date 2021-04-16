@@ -1,5 +1,3 @@
-use std::ops::Index;
-
 use crate::java::util::stringify_tree_children;
 use crate::AST;
 

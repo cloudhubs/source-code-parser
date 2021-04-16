@@ -55,6 +55,8 @@ pub struct VarDecl {
     pub is_static: Option<bool>,
     #[new(default)]
     pub is_final: Option<bool>,
+    #[new(value = r#"vec![]"#)]
+    pub annotation: Vec<crate::AnnotationComponent>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, From, new)]

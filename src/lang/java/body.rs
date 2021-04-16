@@ -26,7 +26,7 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         "local_variable_declaration" | "field_declaration" => {
             Some(Node::Stmt(parse_var(ast, component).into()))
         }
-        "try_with_resources_statement" => try_catch(ast, component),
+        "try_catch" | "try_with_resources_statement" => try_catch(ast, component),
         _ => {
             let expr: Stmt = parse_expr(ast, component)?.into();
             Some(expr.into())
@@ -35,9 +35,12 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
 }
 
 fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    println!("{}::{}", ast.r#type, ast.value);
     match &*ast.r#type {
         // Variables an initialization
-        "variable_declarator" | "assignment_expression" => parse_assignment(ast, component),
+        "type_identifier" | "variable_declarator" | "assignment_expression" => {
+            parse_assignment(ast, component)
+        }
         "identifier" => {
             let ident: Expr = Ident::new(ast.value.clone()).into();
             Some(ident.into())
@@ -55,10 +58,11 @@ fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
 
         // Language statements
         "method_invocation" => method_invoke(ast, component).into(),
+        "local_variable_declaration" => parse_expr(ast, component),
 
         // Base case
         unknown => {
-            log_unknown_tag(unknown, "method body");
+            log_unknown_tag(unknown, "expressions");
             None
         }
     }
@@ -66,7 +70,7 @@ fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
 
 fn method_invoke(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     let mut lhs: Option<Expr> = None;
-    let mut generic: Option<String>;
+    let mut generic: Option<String> = None;
     let mut args: Vec<Expr> = vec![];
 
     for comp in ast.children.iter() {
@@ -117,11 +121,55 @@ fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
                     .collect();
                 // resources = Some(DeclStmt::new(rss.iter().map(), expressions));
             }
-            "block" => try_body = Some(parse_block(ast, component)),
-            "catch_clause" => match parse_catch(comp, component) {
-                Some(catch) => catch_clauses.push(catch),
-                None => {}
-            },
+            "block" => try_body = Some(parse_block(comp, component)),
+            "catch_clause" => {
+                let catch_comp = comp
+                    .find_child_by_type(&["catch_formal_parameter"])
+                    .expect("No catch variables declared!");
+
+                // Modifiers
+                let modifiers =
+                    find_modifier(catch_comp, &*component.path, &*component.package_name);
+
+                // Variables
+                let caught_vars = {
+                    let name = &catch_comp
+                        .find_child_by_type(&["identifier"])
+                        .expect("No name for caught variable!")
+                        .value;
+                    let types: Vec<String> = catch_comp
+                        .find_child_by_type(&["catch_type"])
+                        .expect("No type on catch block!")
+                        .find_all_children_by_type(&["type_identifier"])
+                        .expect("No type on catch block!")
+                        .iter()
+                        .map(|child| child.value.clone())
+                        .collect();
+
+                    types
+                        .into_iter()
+                        .map(|t| {
+                            let mut decl = VarDecl::new(Some(t), Ident::new(name.clone()));
+                            decl.is_final = Some(modifiers.is_final);
+                            decl.is_static = Some(modifiers.is_static);
+                            decl.annotation = modifiers.annotations.clone();
+                            decl
+                        })
+                        .collect()
+                };
+
+                // Body
+                let catch_body = parse_block(
+                    comp.find_child_by_type(&["block"])
+                        .expect("No block for the catch body!"),
+                    component,
+                );
+
+                catch_clauses.push(CatchStmt::new(
+                    DeclStmt::new(caught_vars, vec![]),
+                    catch_body,
+                ));
+            }
             "finally_clause" => finally_clause = Some(parse_block(ast, component)),
             unknown => log_unknown_tag(unknown, "try/catch"),
         }
@@ -134,11 +182,6 @@ fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         try_catch.finally_body = finally_clause;
     }
     Some(Node::Stmt(try_catch.into()))
-}
-
-fn parse_catch(ast: &AST, component: &ComponentInfo) -> Option<CatchStmt> {
-    // TODO
-    None
 }
 
 /// Parse an AST section containing a variable declaration
