@@ -27,11 +27,23 @@ fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             Some(Node::Stmt(parse_decl(ast, component).into()))
         }
         "try_catch" | "try_with_resources_statement" => try_catch(ast, component),
+        "expression_statement" => parse_expr_stmt(ast, component),
         _ => {
             let expr: Stmt = parse_expr(ast, component)?.into();
             Some(expr.into())
         }
     }
+}
+
+fn parse_expr_stmt(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+    let mut expr = None;
+    for comp in ast.children.iter() {
+        expr = parse_expr(comp, component);
+        if expr.is_some() {
+            break;
+        }
+    }
+    Some(Node::Stmt(expr?.into()))
 }
 
 fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
@@ -43,6 +55,7 @@ fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
             let ident: Expr = Ident::new(ast.value.clone()).into();
             Some(ident.into())
         }
+        "field_access" => parse_field_access(ast, component),
         "decimal_integer_literal"
         | "decimal_floating_point_literal"
         | "string_literal"
@@ -65,14 +78,26 @@ fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     }
 }
 
+fn parse_field_access(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    // println!("FIELD ACCESS")
+    let lhs = parse_expr(&ast.children[0], component)?;
+    let rhs = parse_expr(&ast.children[2], component)?;
+    Some(Expr::DotExpr(DotExpr::new(Box::new(lhs), Box::new(rhs))))
+}
+
 fn method_invoke(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
-    let mut lhs: Option<Expr> = None;
-    let mut generic: Option<String> = None;
+    let lhs: Expr = match parse_expr(&ast.children[0], component) {
+        Some(opt) => opt,
+        None => Literal::new("this".to_string()).into(),
+    };
+
+    let mut name = None;
+    let mut generic: String = String::new();
     let mut args: Vec<Expr> = vec![];
 
     for comp in ast.children.iter() {
         match &*comp.r#type {
-            "type_arguments" => generic = Some(parse_type_args(ast)),
+            "type_arguments" => generic = parse_type_args(ast),
             "argument_list" => {
                 args.append(
                     &mut comp
@@ -83,18 +108,26 @@ fn method_invoke(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
                 );
             }
             "identifier" => {
-                lhs = Some(Ident::new(ast.value.clone()).into());
+                let mut result = generic.clone();
+                result.push_str(&*comp.value.clone());
+                name = Some(Ident::new(result).into());
             }
             unknown => log_unknown_tag(unknown, "method_invoke"),
         }
     }
+    println!("{:?}.{:?} ({:?})", lhs, name.clone().expect("ohno"), args);
 
-    // If no lhs, assume this
-    if lhs == None {
-        lhs = Some(Literal::new("this".to_string()).into());
-    }
     // TODO add in generic
-    Some(CallExpr::new(Box::new(lhs.expect("impossible")), args).into())
+    Some(Expr::DotExpr(DotExpr::new(
+        Box::new(lhs),
+        Box::new(
+            CallExpr::new(
+                Box::new(name.expect("method with no name requested!")),
+                args,
+            )
+            .into(),
+        ),
+    )))
 }
 
 fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
