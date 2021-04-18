@@ -76,8 +76,8 @@ pub struct IfStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ForStmt {
-    // ExprStmt(BinExpr) or DeclStmt
-    pub init: Option<Box<Stmt>>,
+    // Containing ExprStmt(BinExpr) or DeclStmt commonly
+    pub init: Vec<Stmt>,
     pub condition: Option<Expr>,
     pub post: Option<Expr>,
     pub body: Block,
@@ -87,8 +87,8 @@ pub struct ForStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ForRangeStmt {
-    // ExprStmt or DecLStmt
-    pub init: Box<Stmt>,
+    // Containing ExprStmt(BinExpr) or DeclStmt commonly
+    pub init: Vec<Stmt>,
     pub iterator: Option<Expr>,
     pub body: Block,
     #[new(value = r#""for_range_stmt""#)]
