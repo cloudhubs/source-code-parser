@@ -1,3 +1,5 @@
+use crate::AnnotationComponent;
+
 use super::*;
 use derive_more::From;
 use derive_new::new;
@@ -56,7 +58,7 @@ pub struct VarDecl {
     #[new(default)]
     pub is_final: Option<bool>,
     #[new(value = r#"vec![]"#)]
-    pub annotation: Vec<crate::AnnotationComponent>,
+    pub annotation: Vec<AnnotationComponent>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, From, new)]

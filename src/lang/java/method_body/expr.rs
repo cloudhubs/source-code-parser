@@ -1,5 +1,7 @@
 use crate::java::method_body::log_unknown_tag;
 use crate::java::method_body::node::parse_child_nodes;
+use crate::java::method_body::parse_block;
+use crate::java::util::parameter::parse_method_parameters;
 use crate::java::util::vartype::parse_type_args;
 
 use crate::ast::*;
@@ -29,6 +31,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
 
         // Language statements
         "method_invocation" => method_invoke(ast, component).into(),
+        "lambda_expression" => parse_lambda(ast, component),
 
         // Base case
         unknown => {
@@ -148,4 +151,58 @@ fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Expr {
     // Create ident
     let ident: Expr = CallExpr::new(Box::new(Ident::new(name).into()), arg_list).into();
     ident.into()
+}
+
+pub(crate) fn parse_lambda(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let mut params = vec![];
+    let mut body = None;
+
+    for child in ast.children.iter() {
+        match &*child.r#type {
+            "identifier" => params.push(new_simple_param(child)),
+            "inferred_parameters" => {
+                params = vec![
+                    params,
+                    child
+                        .children
+                        .iter()
+                        .filter(|p| p.r#type == "identifier")
+                        .map(|p| new_simple_param(p))
+                        .collect(),
+                ]
+                .concat();
+            }
+            "formal_parameters" => {
+                params = vec![
+                    params,
+                    parse_method_parameters(child, component)
+                        .into_iter()
+                        .map(|p| {
+                            let mut decl =
+                                VarDecl::new(Some(p.r#type), Ident::new(p.parameter_name));
+                            if let Some(annotation) = p.annotation {
+                                decl.annotation = annotation;
+                            } else {
+                                decl.annotation = vec![];
+                            }
+                            decl
+                        })
+                        .map(|p| DeclStmt::new(vec![p], vec![]))
+                        .collect(),
+                ]
+                .concat();
+            }
+            "block" => body = Some(parse_block(child, component)),
+            unknown => log_unknown_tag(unknown, "lambda"),
+        }
+    }
+
+    Some(LambdaExpr::new(params, body?).into())
+}
+
+fn new_simple_param(ast: &AST) -> DeclStmt {
+    DeclStmt::new(
+        vec![VarDecl::new(None, Ident::new(ast.value.clone()))],
+        vec![],
+    )
 }

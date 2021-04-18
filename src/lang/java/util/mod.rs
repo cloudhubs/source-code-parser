@@ -1,5 +1,6 @@
 use crate::AST;
 
+pub(crate) mod parameter;
 pub(crate) mod vartype;
 
 /// Convert a vector into an Option. If the vector is empty, swaps it out for None; otherwise is Some(vector)
