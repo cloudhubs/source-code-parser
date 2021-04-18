@@ -6,11 +6,10 @@ use crate::prophet::*;
 mod class_def;
 use class_def::*;
 
-mod body;
+mod method_body;
 mod method_def;
 mod modifier;
 mod util;
-mod vartype;
 
 /// Topmost level of the Java parser, provides public API
 

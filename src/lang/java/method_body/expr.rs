@@ -1,53 +1,12 @@
+use crate::java::method_body::log_unknown_tag;
+use crate::java::method_body::node::parse_child_nodes;
+use crate::java::util::vartype::parse_type_args;
+
 use crate::ast::*;
-use crate::java::modifier::find_modifier;
-use crate::java::stmt::try_catch;
-use crate::java::vartype::find_type;
-use crate::java::vartype::parse_type_args;
 use crate::ComponentInfo;
 use crate::AST;
 
-use super::util::log_unknown_tag;
-
-/// Parse the body of a method, static block, constructor, etc.
-pub(crate) fn parse_block(ast: &AST, component: &ComponentInfo) -> Block {
-    Block::new(parse_child_nodes(ast, component))
-}
-
-fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Node> {
-    ast.children
-        .iter()
-        .map(|member| parse_node(member, component))
-        .flat_map(|some| some)
-        .collect()
-}
-
-fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
-    match &*ast.r#type {
-        // Variables an initialization
-        "local_variable_declaration" | "field_declaration" => {
-            Some(Node::Stmt(parse_decl(ast, component).into()))
-        }
-        "try_catch" | "try_with_resources_statement" => try_catch(ast, component),
-        "expression_statement" => parse_expr_stmt(ast, component),
-        _ => {
-            let expr: Stmt = parse_expr(ast, component)?.into();
-            Some(expr.into())
-        }
-    }
-}
-
-fn parse_expr_stmt(ast: &AST, component: &ComponentInfo) -> Option<Node> {
-    let mut expr = None;
-    for comp in ast.children.iter() {
-        expr = parse_expr(comp, component);
-        if expr.is_some() {
-            break;
-        }
-    }
-    Some(Node::Stmt(expr?.into()))
-}
-
-fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     println!("{}::{}", ast.r#type, ast.value);
     match &*ast.r#type {
         // Variables an initialization
@@ -77,13 +36,6 @@ fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
             None
         }
     }
-}
-
-fn parse_field_access(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
-    // println!("FIELD ACCESS")
-    let lhs = parse_expr(&ast.children[0], component)?;
-    let rhs = parse_expr(&ast.children[2], component)?;
-    Some(Expr::DotExpr(DotExpr::new(Box::new(lhs), Box::new(rhs))))
 }
 
 fn method_invoke(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
@@ -131,59 +83,15 @@ fn method_invoke(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     )))
 }
 
-/// Parse an AST section containing a variable declaration
-fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
-    // Extract informtion about the variable
-    let r#type = find_type(ast);
-    let modifier = find_modifier(ast, &*component.path, &*component.package_name);
-
-    // Determine the value it was set to
-    let rhs = parse_child_nodes(ast, component);
-
-    let mut decl = DeclStmt::new(vec![], vec![]);
-    for var in rhs.iter() {
-        let base;
-
-        // Extract expression from the hierarchy
-        if let Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. })) = var {
-            base = expr;
-        } else if let Node::Expr(expr) = var {
-            base = expr;
-        } else {
-            eprintln!("Unable to interpret as variable: {:#?}", var);
-            continue;
-        }
-
-        // Parse variable
-        match base {
-            Expr::BinaryExpr(expr) => match expr.lhs.as_ref() {
-                Expr::Ident(lhs) => {
-                    decl.variables
-                        .push(VarDecl::new(Some(r#type.clone()), lhs.clone()));
-                    decl.expressions.push(expr.rhs.as_ref().clone());
-                }
-                unknown => eprintln!("Expected Ident got {:#?}", unknown),
-            },
-            Expr::Ident(id) => decl
-                .variables
-                .push(VarDecl::new(Some(r#type.clone()), id.clone())),
-            unknown => {
-                eprintln!("Expected BinaryExpr or Ident, got {:#?}", unknown);
-            }
-        }
-    }
-
-    // TODO: Use name
-    for var_decl in decl.variables.iter_mut() {
-        var_decl.is_final = Some(modifier.is_final);
-        var_decl.is_static = Some(modifier.is_static);
-        var_decl.var_type = Some(r#type.clone());
-    }
-    decl.into()
+fn parse_field_access(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    // println!("FIELD ACCESS")
+    let lhs = parse_expr(&ast.children[0], component)?;
+    let rhs = parse_expr(&ast.children[2], component)?;
+    Some(Expr::DotExpr(DotExpr::new(Box::new(lhs), Box::new(rhs))))
 }
 
 /// Parse an assignment expression. May contain a variable declaration
-fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+pub(crate) fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     // Define attributes
     let mut name = "";
     let mut rhs = None;

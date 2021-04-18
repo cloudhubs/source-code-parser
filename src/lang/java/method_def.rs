@@ -1,9 +1,8 @@
-use crate::java::body::parse_block;
+use crate::java::method_body::parse_block;
 use crate::java::modifier::parse_modifiers;
 use crate::java::modifier::Modifier;
 use crate::java::util::fold_vec;
-use crate::java::vartype::find_type;
-use crate::java::vartype::parse_type;
+use crate::java::util::vartype::{find_type, parse_type};
 use crate::parse::AST;
 use crate::prophet::*;
 

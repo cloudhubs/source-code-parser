@@ -1,9 +1,65 @@
 use crate::ast::*;
+use crate::java::method_body::expr::parse_assignment;
+use crate::java::method_body::log_unknown_tag;
+use crate::java::method_body::parse_block;
+use crate::java::method_body::parse_child_nodes;
 use crate::java::modifier::find_modifier;
+use crate::java::util::vartype::find_type;
 use crate::ComponentInfo;
 use crate::AST;
 
 /// File holding all Java statement parsing (e.g., while/for/trycatch)
+
+/// Parse an AST section containing a variable declaration
+pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
+    // Extract informtion about the variable
+    let r#type = find_type(ast);
+    let modifier = find_modifier(ast, &*component.path, &*component.package_name);
+
+    // Determine the value it was set to
+    let rhs = parse_child_nodes(ast, component);
+
+    let mut decl = DeclStmt::new(vec![], vec![]);
+    for var in rhs.iter() {
+        let base;
+
+        // Extract expression from the hierarchy
+        if let Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. })) = var {
+            base = expr;
+        } else if let Node::Expr(expr) = var {
+            base = expr;
+        } else {
+            eprintln!("Unable to interpret as variable: {:#?}", var);
+            continue;
+        }
+
+        // Parse variable
+        match base {
+            Expr::BinaryExpr(expr) => match expr.lhs.as_ref() {
+                Expr::Ident(lhs) => {
+                    decl.variables
+                        .push(VarDecl::new(Some(r#type.clone()), lhs.clone()));
+                    decl.expressions.push(expr.rhs.as_ref().clone());
+                }
+                unknown => eprintln!("Expected Ident got {:#?}", unknown),
+            },
+            Expr::Ident(id) => decl
+                .variables
+                .push(VarDecl::new(Some(r#type.clone()), id.clone())),
+            unknown => {
+                eprintln!("Expected BinaryExpr or Ident, got {:#?}", unknown);
+            }
+        }
+    }
+
+    // TODO: Use name
+    for var_decl in decl.variables.iter_mut() {
+        var_decl.is_final = Some(modifier.is_final);
+        var_decl.is_static = Some(modifier.is_static);
+        var_decl.var_type = Some(r#type.clone());
+    }
+    decl.into()
+}
 
 /// Parse an AST fragment with a try/catch. May be try-with-resources, or standard try/catch, with any
 /// number of catch/multi-catch blocks, and/or a finally block.
