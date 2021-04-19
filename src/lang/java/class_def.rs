@@ -1,3 +1,4 @@
+use crate::java::method_body::log_unknown_tag;
 use crate::java::method_def::parse_method;
 use crate::java::modifier::{find_modifier, parse_modifiers, Modifier};
 use crate::java::util::vartype::find_type;
@@ -78,12 +79,7 @@ pub(crate) fn parse_class(
                     &mut fields,
                 );
             }
-            unknown_type => {
-                // eprintln!(
-                //     "{} tag unhandled. This may or may not be an issue.",
-                //     unknown_type
-                // );
-            }
+            unknown_type => log_unknown_tag(unknown_type, "class"),
         };
     }
 
@@ -125,11 +121,7 @@ fn parse_class_body(
             | "enum_declaration"
             | "annotation_declaration" => { /* None, since these were extracted + handled elsewhere */
             }
-            unknown => {}
-            // eprintln!(
-            //     "Attempting to parse {}, not currently supported. TODO implement fully!",
-            //     unknown
-            // ),
+            unknown => log_unknown_tag(unknown, "class body"),
         }
     }
 }
