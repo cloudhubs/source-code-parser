@@ -23,6 +23,7 @@ pub enum Stmt {
     TryCatchStmt(TryCatchStmt),
     CatchStmt(CatchStmt),
     WithResourceStmt(WithResourceStmt),
+    LabelStmt(LabelStmt),
 }
 
 /// For variable declaration statements, we can represent various situations for
@@ -132,12 +133,20 @@ pub struct ImportStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct BreakStmt {
+    /// Handle rare labelled breaks
+    #[new(value = "Option::None")]
+    pub label: Option<String>,
+
     #[new(value = r#""break_stmt""#)]
     r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ContinueStmt {
+    /// Handle rare labelled continues
+    #[new(value = "Option::None")]
+    pub label: Option<String>,
+
     #[new(value = r#""continue_stmt""#)]
     r#type: &'static str,
 }
@@ -173,4 +182,10 @@ pub struct WithResourceStmt {
     pub body: Block,
     #[new(value = r#""with_resources_stmt""#)]
     r#type: &'static str,
+}
+
+/// Represents a label, as in goto or a labelled continue/break
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct LabelStmt {
+    pub label: String,
 }

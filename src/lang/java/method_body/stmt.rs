@@ -150,6 +150,7 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     let mut clauses: Vec<Vec<&AST>> = vec![vec![], vec![], vec![], vec![]];
     let mut i = 0;
 
+    // Coerce an Option<Node> to an Expr, if it can be
     let to_expr = |part: &Option<Node>| match part.clone() {
         Some(Node::Expr(node)) => Some(node),
         Some(Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. }))) => Some(expr),
@@ -229,4 +230,10 @@ pub(crate) fn parse_enhanced_for(ast: &AST, component: &ComponentInfo) -> Option
     Some(Node::Stmt(
         ForRangeStmt::new(Box::new(Stmt::DeclStmt(iter_var)), iter, body).into(),
     ))
+}
+
+pub(crate) fn parse_labelled(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+    let label = LabelStmt::new(ast.children[0].value.clone());
+    let body = parse_node(&ast.children[2], component);
+    Some(Block::new(vec![Stmt::LabelStmt(label).into(), body?]).into())
 }
