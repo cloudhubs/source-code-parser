@@ -16,8 +16,6 @@ pub enum Stmt {
     WhileStmt(WhileStmt),
     DoWhileStmt(DoWhileStmt),
     ReturnStmt(ReturnStmt),
-    SwitchStmt(SwitchStmt),
-    CaseStmt(CaseStmt),
     ImportStmt(ImportStmt),
     BreakStmt(BreakStmt),
     ContinueStmt(ContinueStmt),
@@ -118,22 +116,6 @@ pub struct DoWhileStmt {
 pub struct ReturnStmt {
     pub expr: Option<Expr>,
     #[new(value = r#""return_stmt""#)]
-    r#type: &'static str,
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
-pub struct SwitchStmt {
-    pub condition: Expr,
-    pub cases: Vec<CaseStmt>,
-    #[new(value = r#""switch_stmt""#)]
-    r#type: &'static str,
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
-pub struct CaseStmt {
-    cond: Option<Expr>,
-    body: Block,
-    #[new(value = r#""case_stmt""#)]
     r#type: &'static str,
 }
 

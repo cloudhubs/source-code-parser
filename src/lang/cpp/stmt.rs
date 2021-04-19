@@ -244,7 +244,7 @@ fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
     Some(IfStmt::new(cond, body, else_body))
 }
 
-fn switch_statement(switch_stmt: &AST) -> Option<SwitchStmt> {
+fn switch_statement(switch_stmt: &AST) -> Option<SwitchExpr> {
     let cond = switch_stmt
         .find_child_by_type(&["condition_clause"])
         .map(|cond| expression(cond))??;
@@ -255,11 +255,11 @@ fn switch_statement(switch_stmt: &AST) -> Option<SwitchStmt> {
         .flat_map(|case| case)
         .collect();
 
-    let switch_stmt = SwitchStmt::new(cond, cases);
+    let switch_stmt = SwitchExpr::new(Box::new(cond), cases);
     Some(switch_stmt)
 }
 
-fn switch_case(case_statement: &AST) -> Option<CaseStmt> {
+fn switch_case(case_statement: &AST) -> Option<CaseExpr> {
     let expr = case_statement.find_child_by_type(&["case", "default"])?;
     // todo: add literals to expression function
     let expr = match &*expr.r#type {
@@ -272,7 +272,7 @@ fn switch_case(case_statement: &AST) -> Option<CaseStmt> {
     }
     let nodes = block_nodes_iter(&case_statement.children[3..]);
     let block = Block::new(nodes);
-    let case = CaseStmt::new(expr, block);
+    let case = CaseExpr::new(expr, block);
     Some(case.into())
 }
 
