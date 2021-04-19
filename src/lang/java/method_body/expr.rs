@@ -1,6 +1,6 @@
 use crate::java::method_body::log_unknown_tag;
 use crate::java::method_body::node::parse_child_nodes;
-use crate::java::method_body::parse_block;
+use crate::java::method_body::node::parse_node;
 use crate::java::util::parameter::parse_method_parameters;
 use crate::java::util::vartype::parse_type_args;
 
@@ -30,7 +30,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         }
 
         // Language statements
-        "method_invocation" => method_invoke(ast, component).into(),
+        "method_invocation" => parse_method(ast, component).into(),
         "lambda_expression" => parse_lambda(ast, component),
 
         // Base case
@@ -41,13 +41,13 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     }
 }
 
-fn method_invoke(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     let lhs: Expr = match parse_expr(&ast.children[0], component) {
         Some(opt) => opt,
         None => Literal::new("this".to_string()).into(),
     };
 
-    let mut name = None;
+    let mut name: Option<Expr> = None;
     let mut generic: String = String::new();
     let mut args: Vec<Expr> = vec![];
 
@@ -66,7 +66,7 @@ fn method_invoke(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
             "identifier" => {
                 let mut result = generic.clone();
                 result.push_str(&*comp.value.clone());
-                name = Some(Ident::new(result).into());
+                name = Some(Literal::new(result).into());
             }
             unknown => log_unknown_tag(unknown, "method_invoke"),
         }
@@ -74,16 +74,19 @@ fn method_invoke(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     println!("{:?}.{:?} ({:?})", lhs, name.clone().expect("ohno"), args);
 
     // TODO add in generic
-    Some(Expr::DotExpr(DotExpr::new(
-        Box::new(lhs),
-        Box::new(
-            CallExpr::new(
-                Box::new(name.expect("method with no name requested!")),
-                args,
-            )
-            .into(),
-        ),
-    )))
+    Some(
+        Expr::CallExpr(CallExpr::new(
+            Box::new(
+                DotExpr::new(
+                    Box::new(lhs),
+                    Box::new(name.expect("method with no name requested!")).into(),
+                )
+                .into(),
+            ),
+            args,
+        ))
+        .into(),
+    )
 }
 
 fn parse_field_access(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
@@ -192,12 +195,12 @@ pub(crate) fn parse_lambda(ast: &AST, component: &ComponentInfo) -> Option<Expr>
                 ]
                 .concat();
             }
-            "block" => body = Some(parse_block(child, component)),
-            unknown => log_unknown_tag(unknown, "lambda"),
+            "->" => { /* Ignore the boilerplate */ }
+            _ => body = parse_node(child, component),
         }
     }
 
-    Some(LambdaExpr::new(params, body?).into())
+    Some(LambdaExpr::new(params, Block::new(vec![body?])).into())
 }
 
 fn new_simple_param(ast: &AST) -> DeclStmt {
