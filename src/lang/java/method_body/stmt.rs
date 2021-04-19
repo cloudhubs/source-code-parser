@@ -8,6 +8,8 @@ use crate::java::util::vartype::find_type;
 use crate::ComponentInfo;
 use crate::AST;
 
+use super::{expr::parse_expr, node::parse_node};
+
 /// File holding all Java statement parsing (e.g., while/for/trycatch)
 
 /// Parse an AST section containing a variable declaration
@@ -72,17 +74,15 @@ pub(crate) fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     for comp in ast.children.iter() {
         match &*comp.r#type {
             "resource_specification" => {
-                let rss: Vec<Expr> = comp
-                    .children
-                    .iter()
-                    .filter(|resource| match &*resource.r#type {
-                        "resource" => true,
-                        _ => false,
-                    })
-                    .map(|resource| parse_assignment(resource, component))
-                    .flat_map(|n| n)
-                    .collect();
-                // resources = Some(DeclStmt::new(rss.iter().map(), expressions));
+                // let rss: Vec<Expr> = comp
+                //     .children
+                //     .iter()
+                //     .filter(|resource| &*resource.r#type  == "resource")
+                //     .map(|resource| parse_assignment(resource, component))
+                //     .flat_map(|n| match n {
+                //     })
+                //     .collect();
+                // resources = Some(DeclStmt::new(rss, expressions));
             }
             "block" => try_body = Some(parse_block(comp, component)),
             "catch_clause" => {
@@ -145,4 +145,63 @@ pub(crate) fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         try_catch.finally_body = finally_clause;
     }
     Some(Node::Stmt(try_catch.into()))
+}
+
+pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+    let mut clauses: Vec<Vec<&AST>> = vec![vec![], vec![], vec![], vec![]];
+    let mut i = 0;
+
+    // Find all init, guard, and postcondition blocks
+    for child in ast.children.iter() {
+        match &*child.r#type {
+            ";" => i = i + 1,
+            "," | "for" | "(" => { /* Expected junk tags */ }
+            ")" => break,
+            _ => clauses[i].push(child),
+        }
+    }
+
+    // Parse all children
+    let parts: Vec<Option<Node>> = clauses
+        .iter()
+        .map(|c| {
+            if c.len() > 1 {
+                todo!("Can't handle more than one declaration at a time yet!");
+            } else if c.len() == 1 {
+                parse_node(c[0], component)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // Parse initialization
+    let init = match parts[0].clone() {
+        Some(Node::Stmt(node)) => Some(Box::new(node)),
+        Some(Node::Expr(node)) => Some(Box::new(Stmt::ExprStmt(ExprStmt::new(node)))),
+        Some(Node::Block(_)) => panic!("Not supported: block in for loop init"),
+        None => None,
+    };
+
+    // Parse guard condition
+    let guard = match parts[1].clone() {
+        Some(Node::Expr(node)) => Some(node),
+        _ => None,
+    };
+
+    // Parse postcondition
+    let post = match parts[2].clone() {
+        Some(Node::Expr(node)) => Some(node),
+        Some(Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. }))) => Some(expr),
+        _ => None,
+    };
+
+    // Parse loop body
+    let body = match parts[3].clone() {
+        Some(node) => Block::new(vec![node]),
+        None => Block::new(vec![]),
+    };
+
+    // Assemble
+    Some(Stmt::ForStmt(ForStmt::new(init, guard, post, body)).into())
 }
