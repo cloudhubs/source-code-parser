@@ -1,5 +1,5 @@
 use crate::java::method_body::log_unknown_tag;
-use crate::java::method_body::node::parse_child_nodes;
+use crate::java::method_body::node::{parse_child_nodes, parse_node};
 use crate::java::method_body::parse_block;
 use crate::java::util::parameter::parse_method_parameters;
 use crate::java::util::vartype::parse_type_args;
@@ -31,6 +31,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         // Language statements
         "method_invocation" => parse_method(ast, component).into(),
         "lambda_expression" => parse_lambda(ast, component),
+        "switch_statement" => parse_switch(ast, component),
 
         // Base case
         unknown => {
@@ -41,10 +42,16 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
 }
 
 fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
-    let lhs: Expr = match parse_expr(&ast.children[0], component) {
-        Some(opt) => opt,
-        None => Literal::new("this".to_string()).into(),
-    };
+    // Get calleee
+    let lhs: Expr;
+    if ast.find_child_by_type(&["."]).is_some() {
+        lhs = match parse_expr(&ast.children[0], component) {
+            Some(opt) => opt,
+            None => Literal::new("this".to_string()).into(),
+        };
+    } else {
+        lhs = Literal::new("this".to_string()).into();
+    }
 
     let mut name: Option<Expr> = None;
     let mut generic: String = String::new();
@@ -205,4 +212,64 @@ fn new_simple_param(ast: &AST) -> DeclStmt {
         vec![VarDecl::new(None, Ident::new(ast.value.clone()))],
         vec![],
     )
+}
+
+pub(crate) fn parse_switch(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let mut condition = None;
+    let mut guard = None;
+    let mut cases: Vec<CaseExpr> = vec![];
+
+    let gen_cases = |cases: &mut Vec<CaseExpr>, guard: &Option<Expr>, in_case: &Vec<&AST>| {
+        cases.push(CaseExpr::new(
+            guard.clone(),
+            Block::new(
+                in_case
+                    .iter()
+                    .flat_map(|c| parse_node(c, component))
+                    .collect(),
+            ),
+        ))
+    };
+
+    for child in ast.children.iter() {
+        match &*child.r#type {
+            "parenthesized_expression" => condition = parse_expr(&child.children[1], component),
+            "switch_block" => {
+                let mut warmed_up = false;
+                let mut in_case: Vec<&AST> = vec![];
+
+                for case_pt in child.children.iter() {
+                    match &*case_pt.r#type {
+                        "switch_label" => {
+                            // If we've recorded the first case, parse it
+                            if warmed_up {
+                                gen_cases(&mut cases, &guard, &in_case);
+                            } else {
+                                warmed_up = true;
+                            }
+
+                            // Clean up
+                            in_case = vec![];
+
+                            // Extract case guard for next one
+                            if case_pt.children[0].value != "default" {
+                                guard = parse_expr(&case_pt.children[1], component);
+                            } else {
+                                guard = None;
+                            }
+                        }
+                        _ => in_case.push(case_pt),
+                    }
+                }
+
+                // Ensure we don't have a straggler case
+                if in_case.len() != 0 {
+                    gen_cases(&mut cases, &guard, &in_case);
+                }
+            }
+            unknown => log_unknown_tag(unknown, "switch"),
+        }
+    }
+
+    Some(SwitchExpr::new(Box::new(condition?), cases).into())
 }
