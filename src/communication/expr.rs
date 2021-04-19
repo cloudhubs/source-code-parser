@@ -96,7 +96,7 @@ impl CommunicationReplacer for CallExpr {
         let found_rpc_endpoint =
             |class: &ClassOrInterfaceComponent, method: &MethodComponent, method_ident: &Ident| {
                 // Same method name and parameter count
-                let class_name_equiv = match callee_class {
+                let in_different_classes = match callee_class {
                     Some(callee_class) => {
                         callee_class.component.container_name != class.component.container_name
                     }
@@ -105,7 +105,7 @@ impl CommunicationReplacer for CallExpr {
                 method.method_name == method_ident.name
                     && self.args.len() == method.parameters.len()
                     && callee_method.component.path != class.component.component.path
-                    && class_name_equiv
+                    && in_different_classes
             };
 
         let found_rest_endpoint =
@@ -215,11 +215,7 @@ fn get_rpc_service_name(
 
             if field_name.contains("client") {
                 // Strip excess type information and unneeded naming like "client" and underscores
-                let mut field_name = if field_name.contains("client>") {
-                    field_name.split("client>").next()?
-                } else {
-                    field_name.split("client").next()?
-                };
+                let mut field_name = field_name.split("client").next()?;
                 if field_name.contains("<") {
                     field_name = field_name.split("<").last()?;
                 }
