@@ -302,3 +302,31 @@ impl CommunicationReplacer for LambdaExpr {
             .replace_communication_call(modules, module, class, method)
     }
 }
+
+impl CommunicationReplacer for SwitchExpr {
+    fn replace_communication_call(
+        &mut self,
+        modules: &Vec<ModuleComponent>,
+        module: &ModuleComponent,
+        class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
+    ) -> Option<Node> {
+        for case in self.cases.iter_mut() {
+            case.replace_communication_call(modules, module, class, method);
+        }
+        None
+    }
+}
+
+impl CommunicationReplacer for CaseExpr {
+    fn replace_communication_call(
+        &mut self,
+        modules: &Vec<ModuleComponent>,
+        module: &ModuleComponent,
+        class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
+    ) -> Option<Node> {
+        self.body
+            .replace_communication_call(modules, module, class, method)
+    }
+}

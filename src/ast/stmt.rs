@@ -92,7 +92,7 @@ pub struct ForStmt {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ForRangeStmt {
     // Containing ExprStmt(BinExpr) or DeclStmt commonly
-    pub init: Vec<Stmt>,
+    pub init: Box<Stmt>,
     pub iterator: Option<Expr>,
     pub body: Block,
     #[new(value = r#""for_range_stmt""#)]

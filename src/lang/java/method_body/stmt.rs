@@ -138,12 +138,14 @@ pub(crate) fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     }
 
     // Generated wrappers and return
-    let mut try_catch =
-        TryCatchStmt::new(try_body.expect("Try/Catch with no body!"), catch_clauses);
-    if finally_clause.is_some() {
-        try_catch.finally_body = finally_clause;
-    }
-    Some(Node::Stmt(try_catch.into()))
+    Some(Node::Stmt(
+        TryCatchStmt::new(
+            try_body.expect("Try/Catch with no body!"),
+            catch_clauses,
+            finally_clause,
+        )
+        .into(),
+    ))
 }
 
 pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
@@ -151,10 +153,15 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     let mut i = 0;
 
     // Coerce an Option<Node> to an Expr, if it can be
-    let to_expr = |part: &Option<Node>| match part.clone() {
-        Some(Node::Expr(node)) => Some(node),
-        Some(Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. }))) => Some(expr),
-        _ => None,
+    let to_expr = |parts: &Vec<Node>| -> Vec<Expr> {
+        parts
+            .into_iter()
+            .flat_map(|part| match part.clone() {
+                Node::Expr(node) => Some(node),
+                Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. })) => Some(expr),
+                _ => None,
+            })
+            .collect()
     };
 
     // Find all init, guard, and postcondition blocks
@@ -176,13 +183,16 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     }
 
     // Parse for loop parts
-    let parts: Vec<Option<Node>> = clauses
+    let parts: Vec<Option<Vec<Node>>> = clauses
         .iter()
         .map(|c| {
-            if c.len() > 1 {
-                todo!("Can't handle more than one declaration at a time yet!");
-            } else if c.len() == 1 {
-                parse_node(c[0], component)
+            if c.len() > 0 {
+                Some(
+                    c.iter()
+                        .map(|c| parse_node(c, component))
+                        .flat_map(|c| c)
+                        .collect(),
+                )
             } else {
                 None
             }
@@ -190,18 +200,24 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         .collect();
 
     // Parse initialization
-    let init = match parts[0].clone() {
-        Some(Node::Stmt(node)) => Some(Box::new(node)),
-        Some(Node::Expr(node)) => Some(Box::new(Stmt::ExprStmt(ExprStmt::new(node)))),
-        Some(Node::Block(_)) => panic!("Not supported: block in for loop init"),
-        None => None,
-    };
+    let init = parts[0].clone().map_or(vec![], |init_parts| {
+        init_parts
+            .into_iter()
+            .flat_map(|p| match p {
+                Node::Stmt(node) => Some(node),
+                Node::Expr(node) => Some(Stmt::ExprStmt(ExprStmt::new(node))),
+                _ => panic!("Not supported: block in for loop init"),
+            })
+            .collect()
+    });
 
     // Parse guard condition
-    let guard = to_expr(&parts[1]);
+    let guard = parts[1]
+        .clone()
+        .map_or(None, |guard| Some(to_expr(&guard)[0].clone()));
 
     // Parse postcondition
-    let post = to_expr(&parts[2]);
+    let post = parts[2].clone().map_or(vec![], |post| to_expr(&post));
 
     // Assemble
     Some(Stmt::ForStmt(ForStmt::new(init, guard, post, Block::new(body))).into())

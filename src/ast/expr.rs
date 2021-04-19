@@ -218,7 +218,7 @@ impl From<SwitchExpr> for Stmt {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct CaseExpr {
     cond: Option<Expr>,
-    body: Block,
+    pub body: Block,
     #[new(value = r#""case_stmt""#)]
     r#type: &'static str,
 }

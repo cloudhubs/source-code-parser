@@ -3,7 +3,7 @@ use crate::comm_repl_default_impl;
 use crate::{ast::*, ClassOrInterfaceComponent};
 use crate::{prophet::ModuleComponent, MethodComponent};
 
-comm_repl_default_impl!(ImportStmt, BreakStmt, ContinueStmt, ThrowStmt);
+comm_repl_default_impl!(ImportStmt, BreakStmt, ContinueStmt, ThrowStmt, LabelStmt);
 
 impl CommunicationReplacer for DeclStmt {
     fn replace_communication_call(
@@ -134,34 +134,6 @@ impl CommunicationReplacer for DoWhileStmt {
     }
 }
 
-impl CommunicationReplacer for SwitchStmt {
-    fn replace_communication_call(
-        &mut self,
-        modules: &Vec<ModuleComponent>,
-        module: &ModuleComponent,
-        class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
-    ) -> Option<Node> {
-        for case in self.cases.iter_mut() {
-            case.replace_communication_call(modules, module, class, method);
-        }
-        None
-    }
-}
-
-impl CommunicationReplacer for CaseStmt {
-    fn replace_communication_call(
-        &mut self,
-        modules: &Vec<ModuleComponent>,
-        module: &ModuleComponent,
-        class: Option<&ClassOrInterfaceComponent>,
-        method: &MethodComponent,
-    ) -> Option<Node> {
-        self.body
-            .replace_communication_call(modules, module, class, method)
-    }
-}
-
 impl CommunicationReplacer for TryCatchStmt {
     fn replace_communication_call(
         &mut self,
@@ -206,6 +178,22 @@ impl CommunicationReplacer for ReturnStmt {
         {
             *self.expr.as_mut()? = replacement;
         }
+        None
+    }
+}
+
+impl CommunicationReplacer for WithResourceStmt {
+    fn replace_communication_call(
+        &mut self,
+        modules: &Vec<ModuleComponent>,
+        module: &ModuleComponent,
+        class: Option<&ClassOrInterfaceComponent>,
+        method: &MethodComponent,
+    ) -> Option<Node> {
+        self.body
+            .replace_communication_call(modules, module, class, method);
+        self.resources
+            .replace_communication_call(modules, module, class, method);
         None
     }
 }

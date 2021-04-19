@@ -385,7 +385,7 @@ fn for_range_statement(for_range_loop: &AST) -> Option<ForRangeStmt> {
         _ => vec![],
     };
     let decl = DeclStmt::new(variables, vec![]);
-    let for_range_stmt = ForRangeStmt::new(vec![decl.into()], iterator, block);
+    let for_range_stmt = ForRangeStmt::new(Box::new(decl.into()), iterator, block);
     Some(for_range_stmt)
 }
 
