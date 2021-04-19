@@ -206,7 +206,7 @@ fn try_catch_statement(try_catch_stmt: &AST) -> Option<TryCatchStmt> {
         .map(|catch| catch_statement(catch))
         .filter_map(|catch| catch)
         .collect();
-    Some(TryCatchStmt::new(body, catch_bodies))
+    Some(TryCatchStmt::new(body, catch_bodies, None))
 }
 
 fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
@@ -322,7 +322,12 @@ fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
         _ => None,
     };
 
-    let for_stmt = ForStmt::new(init, cond, post, block);
+    let for_stmt = ForStmt::new(
+        init.map_or_else(|| vec![], |init| vec![*init]),
+        cond,
+        post.map_or_else(|| vec![], |post| vec![post]),
+        block,
+    );
     Some(for_stmt)
 }
 
@@ -380,7 +385,7 @@ fn for_range_statement(for_range_loop: &AST) -> Option<ForRangeStmt> {
         _ => vec![],
     };
     let decl = DeclStmt::new(variables, vec![]);
-    let for_range_stmt = ForRangeStmt::new(Box::new(decl.into()), iterator, block);
+    let for_range_stmt = ForRangeStmt::new(vec![decl.into()], iterator, block);
     Some(for_range_stmt)
 }
 
@@ -711,7 +716,7 @@ mod tests {
         let init: Stmt = init.into();
 
         let expected: Stmt = ForStmt::new(
-            Some(Box::new(init)),
+            vec![init],
             Some(
                 BinaryExpr::new(
                     Box::new(Ident::new("_i284".into()).into()),
@@ -720,7 +725,7 @@ mod tests {
                 )
                 .into(),
             ),
-            Some(IncDecExpr::new(true, true, Box::new(Ident::new("_i284".into()).into())).into()),
+            vec![IncDecExpr::new(true, true, Box::new(Ident::new("_i284".into()).into())).into()],
             Block::new(vec![]).into(),
         )
         .into();
