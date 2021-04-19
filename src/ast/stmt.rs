@@ -1,9 +1,11 @@
 use super::*;
 use derive_more::From;
 use derive_new::new;
+use enum_dispatch::enum_dispatch;
 use serde::Serialize;
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, From)]
+#[enum_dispatch]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(untagged)]
 pub enum Stmt {
     DeclStmt(DeclStmt),
@@ -74,10 +76,10 @@ pub struct IfStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ForStmt {
-    // ExprStmt(BinExpr) or DeclStmt
-    pub init: Option<Box<Stmt>>,
+    // Containing ExprStmt(BinExpr) or DeclStmt commonly
+    pub init: Vec<Stmt>,
     pub condition: Option<Expr>,
-    pub post: Option<Expr>,
+    pub post: Vec<Expr>,
     pub body: Block,
     #[new(value = r#""for_stmt""#)]
     r#type: &'static str,
@@ -85,8 +87,8 @@ pub struct ForStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ForRangeStmt {
-    // ExprStmt or DecLStmt
-    pub init: Box<Stmt>,
+    // Containing ExprStmt(BinExpr) or DeclStmt commonly
+    pub init: Vec<Stmt>,
     pub iterator: Option<Expr>,
     pub body: Block,
     #[new(value = r#""for_range_stmt""#)]
@@ -126,8 +128,8 @@ pub struct SwitchStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct CaseStmt {
-    cond: Option<Expr>,
-    body: Block,
+    pub cond: Option<Expr>,
+    pub body: Block,
     #[new(value = r#""case_stmt""#)]
     r#type: &'static str,
 }
@@ -157,7 +159,7 @@ pub struct ContinueStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ThrowStmt {
-    expr: Option<Expr>,
+    pub expr: Option<Expr>,
     #[new(value = r#""throw_stmt""#)]
     r#type: &'static str,
 }
@@ -166,6 +168,7 @@ pub struct ThrowStmt {
 pub struct TryCatchStmt {
     pub try_body: Block,
     pub catch_bodies: Vec<CatchStmt>,
+    pub finally_body: Option<Block>,
     #[new(value = r#""try_catch_stmt""#)]
     r#type: &'static str,
 }

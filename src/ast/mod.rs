@@ -1,5 +1,5 @@
-use derive_more::From;
 use derive_new::new;
+use enum_dispatch::enum_dispatch;
 use serde::Serialize;
 
 mod stmt;
@@ -11,7 +11,10 @@ pub use expr::*;
 mod op;
 pub use op::*;
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, From)]
+// enum_dispatch adds in our From implementations for us
+
+#[enum_dispatch]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(untagged)]
 pub enum Node {
     Block(Block),

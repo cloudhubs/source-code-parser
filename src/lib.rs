@@ -8,3 +8,5 @@ pub mod lang;
 pub use lang::*;
 
 pub mod ast;
+
+pub mod communication;
