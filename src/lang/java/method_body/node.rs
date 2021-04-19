@@ -1,6 +1,6 @@
 use crate::ast::*;
 use crate::java::method_body::expr::parse_expr;
-use crate::java::method_body::stmt::{parse_decl, parse_for, try_catch};
+use crate::java::method_body::stmt::{parse_decl, parse_enhanced_for, parse_for, try_catch};
 use crate::ComponentInfo;
 use crate::AST;
 
@@ -21,6 +21,7 @@ pub(crate) fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         "try_catch" | "try_with_resources_statement" => try_catch(ast, component),
         "expression_statement" => parse_expr_stmt(ast, component),
         "for_statement" => parse_for(ast, component),
+        "enhanced_for_statement" => parse_enhanced_for(ast, component),
         _ => {
             let expr: Stmt = parse_expr(ast, component)?.into();
             Some(expr.into())

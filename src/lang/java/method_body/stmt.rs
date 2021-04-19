@@ -1,5 +1,3 @@
-use crate::ast::*;
-use crate::java::method_body::expr::parse_assignment;
 use crate::java::method_body::log_unknown_tag;
 use crate::java::method_body::parse_block;
 use crate::java::method_body::parse_child_nodes;
@@ -7,6 +5,7 @@ use crate::java::modifier::find_modifier;
 use crate::java::util::vartype::find_type;
 use crate::ComponentInfo;
 use crate::AST;
+use crate::{ast::*, java::util::vartype::parse_type};
 
 use super::{expr::parse_expr, node::parse_node};
 
@@ -151,17 +150,31 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     let mut clauses: Vec<Vec<&AST>> = vec![vec![], vec![], vec![], vec![]];
     let mut i = 0;
 
+    let to_expr = |part: &Option<Node>| match part.clone() {
+        Some(Node::Expr(node)) => Some(node),
+        Some(Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. }))) => Some(expr),
+        _ => None,
+    };
+
     // Find all init, guard, and postcondition blocks
     for child in ast.children.iter() {
         match &*child.r#type {
-            ";" => i = i + 1,
+            ";" | ")" => i = i + 1,
             "," | "for" | "(" => { /* Expected junk tags */ }
-            ")" => break,
             _ => clauses[i].push(child),
         }
     }
 
-    // Parse all children
+    // Parse loop body (should be last)
+    let body;
+    let raw_body = clauses.pop()?;
+    if raw_body.len() > 0 {
+        body = parse_child_nodes(raw_body[0], component);
+    } else {
+        body = vec![];
+    }
+
+    // Parse for loop parts
     let parts: Vec<Option<Node>> = clauses
         .iter()
         .map(|c| {
@@ -184,24 +197,36 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     };
 
     // Parse guard condition
-    let guard = match parts[1].clone() {
-        Some(Node::Expr(node)) => Some(node),
-        _ => None,
-    };
+    let guard = to_expr(&parts[1]);
 
     // Parse postcondition
-    let post = match parts[2].clone() {
-        Some(Node::Expr(node)) => Some(node),
-        Some(Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. }))) => Some(expr),
-        _ => None,
-    };
-
-    // Parse loop body
-    let body = match parts[3].clone() {
-        Some(node) => Block::new(vec![node]),
-        None => Block::new(vec![]),
-    };
+    let post = to_expr(&parts[2]);
 
     // Assemble
-    Some(Stmt::ForStmt(ForStmt::new(init, guard, post, body)).into())
+    Some(Stmt::ForStmt(ForStmt::new(init, guard, post, Block::new(body))).into())
+}
+
+pub(crate) fn parse_enhanced_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+    // Extract iterator
+    let iter_type = parse_type(&ast.children[2]);
+    let iter_var = DeclStmt::new(
+        vec![VarDecl::new(
+            Some(iter_type),
+            Ident::new(ast.children[3].value.clone()),
+        )],
+        vec![],
+    );
+    let iter = parse_expr(&ast.children[5], component);
+
+    // Extract body
+    let body;
+    if let Some(block) = ast.find_child_by_type(&["block"]) {
+        body = parse_block(block, component);
+    } else {
+        body = Block::new(vec![]);
+    }
+
+    Some(Node::Stmt(
+        ForRangeStmt::new(Box::new(Stmt::DeclStmt(iter_var)), iter, body).into(),
+    ))
 }

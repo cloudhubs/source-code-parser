@@ -1,6 +1,6 @@
 use crate::java::method_body::log_unknown_tag;
 use crate::java::method_body::node::parse_child_nodes;
-use crate::java::method_body::node::parse_node;
+use crate::java::method_body::parse_block;
 use crate::java::util::parameter::parse_method_parameters;
 use crate::java::util::vartype::parse_type_args;
 
@@ -9,7 +9,6 @@ use crate::ComponentInfo;
 use crate::AST;
 
 pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
-    println!("{}::{}", ast.r#type, ast.value);
     match &*ast.r#type {
         // Variables an initialization
         "variable_declarator" | "assignment_expression" => parse_assignment(ast, component),
@@ -71,7 +70,6 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
             unknown => log_unknown_tag(unknown, "method_invoke"),
         }
     }
-    println!("{:?}.{:?} ({:?})", lhs, name.clone().expect("ohno"), args);
 
     // TODO add in generic
     Some(
@@ -90,7 +88,6 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
 }
 
 fn parse_field_access(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
-    // println!("FIELD ACCESS")
     let lhs = parse_expr(&ast.children[0], component)?;
     let rhs = parse_expr(&ast.children[2], component)?;
     Some(Expr::DotExpr(DotExpr::new(Box::new(lhs), Box::new(rhs))))
@@ -196,11 +193,11 @@ pub(crate) fn parse_lambda(ast: &AST, component: &ComponentInfo) -> Option<Expr>
                 .concat();
             }
             "->" => { /* Ignore the boilerplate */ }
-            _ => body = parse_node(child, component),
+            _ => body = Some(parse_block(child, component)),
         }
     }
 
-    Some(LambdaExpr::new(params, Block::new(vec![body?])).into())
+    Some(LambdaExpr::new(params, body?).into())
 }
 
 fn new_simple_param(ast: &AST) -> DeclStmt {
