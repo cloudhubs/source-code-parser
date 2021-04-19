@@ -79,7 +79,7 @@ pub struct ForStmt {
     // Containing ExprStmt(BinExpr) or DeclStmt commonly
     pub init: Vec<Stmt>,
     pub condition: Option<Expr>,
-    pub post: Option<Expr>,
+    pub post: Vec<Expr>,
     pub body: Block,
     #[new(value = r#""for_stmt""#)]
     r#type: &'static str,

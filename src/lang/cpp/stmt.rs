@@ -325,7 +325,7 @@ fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
     let for_stmt = ForStmt::new(
         init.map_or_else(|| vec![], |init| vec![*init]),
         cond,
-        post,
+        post.map_or_else(|| vec![], |post| vec![post]),
         block,
     );
     Some(for_stmt)
@@ -725,7 +725,7 @@ mod tests {
                 )
                 .into(),
             ),
-            Some(IncDecExpr::new(true, true, Box::new(Ident::new("_i284".into()).into())).into()),
+            vec![IncDecExpr::new(true, true, Box::new(Ident::new("_i284".into()).into())).into()],
             Block::new(vec![]).into(),
         )
         .into();

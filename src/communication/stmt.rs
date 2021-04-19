@@ -72,13 +72,9 @@ impl CommunicationReplacer for ForStmt {
         {
             *self.condition.as_mut()? = replacement;
         }
-        if let Some(Node::Expr(replacement)) = self
-            .post
-            .as_mut()?
-            .replace_communication_call(modules, module, class, method)
-        {
-            *self.post.as_mut()? = replacement;
-        }
+        self.post.iter_mut().for_each(|stmt| {
+            stmt.replace_communication_call(modules, module, class, method);
+        });
         self.body
             .replace_communication_call(modules, module, class, method)
     }
