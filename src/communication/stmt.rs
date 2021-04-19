@@ -65,12 +65,20 @@ impl CommunicationReplacer for ForStmt {
         self.init.iter_mut().for_each(|stmt| {
             stmt.replace_communication_call(modules, module, class, method);
         });
-        self.condition
+        if let Some(Node::Expr(replacement)) = self
+            .condition
             .as_mut()?
-            .replace_communication_call(modules, module, class, method);
-        self.post
+            .replace_communication_call(modules, module, class, method)
+        {
+            *self.condition.as_mut()? = replacement;
+        }
+        if let Some(Node::Expr(replacement)) = self
+            .post
             .as_mut()?
-            .replace_communication_call(modules, module, class, method);
+            .replace_communication_call(modules, module, class, method)
+        {
+            *self.post.as_mut()? = replacement;
+        }
         self.body
             .replace_communication_call(modules, module, class, method)
     }
@@ -83,9 +91,13 @@ impl CommunicationReplacer for ForRangeStmt {
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
-        self.iterator
+        if let Some(Node::Expr(replacement)) = self
+            .iterator
             .as_mut()?
-            .replace_communication_call(modules, module, class, method);
+            .replace_communication_call(modules, module, class, method)
+        {
+            *self.iterator.as_mut()? = replacement;
+        }
         self.body
             .replace_communication_call(modules, module, class, method)
     }
@@ -99,8 +111,11 @@ impl CommunicationReplacer for WhileStmt {
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
-        self.condition
-            .replace_communication_call(modules, module, class, method);
+        if let Some(Node::Expr(replacement)) =
+            (&mut self.condition).replace_communication_call(modules, module, class, method)
+        {
+            *&mut self.condition = replacement;
+        };
         self.body
             .replace_communication_call(modules, module, class, method)
     }
@@ -113,8 +128,11 @@ impl CommunicationReplacer for DoWhileStmt {
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
-        self.condition
-            .replace_communication_call(modules, module, class, method);
+        if let Some(Node::Expr(replacement)) =
+            (&mut self.condition).replace_communication_call(modules, module, class, method)
+        {
+            *&mut self.condition = replacement;
+        }
         self.body
             .replace_communication_call(modules, module, class, method)
     }
@@ -185,8 +203,13 @@ impl CommunicationReplacer for ReturnStmt {
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
-        self.expr
+        if let Some(Node::Expr(replacement)) = self
+            .expr
             .as_mut()?
             .replace_communication_call(modules, module, class, method)
+        {
+            *self.expr.as_mut()? = replacement;
+        }
+        None
     }
 }
