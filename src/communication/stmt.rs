@@ -62,7 +62,9 @@ impl CommunicationReplacer for ForStmt {
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
-        (*self.init.as_mut()?).replace_communication_call(modules, module, class, method);
+        self.init.iter_mut().for_each(|stmt| {
+            stmt.replace_communication_call(modules, module, class, method);
+        });
         self.condition
             .as_mut()?
             .replace_communication_call(modules, module, class, method);
@@ -155,6 +157,9 @@ impl CommunicationReplacer for TryCatchStmt {
         method: &MethodComponent,
     ) -> Option<Node> {
         self.try_body
+            .replace_communication_call(modules, module, class, method);
+        self.finally_body
+            .as_mut()?
             .replace_communication_call(modules, module, class, method)
     }
 }

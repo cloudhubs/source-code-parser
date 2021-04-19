@@ -206,7 +206,7 @@ fn try_catch_statement(try_catch_stmt: &AST) -> Option<TryCatchStmt> {
         .map(|catch| catch_statement(catch))
         .filter_map(|catch| catch)
         .collect();
-    Some(TryCatchStmt::new(body, catch_bodies))
+    Some(TryCatchStmt::new(body, catch_bodies, None))
 }
 
 fn if_statement(if_stmt: &AST) -> Option<IfStmt> {

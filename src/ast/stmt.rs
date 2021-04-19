@@ -168,6 +168,7 @@ pub struct ThrowStmt {
 pub struct TryCatchStmt {
     pub try_body: Block,
     pub catch_bodies: Vec<CatchStmt>,
+    pub finally_body: Option<Block>,
     #[new(value = r#""try_catch_stmt""#)]
     r#type: &'static str,
 }
