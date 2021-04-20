@@ -72,13 +72,7 @@ pub(crate) fn parse_if(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             "parenthesized_expression" => guard = parse_expr(child, component),
             _ => {
                 if let Some(stmt) = parse_node(child, component) {
-                    let stmt = match stmt {
-                        Node::Block(block) => block,
-                        Node::Stmt(stmt) => Block::new(vec![stmt.into()]),
-                        Node::Expr(expr) => {
-                            Block::new(vec![Node::Stmt(ExprStmt::new(expr).into())])
-                        }
-                    };
+                    let stmt = to_block(stmt);
                     if if_stmt.is_none() {
                         if_stmt = Some(stmt);
                     } else {
@@ -285,4 +279,51 @@ pub(crate) fn parse_labelled(ast: &AST, component: &ComponentInfo) -> Option<Nod
     let label = LabelStmt::new(ast.children[0].value.clone());
     let body = parse_node(&ast.children[2], component);
     Some(Block::new(vec![Stmt::LabelStmt(label).into(), body?]).into())
+}
+
+pub(crate) fn parse_while(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+    let mut guard = None;
+    let mut stmt = Block::new(vec![]);
+
+    for child in ast.children.iter() {
+        match &*child.r#type {
+            "parenthesized_expression" => guard = parse_expr(child, component),
+            _ => {
+                if let Some(body_stmt) = parse_node(child, component) {
+                    stmt = to_block(body_stmt);
+                }
+            }
+        }
+    }
+    Some(Node::Stmt(WhileStmt::new(guard?, stmt).into()))
+}
+
+pub(crate) fn parse_do_while(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+    let mut stmt = Block::new(vec![]);
+    for child in ast.children.iter() {
+        match &*child.r#type {
+            "parenthesized_expression" => {
+                return Some(Node::Stmt(
+                    DoWhileStmt::new(parse_expr(child, component)?, stmt).into(),
+                ));
+            }
+            _ => {
+                if let Some(body_stmt) = parse_node(child, component) {
+                    stmt = to_block(body_stmt);
+                }
+            }
+        }
+    }
+
+    // Uh... oops?
+    eprintln!("Failure to find all parts of a do/while loop! Cannot assemble");
+    None
+}
+
+fn to_block(node: Node) -> Block {
+    match node {
+        Node::Block(block) => block,
+        Node::Stmt(stmt) => Block::new(vec![stmt.into()]),
+        Node::Expr(expr) => Block::new(vec![Node::Stmt(ExprStmt::new(expr).into())]),
+    }
 }
