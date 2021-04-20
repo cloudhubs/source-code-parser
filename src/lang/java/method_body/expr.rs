@@ -8,6 +8,8 @@ use crate::ast::*;
 use crate::ComponentInfo;
 use crate::AST;
 
+use super::is_common_junk_tag;
+
 pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     match &*ast.r#type {
         // Variables an initialization
@@ -32,6 +34,8 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "method_invocation" => parse_method(ast, component).into(),
         "lambda_expression" => parse_lambda(ast, component),
         "switch_statement" => parse_switch(ast, component),
+        "parenthesized_expression" => parse_expr(&ast.children[1], component),
+        "binary_expression" => parse_binary(ast, component),
 
         // Base case
         unknown => {
@@ -272,4 +276,41 @@ pub(crate) fn parse_switch(ast: &AST, component: &ComponentInfo) -> Option<Expr>
     }
 
     Some(SwitchExpr::new(Box::new(condition?), cases).into())
+}
+
+/// Handle parsing all logical guards
+fn parse_binary(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let mut lhs = None;
+    let mut op = None;
+    let mut rhs = None;
+    for child in ast.children.iter() {
+        if !is_common_junk_tag(&child.r#type) {
+            let res = Some(child);
+            if lhs.is_none() {
+                lhs = res;
+            } else if op.is_none() {
+                op = res;
+            } else if rhs.is_none() {
+                rhs = res;
+                break;
+            }
+        }
+    }
+
+    if let Some(lhs) = lhs {
+        if let Some(op) = op {
+            if let Some(rhs) = rhs {
+                return Some(
+                    BinaryExpr::new(
+                        Box::new(parse_expr(lhs, component)?),
+                        op.value.as_str().into(),
+                        Box::new(parse_expr(rhs, component)?),
+                    )
+                    .into(),
+                );
+            }
+        }
+    }
+    eprintln!("Malformed binary expression detected!");
+    None
 }

@@ -7,7 +7,7 @@ use crate::ComponentInfo;
 use crate::AST;
 use crate::{ast::*, java::util::vartype::parse_type};
 
-use super::{expr::parse_expr, node::parse_node};
+use super::{expr::parse_expr, is_common_junk_tag, node::parse_node};
 
 /// File holding all Java statement parsing (e.g., while/for/trycatch)
 
@@ -60,6 +60,36 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
         var_decl.var_type = Some(r#type.clone());
     }
     decl.into()
+}
+
+pub(crate) fn parse_if(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+    let mut guard = None;
+    let mut if_stmt = None;
+    let mut else_stmt = None;
+
+    for child in ast.children.iter() {
+        match &*child.r#type {
+            "parenthesized_expression" => guard = parse_expr(child, component),
+            _ => {
+                if let Some(stmt) = parse_node(child, component) {
+                    let stmt = match stmt {
+                        Node::Block(block) => block,
+                        Node::Stmt(stmt) => Block::new(vec![stmt.into()]),
+                        Node::Expr(expr) => {
+                            Block::new(vec![Node::Stmt(ExprStmt::new(expr).into())])
+                        }
+                    };
+                    if if_stmt.is_none() {
+                        if_stmt = Some(stmt);
+                    } else {
+                        else_stmt = Some(stmt);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    Some(Node::Stmt(IfStmt::new(guard?, if_stmt?, else_stmt).into()))
 }
 
 /// Parse an AST fragment with a try/catch. May be try-with-resources, or standard try/catch, with any
@@ -168,8 +198,11 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     for child in ast.children.iter() {
         match &*child.r#type {
             ";" | ")" => i = i + 1,
-            "," | "for" | "(" => { /* Expected junk tags */ }
-            _ => clauses[i].push(child),
+            unknown => {
+                if !is_common_junk_tag(unknown) {
+                    clauses[i].push(child);
+                }
+            }
         }
     }
 

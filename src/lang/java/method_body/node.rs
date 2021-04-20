@@ -4,7 +4,10 @@ use crate::java::method_body::stmt::{parse_decl, parse_enhanced_for, parse_for, 
 use crate::ComponentInfo;
 use crate::AST;
 
-use super::stmt::parse_labelled;
+use super::{
+    parse_block,
+    stmt::{parse_if, parse_labelled},
+};
 
 pub(crate) fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Node> {
     ast.children
@@ -20,6 +23,7 @@ pub(crate) fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         "local_variable_declaration" | "field_declaration" => {
             Some(Node::Stmt(parse_decl(ast, component).into()))
         }
+        "if_statement" => parse_if(ast, component),
         "try_catch" | "try_with_resources_statement" => try_catch(ast, component),
         "expression_statement" => parse_expr_stmt(ast, component),
         "for_statement" => parse_for(ast, component),
@@ -27,6 +31,7 @@ pub(crate) fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         "continue_statement" => make_continue(ast),
         "break_statement" => make_break(ast),
         "labeled_statement" => parse_labelled(ast, component),
+        "block" => Some(parse_block(ast, component).into()),
         _ => {
             let expr: Stmt = parse_expr(ast, component)?.into();
             Some(expr.into())
