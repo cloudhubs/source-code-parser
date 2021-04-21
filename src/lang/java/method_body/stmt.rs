@@ -1,3 +1,4 @@
+use crate::ast::*;
 use crate::java::method_body::parse_block;
 use crate::java::method_body::parse_child_nodes;
 use crate::java::modifier::find_modifier;
@@ -5,7 +6,6 @@ use crate::java::util::vartype::find_type;
 use crate::java::{method_body::log_unknown_tag, modifier::parse_modifiers};
 use crate::ComponentInfo;
 use crate::AST;
-use crate::{ast::*, java::util::vartype::parse_type};
 
 use super::{expr::parse_expr, is_common_junk_tag, node::parse_node};
 
@@ -186,7 +186,7 @@ fn parse_resource(ast: &AST, component: &ComponentInfo) -> Option<DeclStmt> {
                     &*component.package_name,
                 ))
             }
-            "type_identifier" => r#type = Some(parse_type(child)),
+            "type_identifier" => r#type = Some(find_type(child)),
             _ => {
                 if !is_common_junk_tag(&*child.r#type) {
                     match parse_expr(child, component) {
@@ -293,7 +293,7 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
 
 pub(crate) fn parse_enhanced_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     // Extract iterator
-    let iter_type = parse_type(&ast.children[2]);
+    let iter_type = find_type(ast);
     let iter_var = DeclStmt::new(
         vec![VarDecl::new(
             Some(iter_type),

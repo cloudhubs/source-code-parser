@@ -1,9 +1,10 @@
-use crate::java::modifier::parse_modifiers;
 use crate::java::modifier::Modifier;
 use crate::java::util::fold_vec;
-use crate::java::util::vartype::parse_type;
+use crate::java::{method_body::log_unknown_tag, modifier::parse_modifiers};
 use crate::parse::AST;
 use crate::prophet::*;
+
+use super::vartype::find_type;
 
 /// Handles parsing parameters for lambdas, methods, etc.
 
@@ -30,25 +31,22 @@ pub(crate) fn parse_method_parameters(
 /// Parse the AST containing a single parameter to a method
 fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent {
     let mut name = String::new();
-    let mut param_type = String::new();
     let mut modifier = Modifier::new();
-    let mut is_spread = false;
+    let param_type = find_type(ast);
 
     // Parse the definition
     for part_defn in ast.children.iter() {
         match &*part_defn.r#type {
+            "variable_declarator" => match part_defn.find_child_by_type(&["identifier"]) {
+                Some(ident) => name = ident.value.clone(),
+                None => eprintln!("Variable declarator with no variable name!"),
+            },
             "identifier" => name = part_defn.value.clone(),
             "modifiers" => {
                 modifier = parse_modifiers(part_defn, &*component.path, &*component.package_name)
             }
-            "..." => is_spread = true,
-            _ => param_type = parse_type(part_defn),
+            unknown => log_unknown_tag(unknown, "method parameter"),
         }
-    }
-
-    // If this is varargs, add varargs symbol
-    if is_spread {
-        name.push_str("...");
     }
 
     MethodParamComponent {

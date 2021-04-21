@@ -56,7 +56,7 @@ pub(crate) fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
                     types
                         .into_iter()
                         .map(|t| {
-                            let mut decl = VarDecl::new(Some(t), Ident::new(name.clone()));
+                            let mut decl = VarDecl::new(Some(t), name.clone().into());
                             decl.is_final = Some(modifiers.is_final);
                             decl.is_static = Some(modifiers.is_static);
                             decl.annotation = modifiers.annotations.clone();
