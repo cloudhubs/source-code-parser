@@ -52,7 +52,7 @@ pub(crate) fn find_type(ast: &AST) -> String {
 
     // Check for C-style array declaration
     if let Some(ident) = ast.find_child_by_type(&["variable_declarator"]) {
-        if let Some(dimensions) = ident.find_child_by_type(&["dimensions"]) {
+        if let Some(dimensions) = ident.find_child_by_type(&["dimensions", "dimensions_expr"]) {
             result = make_array_type(dimensions, &*result);
         }
     }

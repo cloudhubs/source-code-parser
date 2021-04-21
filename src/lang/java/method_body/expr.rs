@@ -1,8 +1,8 @@
-use crate::java::method_body::log_unknown_tag;
 use crate::java::method_body::node::{parse_child_nodes, parse_node};
 use crate::java::method_body::parse_block;
 use crate::java::util::parameter::parse_method_parameters;
 use crate::java::util::vartype::parse_type_args;
+use crate::java::{method_body::log_unknown_tag, util::vartype::find_type};
 
 use crate::ast::*;
 use crate::ComponentInfo;
@@ -17,15 +17,15 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "identifier" => parse_ident(ast, component),
         "field_access" => parse_field_access(ast, component),
         "decimal_integer_literal"
+        | "hex_integer_literal"
+        | "binary_integer_literal"
         | "decimal_floating_point_literal"
         | "string_literal"
         | "false"
         | "true" => Some(Expr::Literal(ast.value.clone().into())),
         "object_creation_expression" => Some(parse_object_creation(ast, component)),
-        "array_creation_expression" => {
-            let ident: Expr = Ident::new("AN_ARRAY_HANDLE".into()).into();
-            Some(ident.into())
-        }
+        "array_creation_expression" => Some(parse_array_creation(ast, component)),
+        "array_initializer" => Some(parse_array_init(ast, component)),
 
         // Language statements
         "method_invocation" => parse_method(ast, component).into(),
@@ -44,7 +44,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     }
 }
 
-fn parse_ident(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+fn parse_ident(ast: &AST, _component: &ComponentInfo) -> Option<Expr> {
     let ident: Expr = Ident::new(ast.value.clone()).into();
     Some(ident.into())
 }
@@ -168,6 +168,38 @@ fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Expr {
     ident.into()
 }
 
+fn parse_array_creation(ast: &AST, component: &ComponentInfo) -> Expr {
+    if let Some(init) = ast.find_child_by_type(&["array_initializer"]) {
+        // We've got an initializer list, don't mess with the cuckoo-bananas Treesitter format
+        parse_array_init(init, component)
+    } else {
+        // Index-style declaration
+        let indexes: Vec<Expr> = ast
+            .find_all_children_by_type(&["dimensions_expr"])
+            .expect("Array without dimensions!")
+            .iter()
+            .flat_map(|ndx| parse_expr(&ndx.children[1], component))
+            .collect();
+
+        // Recursively compose indexing
+        let mut expr = Expr::Ident(Ident::new(find_type(ast)));
+        for ndx in indexes {
+            expr = Expr::IndexExpr(IndexExpr::new(Box::new(expr), Box::new(ndx)));
+        }
+        expr.into()
+    }
+}
+
+fn parse_array_init(ast: &AST, component: &ComponentInfo) -> Expr {
+    let mut contents = vec![];
+    for init_val in ast.children.iter() {
+        if let Some(expr) = parse_expr(init_val, component) {
+            contents.push(expr);
+        }
+    }
+    InitListExpr::new(contents).into()
+}
+
 pub(crate) fn parse_lambda(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     let mut params = vec![];
     let mut body = None;
@@ -218,7 +250,7 @@ pub(crate) fn parse_lambda(ast: &AST, component: &ComponentInfo) -> Option<Expr>
 fn new_simple_param(ast: &AST) -> DeclStmt {
     DeclStmt::new(
         vec![VarDecl::new(None, Ident::new(ast.value.clone()))],
-        vec![],
+        vec![None],
     )
 }
 

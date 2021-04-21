@@ -6,7 +6,7 @@ use crate::AST;
 
 use super::{
     parse_block,
-    stmt::{parse_do_while, parse_if, parse_labelled, parse_return, parse_throw, parse_while},
+    stmt::{parse_do_while, parse_if, parse_labeled, parse_return, parse_throw, parse_while},
 };
 
 pub(crate) fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Node> {
@@ -32,7 +32,7 @@ pub(crate) fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         "do_statement" => parse_do_while(ast, component),
         "continue_statement" => make_continue(ast),
         "break_statement" => make_break(ast),
-        "labeled_statement" => parse_labelled(ast, component),
+        "labeled_statement" => parse_labeled(ast, component),
         "return_statement" => parse_return(ast, component),
         "throw_statement" => parse_throw(ast, component),
         "block" => Some(parse_block(ast, component).into()),

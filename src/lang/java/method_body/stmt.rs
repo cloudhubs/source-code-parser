@@ -316,7 +316,7 @@ pub(crate) fn parse_enhanced_for(ast: &AST, component: &ComponentInfo) -> Option
     ))
 }
 
-pub(crate) fn parse_labelled(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+pub(crate) fn parse_labeled(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     let label = LabelStmt::new(ast.children[0].value.clone());
     let body = parse_node(&ast.children[2], component);
     Some(Block::new(vec![Stmt::LabelStmt(label).into(), body?]).into())
