@@ -4,6 +4,7 @@ use crate::prophet::*;
 /// final, and static nature of the element the modifier is attached to.
 
 /// Struct to hold return data from parse_modifiers/find_modifiers
+#[derive(Debug)]
 pub(crate) struct Modifier {
     pub accessor: AccessorType,
     pub annotations: Vec<AnnotationComponent>,

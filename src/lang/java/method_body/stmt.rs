@@ -1,8 +1,8 @@
-use crate::java::method_body::log_unknown_tag;
 use crate::java::method_body::parse_block;
 use crate::java::method_body::parse_child_nodes;
 use crate::java::modifier::find_modifier;
 use crate::java::util::vartype::find_type;
+use crate::java::{method_body::log_unknown_tag, modifier::parse_modifiers};
 use crate::ComponentInfo;
 use crate::AST;
 use crate::{ast::*, java::util::vartype::parse_type};
@@ -92,20 +92,26 @@ pub(crate) fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     let mut try_body = None;
     let mut catch_clauses = vec![];
     let mut finally_clause = None;
-    // let mut resources = None;
+    let mut resources = None;
 
     for comp in ast.children.iter() {
         match &*comp.r#type {
             "resource_specification" => {
-                // let rss: Vec<Expr> = comp
-                //     .children
-                //     .iter()
-                //     .filter(|resource| &*resource.r#type  == "resource")
-                //     .map(|resource| parse_assignment(resource, component))
-                //     .flat_map(|n| match n {
-                //     })
-                //     .collect();
-                // resources = Some(DeclStmt::new(rss, expressions));
+                let rss_list: Vec<DeclStmt> = comp
+                    .find_all_children_by_type(&["resource"])
+                    .get_or_insert(vec![])
+                    .iter()
+                    .flat_map(|resource| parse_resource(resource, component))
+                    .collect();
+                let rss_decl = rss_list
+                    .iter()
+                    .flat_map(|rss| rss.variables.clone())
+                    .collect();
+                let rss_expr = rss_list
+                    .into_iter()
+                    .flat_map(|rss| rss.expressions)
+                    .collect();
+                resources = Some(DeclStmt::new(rss_decl, rss_expr));
             }
             "block" => try_body = Some(parse_block(comp, component)),
             "catch_clause" => {
@@ -161,15 +167,61 @@ pub(crate) fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         }
     }
 
-    // Generated wrappers and return
-    Some(Node::Stmt(
-        TryCatchStmt::new(
-            try_body.expect("Try/Catch with no body!"),
-            catch_clauses,
-            finally_clause,
-        )
-        .into(),
-    ))
+    // Build body; if with resources, wrap before returning
+    let mut try_catch: Stmt = TryCatchStmt::new(
+        try_body.expect("Try/Catch with no body!"),
+        catch_clauses,
+        finally_clause,
+    )
+    .into();
+    if let Some(resources) = resources {
+        try_catch = WithResourceStmt::new(resources, Block::new(vec![try_catch.into()])).into();
+    };
+    Some(try_catch.into())
+}
+
+fn parse_resource(ast: &AST, component: &ComponentInfo) -> Option<DeclStmt> {
+    let mut modifier = None;
+    let mut name = None;
+    let mut result = None;
+    let mut r#type = None;
+
+    for child in ast.children.iter() {
+        match &*child.r#type {
+            "modifiers" => {
+                modifier = Some(parse_modifiers(
+                    child,
+                    &*component.path,
+                    &*component.package_name,
+                ))
+            }
+            "type_identifier" => r#type = Some(parse_type(child)),
+            _ => {
+                if !is_common_junk_tag(&*child.r#type) {
+                    match parse_expr(child, component) {
+                        Some(Expr::Ident(expr)) => name = Some(expr),
+                        Some(expr) => result = Some(expr),
+                        None => log_unknown_tag(&*child.r#type, "resource"),
+                    }
+                }
+            }
+        }
+    }
+
+    // Unwrap
+    let result = result?;
+    let mut decl = VarDecl::new(r#type, name?); //DeclStmt::new(vec![], vec![result?]);
+
+    // Inject modifier information
+    if let Some(mut modifier) = modifier {
+        println!("{:#?}", modifier);
+        decl.annotation.append(&mut modifier.annotations);
+        decl.is_final = Some(modifier.is_final);
+        decl.is_static = Some(modifier.is_static);
+    }
+
+    // Assemble into declaration
+    Some(DeclStmt::new(vec![decl], vec![result]))
 }
 
 pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
@@ -326,4 +378,16 @@ fn to_block(node: Node) -> Block {
         Node::Stmt(stmt) => Block::new(vec![stmt.into()]),
         Node::Expr(expr) => Block::new(vec![Node::Stmt(ExprStmt::new(expr).into())]),
     }
+}
+
+pub(crate) fn parse_return(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+    Some(Node::Stmt(
+        ReturnStmt::new(parse_expr(&ast.children[1], component)).into(),
+    ))
+}
+
+pub(crate) fn parse_throw(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+    Some(Node::Stmt(
+        ThrowStmt::new(parse_expr(&ast.children[1], component)).into(),
+    ))
 }

@@ -14,10 +14,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     match &*ast.r#type {
         // Variables an initialization
         "variable_declarator" | "assignment_expression" => parse_assignment(ast, component),
-        "identifier" => {
-            let ident: Expr = Ident::new(ast.value.clone()).into();
-            Some(ident.into())
-        }
+        "identifier" => parse_ident(ast, component),
         "field_access" => parse_field_access(ast, component),
         "decimal_integer_literal"
         | "decimal_floating_point_literal"
@@ -43,6 +40,11 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
             None
         }
     }
+}
+
+fn parse_ident(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let ident: Expr = Ident::new(ast.value.clone()).into();
+    Some(ident.into())
 }
 
 fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
