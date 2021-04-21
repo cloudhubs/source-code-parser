@@ -33,6 +33,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "switch_statement" => parse_switch(ast, component),
         "parenthesized_expression" => parse_expr(&ast.children[1], component),
         "binary_expression" => parse_binary(ast, component),
+        "update_expression" => parse_unary(ast, component),
 
         // Base case
         unknown => {
@@ -315,4 +316,21 @@ fn parse_binary(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     }
     eprintln!("Malformed binary expression detected!");
     None
+}
+
+fn parse_unary(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let name = if ast.children[0].r#type == "identifier" {
+        0
+    } else {
+        1
+    };
+    let op = (name + 1) % 2;
+
+    Some(
+        UnaryExpr::new(
+            Box::new(parse_expr(&ast.children[name], component)?),
+            ast.children[op].r#type.as_str().into(),
+        )
+        .into(),
+    )
 }

@@ -43,9 +43,22 @@ pub struct DeclStmt {
     /// The declared variable(s).
     pub variables: Vec<VarDecl>,
     /// The expression(s) being assigned to the declared variables.
-    pub expressions: Vec<Expr>,
+    /// None means no value was explicitly assigned, so language-specific defaults come into play.
+    pub expressions: Vec<Option<Expr>>,
     #[new(value = r#""decl_stmt""#)]
     r#type: &'static str,
+}
+
+impl From<Vec<DeclStmt>> for DeclStmt {
+    /// Zip up a set of declarations into a single declaration
+    fn from(decls: Vec<DeclStmt>) -> Self {
+        let vars = decls.iter().flat_map(|rss| rss.variables.clone()).collect();
+        let exprs = decls
+            .iter()
+            .flat_map(|rss| rss.expressions.clone())
+            .collect();
+        DeclStmt::new(vars, exprs)
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]

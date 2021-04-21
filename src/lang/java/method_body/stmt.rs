@@ -22,17 +22,14 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
 
     let mut decl = DeclStmt::new(vec![], vec![]);
     for var in rhs.iter() {
-        let base;
-
         // Extract expression from the hierarchy
-        if let Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. })) = var {
-            base = expr;
-        } else if let Node::Expr(expr) = var {
-            base = expr;
-        } else {
-            eprintln!("Unable to interpret as variable: {:#?}", var);
-            continue;
-        }
+        let base = match var {
+            Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. })) | Node::Expr(expr) => expr,
+            _ => {
+                eprintln!("Unable to interpret as variable: {:#?}", var);
+                continue;
+            }
+        };
 
         // Parse variable
         match base {
@@ -40,13 +37,15 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
                 Expr::Ident(lhs) => {
                     decl.variables
                         .push(VarDecl::new(Some(r#type.clone()), lhs.clone()));
-                    decl.expressions.push(expr.rhs.as_ref().clone());
+                    decl.expressions.push(Some(expr.rhs.as_ref().clone()));
                 }
                 unknown => eprintln!("Expected Ident got {:#?}", unknown),
             },
-            Expr::Ident(id) => decl
-                .variables
-                .push(VarDecl::new(Some(r#type.clone()), id.clone())),
+            Expr::Ident(id) => {
+                decl.variables
+                    .push(VarDecl::new(Some(r#type.clone()), id.clone()));
+                decl.expressions.push(None);
+            }
             unknown => {
                 eprintln!("Expected BinaryExpr or Ident, got {:#?}", unknown);
             }
@@ -103,15 +102,7 @@ pub(crate) fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
                     .iter()
                     .flat_map(|resource| parse_resource(resource, component))
                     .collect();
-                let rss_decl = rss_list
-                    .iter()
-                    .flat_map(|rss| rss.variables.clone())
-                    .collect();
-                let rss_expr = rss_list
-                    .into_iter()
-                    .flat_map(|rss| rss.expressions)
-                    .collect();
-                resources = Some(DeclStmt::new(rss_decl, rss_expr));
+                resources = Some(rss_list.into());
             }
             "block" => try_body = Some(parse_block(comp, component)),
             "catch_clause" => {
@@ -209,12 +200,10 @@ fn parse_resource(ast: &AST, component: &ComponentInfo) -> Option<DeclStmt> {
     }
 
     // Unwrap
-    let result = result?;
     let mut decl = VarDecl::new(r#type, name?); //DeclStmt::new(vec![], vec![result?]);
 
     // Inject modifier information
     if let Some(mut modifier) = modifier {
-        println!("{:#?}", modifier);
         decl.annotation.append(&mut modifier.annotations);
         decl.is_final = Some(modifier.is_final);
         decl.is_static = Some(modifier.is_static);

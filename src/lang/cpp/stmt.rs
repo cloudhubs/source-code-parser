@@ -95,9 +95,9 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
                         Expr::IndexExpr(index_expr) => match *index_expr.expr.clone() {
                             Expr::Ident(ident) => (
                                 vec![VarDecl::new(Some(variable_type), ident)],
-                                vec![index_expr.into()],
+                                vec![Some(index_expr.into())], // TODO add multiple variables on 1 line parsing
                             ),
-                            _ => (vec![], vec![index_expr.into()]),
+                            _ => (vec![], vec![Some(index_expr.into())]), // TODO add multiple variables on 1 line parsing
                         },
                         _ => (vec![], vec![]),
                     },
@@ -154,10 +154,7 @@ fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -
     };
     let ident = Ident::new(name);
     let var_decl = VarDecl::new(Some(variable_type), ident);
-    let rhs = match rhs {
-        Some(rhs) => vec![rhs],
-        None => vec![],
-    };
+    let rhs = vec![rhs]; // TODO add multiple variables on 1 line parsing
     DeclStmt::new(vec![var_decl], rhs)
 }
 
@@ -583,7 +580,7 @@ mod tests {
                 Some("uint32_t".into()),
                 Ident::new("xfer".into()),
             )],
-            vec![Literal::new("0".into()).into()],
+            vec![Some(Literal::new("0".into()).into())], // TODO add multiple variables on 1 line parsing
         )
         .into();
         let expected: Node = expected.into();

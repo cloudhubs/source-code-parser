@@ -14,10 +14,12 @@ impl CommunicationReplacer for DeclStmt {
         method: &MethodComponent,
     ) -> Option<Node> {
         for expr in self.expressions.iter_mut() {
-            if let Some(Node::Expr(replacement)) =
-                expr.replace_communication_call(modules, module, class, method)
-            {
-                *expr = replacement;
+            if let Some(expr) = expr {
+                if let Some(Node::Expr(replacement)) =
+                    expr.replace_communication_call(modules, module, class, method)
+                {
+                    *expr = replacement;
+                }
             }
         }
         None
