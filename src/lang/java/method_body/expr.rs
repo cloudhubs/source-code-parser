@@ -26,6 +26,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "object_creation_expression" => Some(parse_object_creation(ast, component)),
         "array_creation_expression" => Some(parse_array_creation(ast, component)),
         "array_initializer" => Some(parse_array_init(ast, component)),
+        "array_access" => parse_array_access(ast, component),
 
         // Language statements
         "method_invocation" => parse_method(ast, component).into(),
@@ -111,32 +112,44 @@ fn parse_field_access(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
 /// Parse an assignment expression. May contain a variable declaration
 pub(crate) fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     // Define attributes
-    let mut name = "";
+    let mut lhs = None;
     let mut rhs = None;
 
     // Find values
     for node in ast.children.iter() {
-        match &*node.r#type {
-            "identifier" => name = &*node.value,
-            "=" => {}
-            unknown => {
-                rhs = if let Some(parsed_rhs) = parse_expr(node, component) {
-                    Some(parsed_rhs)
-                } else {
-                    log_unknown_tag(unknown, "parse_assignment");
-                    None
-                }
+        let unknown = &*node.r#type;
+        if unknown == "=" {
+            continue;
+        }
+
+        let result = parse_expr(node, component);
+        if result.is_some() {
+            if lhs.is_none() {
+                lhs = result;
+            } else if rhs.is_none() {
+                rhs = result;
+            } else {
+                eprintln!(
+                    "Extra parsable tag {} encountered while parsing assignment",
+                    unknown
+                );
             }
+        } else {
+            log_unknown_tag(unknown, "parse_assignment");
         }
     }
 
     // Assemble
-    let lhs = Ident::new(name.into());
-    if let Some(rhs) = rhs {
-        let bin: Expr = BinaryExpr::new(Box::new(lhs.into()), "=".into(), Box::new(rhs)).into();
-        Some(bin.into())
+    if let Some(lhs) = lhs {
+        if let Some(rhs) = rhs {
+            let bin: Expr = BinaryExpr::new(Box::new(lhs.into()), "=".into(), Box::new(rhs)).into();
+            Some(bin.into())
+        } else {
+            Some(lhs.into())
+        }
     } else {
-        Some(lhs.into())
+        eprintln!("Assignment with no lefthand side!");
+        None
     }
 }
 
@@ -198,6 +211,12 @@ fn parse_array_init(ast: &AST, component: &ComponentInfo) -> Expr {
         }
     }
     InitListExpr::new(contents).into()
+}
+
+fn parse_array_access(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let ident = parse_expr(&ast.children[0], component);
+    let index = parse_expr(&ast.children[2], component);
+    Some(IndexExpr::new(Box::new(ident?), Box::new(index?)).into())
 }
 
 pub(crate) fn parse_lambda(ast: &AST, component: &ComponentInfo) -> Option<Expr> {

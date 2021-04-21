@@ -27,7 +27,7 @@ pub(crate) fn is_common_junk_tag(tag: &str) -> bool {
     match tag {
         "if" | "else" | "for" | "while" | "do" | "switch" | "try" | "catch" | "finally" => true,
         "class" | "interface" | "enum" => true,
-        "(" | ")" | "{" | "}" | "->" | ";" | "," | "." => true,
+        "(" | ")" | "{" | "}" | "->" | ";" | "," | "." | "..." => true,
         _ => false,
     }
 }
