@@ -37,6 +37,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "binary_expression" => parse_binary(ast, component),
         "update_expression" => parse_inc_dec(ast, component),
         "unary_expression" => parse_unary(ast, component),
+        "cast_expression" => parse_cast(ast, component),
 
         // Base case
         unknown => {
@@ -427,4 +428,30 @@ fn parse_inc_dec(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         )
         .into(),
     )
+}
+
+fn parse_cast(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    // Get well soon... wait, wrong cast
+    let r#type = find_type(ast);
+    let mut ident = None;
+    for child in ast.children.iter() {
+        let expr = parse_expr(child, component);
+        if expr.is_some() {
+            ident = expr;
+        }
+    }
+
+    // Assemble
+    let lhs: Expr = Ident::new(r#type).into();
+    let rhs: Expr = Ident::new(String::from("class")).into();
+    let cast = DotExpr::new(Box::new(lhs), Box::new(rhs)).into();
+    let rhs = Ident::new(String::from("cast")).into();
+    let cast = DotExpr::new(Box::new(cast), Box::new(rhs));
+
+    if let Some(ident) = ident {
+        Some(CallExpr::new(Box::new(cast.into()), vec![ident.into()]).into())
+    } else {
+        eprintln!("Cannot find cast target!");
+        None
+    }
 }
