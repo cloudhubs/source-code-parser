@@ -33,6 +33,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "lambda_expression" => parse_lambda(ast, component),
         "switch_statement" => parse_switch(ast, component),
         "parenthesized_expression" => parse_expr(&ast.children[1], component),
+        "ternary_expression" => parse_ternary(ast, component.into()),
         "binary_expression" => parse_binary(ast, component),
         "update_expression" => parse_inc_dec(ast, component),
         "unary_expression" => parse_unary(ast, component),
@@ -331,6 +332,36 @@ pub(crate) fn parse_switch(ast: &AST, component: &ComponentInfo) -> Option<Expr>
     }
 
     Some(SwitchExpr::new(Box::new(condition?), cases).into())
+}
+
+/// Parse a ternary operator into our rendition of this structure
+fn parse_ternary(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let cond = parse_expr(&ast.children[0], component)?;
+    let if_true = parse_expr(&ast.children[2], component);
+    let if_false = parse_expr(&ast.children[4], component);
+
+    let to_stmt = |stmt: Stmt| to_block(stmt.into());
+
+    Some(
+        CallExpr::new(
+            Box::new(
+                LambdaExpr::new(
+                    vec![],
+                    to_block(Node::Stmt(
+                        IfStmt::new(
+                            cond,
+                            to_stmt(ReturnStmt::new(if_true).into()),
+                            Some(to_stmt(ReturnStmt::new(if_false).into())),
+                        )
+                        .into(),
+                    )),
+                )
+                .into(),
+            ),
+            vec![],
+        )
+        .into(),
+    )
 }
 
 /// Handle parsing all logical guards

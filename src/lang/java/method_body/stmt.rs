@@ -361,14 +361,6 @@ pub(crate) fn parse_do_while(ast: &AST, component: &ComponentInfo) -> Option<Nod
     None
 }
 
-fn to_block(node: Node) -> Block {
-    match node {
-        Node::Block(block) => block,
-        Node::Stmt(stmt) => Block::new(vec![stmt.into()]),
-        Node::Expr(expr) => Block::new(vec![Node::Stmt(ExprStmt::new(expr).into())]),
-    }
-}
-
 pub(crate) fn parse_return(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     Some(Node::Stmt(
         ReturnStmt::new(parse_expr(&ast.children[1], component)).into(),
