@@ -81,8 +81,7 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
                 );
             }
             "identifier" => {
-                let mut result = generic.clone();
-                result.push_str(&*comp.value.clone());
+                let result = format!("{}{}", generic, comp.value);
                 name = Some(Literal::new(result).into());
             }
             unknown => log_unknown_tag(unknown, "method_invoke"),
