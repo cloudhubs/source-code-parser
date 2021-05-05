@@ -52,7 +52,6 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
         }
     }
 
-    // TODO: Use name
     for var_decl in decl.variables.iter_mut() {
         var_decl.is_final = Some(modifier.is_final);
         var_decl.is_static = Some(modifier.is_static);
@@ -87,7 +86,7 @@ pub(crate) fn parse_if(ast: &AST, component: &ComponentInfo) -> Option<Node> {
 
 /// Parse an AST fragment with a try/catch. May be try-with-resources, or standard try/catch, with any
 /// number of catch/multi-catch blocks, and/or a finally block.
-pub(crate) fn try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
+pub(crate) fn parse_try_catch(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     let mut try_body = None;
     let mut catch_clauses = vec![];
     let mut finally_clause = None;

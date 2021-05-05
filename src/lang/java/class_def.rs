@@ -47,22 +47,17 @@ pub(crate) fn parse_class(
     };
 
     // Define default values
-    let mut stereotype = ContainerStereotype::Entity;
+    let stereotype = ContainerStereotype::Entity; // TODO determine properly
     let mut fields = vec![];
     let mut constructors = vec![];
     let mut methods = vec![];
     let mut modifier = Modifier::new();
 
     // Find bounds
-    let start;
-    let end;
-    if let Some(span) = ast.span {
-        start = span.0 as i32;
-        end = span.1 as i32;
-    } else {
-        start = 0;
-        end = 0;
-    }
+    let (start, end) = match ast.span {
+        Some(span) => (span.0 as i32, span.1 as i32),
+        None => (0, 0),
+    };
 
     // Generate the implementation data
     for member in ast.children.iter() {
@@ -132,9 +127,8 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
         .find_all_children_by_type(&["variable_declarator"])
         .get_or_insert(vec![])
         .iter()
-        .map(|var_decl| var_decl.find_child_by_type(&["identifier"]))
-        .filter(|var_ident| var_ident.is_some())
-        .map(|identifier| identifier.unwrap().value.clone())
+        .flat_map(|var_decl| var_decl.find_child_by_type(&["identifier"]))
+        .map(|identifier| identifier.value.clone())
         .collect();
     let modifier = find_modifier(ast, &*component.path, &*component.package_name);
     let r#type = find_type(ast);

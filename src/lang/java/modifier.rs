@@ -94,8 +94,7 @@ pub(crate) fn parse_annotations(
         let params = item.find_child_by_type(&["annotation_argument_list"]);
 
         // Generate and store annotation
-        if params.is_some() {
-            let params = params.unwrap();
+        if let Some(params) = params {
             if let Some(params) = params.find_all_children_by_type(&["element_value_pair"]) {
                 // Annotation with named parameters -> NormalAnnotation
                 let mut key_value_pairs = vec![];

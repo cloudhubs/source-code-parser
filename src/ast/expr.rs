@@ -203,7 +203,7 @@ impl From<String> for Literal {
 pub struct SwitchExpr {
     pub condition: Box<Expr>,
     pub cases: Vec<CaseExpr>,
-    #[new(value = r#""switch_stmt""#)]
+    #[new(value = r#""switch_expr""#)]
     r#type: &'static str,
 }
 
@@ -217,8 +217,8 @@ impl From<SwitchExpr> for Stmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct CaseExpr {
-    cond: Option<Expr>,
+    pub cond: Option<Expr>,
     pub body: Block,
-    #[new(value = r#""case_stmt""#)]
+    #[new(value = r#""case_expr""#)]
     r#type: &'static str,
 }
