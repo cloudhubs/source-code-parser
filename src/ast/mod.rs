@@ -28,3 +28,11 @@ pub struct Block {
     #[new(value = r#""block""#)]
     r#type: &'static str,
 }
+
+pub fn to_block(node: Node) -> Block {
+    match node {
+        Node::Block(block) => block,
+        Node::Stmt(stmt) => Block::new(vec![stmt.into()]),
+        Node::Expr(expr) => Block::new(vec![Node::Stmt(ExprStmt::new(expr).into())]),
+    }
+}

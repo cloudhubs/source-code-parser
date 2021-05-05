@@ -48,17 +48,17 @@ pub enum ContainerType {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct AnnotationValuePair {
-    key: String,
-    value: String,
+    pub key: String,
+    pub value: String,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub enum AccessorType {
-    #[serde(rename = "private")]
+    #[serde(rename = "PRIVATE")]
     Private,
-    #[serde(rename = "public")]
+    #[serde(rename = "PUBLIC")]
     Public,
-    #[serde(rename = "protected")]
+    #[serde(rename = "PROTECTED")]
     Protected,
     #[serde(rename = "DEFAULT")]
     Default,

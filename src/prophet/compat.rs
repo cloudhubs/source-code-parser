@@ -1,7 +1,6 @@
 use super::*;
 use crate::ast::Block;
 use serde::Serialize;
-use std::collections::HashMap;
 
 #[derive(Debug, Serialize)]
 pub struct JSSAContext {
@@ -66,67 +65,33 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             .map(|class| class.component.container_name.clone())
             .collect();
 
-        let method_ids = map_ids(&funcs, &mut id);
-        let class_ids = map_ids(&classes, &mut id);
-        let module_ids = map_ids(&other.modules, &mut id);
-
-        let methods: Vec<_> = method_ids
-            .iter()
-            .map(|(ndx, id)| {
-                let func = funcs.get(*ndx).expect(&*format!(
-                    "Ivalid index {} into funcs array during prophet compat conversion",
-                    ndx
-                ));
-                MethodComponent::convert_compat(func, *id)
+        let methods: Vec<_> = add_ids(&funcs, &mut id, |func, id| {
+            MethodComponent::convert_compat(func, id)
+        });
+        let class_ix_list = add_ids(&classes, &mut id, |interface, id| {
+            ClassOrInterfaceComponent::convert_compat(interface, id, &methods)
+        });
+        let interfaces: Vec<ClassOrInterfaceComponent> = class_ix_list
+            .clone()
+            .into_iter()
+            .filter(|interface| match interface.declaration_type {
+                ContainerType::Interface => true,
+                _ => false,
             })
             .collect();
-
-        let interfaces: Vec<_> = class_ids
-            .iter()
-            .map(|(ndx, id)| {
-                let interface = classes.get(*ndx).expect(&*format!(
-                    "Ivalid index {} into funcs classes during prophet compat conversion",
-                    ndx
-                ));
-                match interface.declaration_type {
-                    ContainerType::Interface => Some(ClassOrInterfaceComponent::convert_compat(
-                        interface, *id, &methods,
-                    )),
-                    _ => None,
-                }
-            })
-            .flat_map(|interface| interface)
-            .collect();
-
-        let classes: Vec<_> = class_ids
-            .iter()
-            .map(|(ndx, id)| {
-                let class = classes.get(*ndx).expect(&*format!(
-                    "Invalid index {} into funcs classes during prophet compat conversion",
-                    ndx
-                ));
-                match class.declaration_type {
-                    ContainerType::Class => Some(ClassOrInterfaceComponent::convert_compat(
-                        class, *id, &methods,
-                    )),
-                    _ => None,
-                }
-            })
-            .flat_map(|class| class)
-            .collect();
-
-        let modules: Vec<_> = module_ids
-            .iter()
-            .map(|(ndx, id)| {
-                let module = other.modules.get(*ndx).expect(&*format!(
-                    "Ivalid index {} into modules array during prophet compat conversion",
-                    ndx
-                ));
-                ModuleComponent::convert_compat(module, *id, &methods, &classes)
+        let classes: Vec<ClassOrInterfaceComponent> = class_ix_list
+            .clone()
+            .into_iter()
+            .filter(|class| match class.declaration_type {
+                ContainerType::Class => true,
+                _ => false,
             })
             .collect();
+        let modules: Vec<_> = add_ids(&other.modules, &mut id, |module, id| {
+            ModuleComponent::convert_compat(module, *id, &methods, &classes)
+        });
 
-        JSSAContext {
+        let ctx = JSSAContext {
             instance_type: other.component.instance_type,
             succeeded: other.succeeded,
             class_names,
@@ -142,17 +107,24 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             interfaces,
             modules,
             methods,
-        }
+        };
+        // println!("{:#?}", ctx);
+        ctx
     }
 }
 
-fn map_ids<T>(components: &Vec<T>, id: &mut i64) -> HashMap<usize, i64> {
-    let mut ids = HashMap::new();
-    for (i, _) in components.iter().enumerate() {
-        ids.insert(i, *id);
-        *id += 1;
-    }
-    ids
+fn add_ids<T, F, R>(components: &Vec<T>, id: &mut i64, id_adder: F) -> Vec<R>
+where
+    F: Fn(&T, &mut i64) -> R,
+{
+    components
+        .iter()
+        .map(|comp| {
+            let ret = id_adder(comp, id);
+            *id += 1;
+            ret
+        })
+        .collect()
 }
 
 #[derive(Debug, Serialize, Eq, PartialEq, Clone)]
@@ -182,29 +154,24 @@ pub struct MethodComponent {
 }
 
 impl MethodComponent {
-    fn convert_compat(other: &super::MethodComponent, id: i64) -> MethodComponent {
-        let sub_components = other
+    fn convert_compat(other: &super::MethodComponent, id: &mut i64) -> MethodComponent {
+        let annotations = AnnotationComponent::convert_all(&other.annotations, id);
+
+        let parameters: Vec<MethodParamComponent> = other
             .parameters
             .clone()
             .iter()
-            .map(|param| {
-                ComponentType::MethodParamComponent(MethodParamComponent {
-                    component: ComponentInfo {
-                        instance_name: format!(
-                            "{}::MethodParamComponent",
-                            param.component.instance_name
-                        ),
-                        ..param.component.clone()
-                    },
-                    ..param.clone()
-                })
-            })
+            .map(|param| MethodParamComponent::convert_compat(param, id))
+            .collect();
+        let sub_components = parameters
+            .clone()
+            .into_iter()
+            .map(|annotation| ComponentType::MethodParamComponent(annotation))
             .chain(
-                other
-                    .annotations
+                annotations
                     .clone()
-                    .iter()
-                    .map(|annotation| ComponentType::AnnotationComponent(annotation.clone())),
+                    .into_iter()
+                    .map(|annotation| ComponentType::AnnotationComponent(annotation)),
             )
             .collect();
 
@@ -220,18 +187,18 @@ impl MethodComponent {
         };
 
         MethodComponent {
-            id,
+            id: *id,
             component,
             accessor: other.accessor.clone(),
             method_name: other.method_name.clone(),
             return_type: other.return_type.clone(),
-            parameters: other.parameters.clone(), // add to subcomponents as well
+            parameters, // add to subcomponents as well
             is_static: other.is_static,
             is_abstract: other.is_abstract,
             is_final: other.is_final,
             sub_methods: vec![],
             sub_components,
-            annotations: other.annotations.clone(), // add to subcomponents as well
+            annotations, // add to subcomponents as well
             line_count: other.line_count,
             line_begin: other.line_begin,
             line_end: other.line_end,
@@ -244,15 +211,65 @@ impl MethodComponent {
             && self.accessor == other.accessor
             && self.method_name == other.method_name
             && self.return_type == other.return_type
-            && self.parameters == other.parameters
+            && self.parameters.len() == other.parameters.len()
             && self.is_static == other.is_static
             && self.is_abstract == other.is_abstract
             && self.is_final == other.is_final
-            && self.annotations == other.annotations
+            && self.annotations.len() == other.annotations.len()
             && self.line_count == other.line_count
             && self.line_begin == other.line_begin
             && self.line_end == other.line_end
             && self.body == other.body
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Clone)]
+pub struct MethodParamComponent {
+    #[serde(flatten)]
+    pub component: ComponentInfo,
+    pub annotation: Vec<AnnotationComponent>,
+    pub r#type: String,
+    pub parameter_name: String,
+}
+impl MethodParamComponent {
+    fn convert_compat(param: &super::MethodParamComponent, id: &mut i64) -> MethodParamComponent {
+        let annotation = match &param.annotation {
+            Some(annotation_list) => AnnotationComponent::convert_all(&annotation_list, id),
+            _ => vec![],
+        };
+        MethodParamComponent {
+            component: ComponentInfo {
+                instance_name: format!("{}::MethodParamComponent", param.component.instance_name),
+                ..param.component.clone()
+            },
+            annotation,
+            r#type: param.r#type.clone(),
+            parameter_name: param.parameter_name.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Eq, PartialEq, Clone)]
+pub struct AnnotationComponent {
+    pub id: i64,
+    #[serde(flatten)]
+    pub annotation: super::AnnotationComponent,
+}
+impl AnnotationComponent {
+    fn convert_compat(other: &super::AnnotationComponent, id: &i64) -> AnnotationComponent {
+        AnnotationComponent {
+            id: *id,
+            annotation: other.clone(),
+        }
+    }
+
+    fn convert_all(
+        annotations: &Vec<super::AnnotationComponent>,
+        id: &mut i64,
+    ) -> Vec<AnnotationComponent> {
+        add_ids(annotations, id, |anno, id| {
+            AnnotationComponent::convert_compat(anno, id)
+        })
     }
 }
 
@@ -354,12 +371,28 @@ impl ModuleComponent {
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+pub struct FieldComponent {
+    #[serde(flatten)]
+    pub component: ComponentInfo,
+    pub annotations: Vec<AnnotationComponent>,
+    pub variables: Vec<String>,
+    pub field_name: String,
+    pub accessor: AccessorType,
+    #[serde(rename = "static")]
+    pub is_static: bool,
+    #[serde(rename = "final")]
+    pub is_final: bool,
+    #[serde(rename = "default_value_string")]
+    pub default_value: String,
+    pub r#type: String,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ClassOrInterfaceComponent {
     #[serde(flatten)]
     pub component: ContainerComponent,
     pub declaration_type: ContainerType,
     pub annotations: Vec<AnnotationComponent>,
-
     pub constructors: Vec<MethodComponent>,
     #[serde(rename = "fieldComponents")]
     pub field_components: Vec<FieldComponent>,
@@ -368,7 +401,7 @@ pub struct ClassOrInterfaceComponent {
 impl ClassOrInterfaceComponent {
     fn convert_compat(
         other: &super::ClassOrInterfaceComponent,
-        id: i64,
+        id: &mut i64,
         methods: &Vec<MethodComponent>,
     ) -> ClassOrInterfaceComponent {
         let constructors: Vec<_> = methods
@@ -398,18 +431,20 @@ impl ClassOrInterfaceComponent {
             })
             .collect();
 
+        let annotations: Vec<_> = AnnotationComponent::convert_all(&other.annotations, id);
+
         // The instance_name should have already been adjusted to
         // name::ClassComponent or name::InterfaceComponent
         ClassOrInterfaceComponent {
             component: ContainerComponent::convert_compat(
                 &other.component,
-                id,
+                *id,
                 &methods,
-                &other.annotations,
+                &annotations,
                 false,
             ),
             declaration_type: other.declaration_type.clone(),
-            annotations: other.annotations.clone(),
+            annotations,
             constructors,
             field_components: other
                 .field_components
@@ -419,7 +454,14 @@ impl ClassOrInterfaceComponent {
                         instance_name: format!("{}::FieldComponent", f.component.instance_name),
                         ..f.component.clone()
                     },
-                    ..f.clone()
+                    annotations: AnnotationComponent::convert_all(&f.annotations, id),
+                    variables: f.variables.clone(),
+                    field_name: f.field_name.clone(),
+                    accessor: f.accessor.clone(),
+                    is_static: f.is_static.clone(),
+                    is_final: f.is_final.clone(),
+                    default_value: f.default_value.clone(),
+                    r#type: f.r#type.clone(),
                 })
                 .collect(),
         }
@@ -428,7 +470,7 @@ impl ClassOrInterfaceComponent {
     fn is_equiv(&self, other: &super::ClassOrInterfaceComponent) -> bool {
         self.component.is_equiv(&other.component)
             && self.declaration_type == other.declaration_type
-            && self.field_components == other.field_components
+            && self.field_components.len() == other.field_components.len()
             && self.constructors.len() == other.constructors.len()
     }
 }

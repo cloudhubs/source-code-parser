@@ -23,6 +23,7 @@ pub enum Expr {
     LambdaExpr(LambdaExpr),
     Ident(Ident),
     Literal(Literal),
+    SwitchExpr(SwitchExpr),
 }
 
 impl Into<Stmt> for Expr {
@@ -196,4 +197,28 @@ impl From<String> for Literal {
     fn from(string: String) -> Literal {
         Literal::new(string)
     }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct SwitchExpr {
+    pub condition: Box<Expr>,
+    pub cases: Vec<CaseExpr>,
+    #[new(value = r#""switch_expr""#)]
+    r#type: &'static str,
+}
+
+impl From<SwitchExpr> for Stmt {
+    /// Enable a SwitchExpr to be easily coerced to a Stmt. Since Switches (depending on the language)
+    /// could be either a statement or an expression, giving it this special case makes sense.
+    fn from(expr: SwitchExpr) -> Self {
+        Stmt::ExprStmt(ExprStmt::new(expr.into()))
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct CaseExpr {
+    pub cond: Option<Expr>,
+    pub body: Block,
+    #[new(value = r#""case_expr""#)]
+    r#type: &'static str,
 }

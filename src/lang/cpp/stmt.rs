@@ -95,9 +95,9 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
                         Expr::IndexExpr(index_expr) => match *index_expr.expr.clone() {
                             Expr::Ident(ident) => (
                                 vec![VarDecl::new(Some(variable_type), ident)],
-                                vec![index_expr.into()],
+                                vec![Some(index_expr.into())], // TODO add multiple variables on 1 line parsing
                             ),
-                            _ => (vec![], vec![index_expr.into()]),
+                            _ => (vec![], vec![Some(index_expr.into())]), // TODO add multiple variables on 1 line parsing
                         },
                         _ => (vec![], vec![]),
                     },
@@ -154,10 +154,7 @@ fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -
     };
     let ident = Ident::new(name);
     let var_decl = VarDecl::new(Some(variable_type), ident);
-    let rhs = match rhs {
-        Some(rhs) => vec![rhs],
-        None => vec![],
-    };
+    let rhs = vec![rhs]; // TODO add multiple variables on 1 line parsing
     DeclStmt::new(vec![var_decl], rhs)
 }
 
@@ -244,7 +241,7 @@ fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
     Some(IfStmt::new(cond, body, else_body))
 }
 
-fn switch_statement(switch_stmt: &AST) -> Option<SwitchStmt> {
+fn switch_statement(switch_stmt: &AST) -> Option<SwitchExpr> {
     let cond = switch_stmt
         .find_child_by_type(&["condition_clause"])
         .map(|cond| expression(cond))??;
@@ -255,11 +252,11 @@ fn switch_statement(switch_stmt: &AST) -> Option<SwitchStmt> {
         .flat_map(|case| case)
         .collect();
 
-    let switch_stmt = SwitchStmt::new(cond, cases);
+    let switch_stmt = SwitchExpr::new(Box::new(cond), cases);
     Some(switch_stmt)
 }
 
-fn switch_case(case_statement: &AST) -> Option<CaseStmt> {
+fn switch_case(case_statement: &AST) -> Option<CaseExpr> {
     let expr = case_statement.find_child_by_type(&["case", "default"])?;
     // todo: add literals to expression function
     let expr = match &*expr.r#type {
@@ -272,7 +269,7 @@ fn switch_case(case_statement: &AST) -> Option<CaseStmt> {
     }
     let nodes = block_nodes_iter(&case_statement.children[3..]);
     let block = Block::new(nodes);
-    let case = CaseStmt::new(expr, block);
+    let case = CaseExpr::new(expr, block);
     Some(case.into())
 }
 
@@ -385,7 +382,7 @@ fn for_range_statement(for_range_loop: &AST) -> Option<ForRangeStmt> {
         _ => vec![],
     };
     let decl = DeclStmt::new(variables, vec![]);
-    let for_range_stmt = ForRangeStmt::new(vec![decl.into()], iterator, block);
+    let for_range_stmt = ForRangeStmt::new(Box::new(decl.into()), iterator, block);
     Some(for_range_stmt)
 }
 
@@ -583,7 +580,7 @@ mod tests {
                 Some("uint32_t".into()),
                 Ident::new("xfer".into()),
             )],
-            vec![Literal::new("0".into()).into()],
+            vec![Some(Literal::new("0".into()).into())], // TODO add multiple variables on 1 line parsing
         )
         .into();
         let expected: Node = expected.into();

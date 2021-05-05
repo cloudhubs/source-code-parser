@@ -225,6 +225,7 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
         modules.push(module);
     }
 
+    println!("Finished parsing file!");
     Ok(merge_modules(modules, language))
 }
 

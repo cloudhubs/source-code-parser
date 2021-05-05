@@ -1,3 +1,5 @@
+use crate::AnnotationComponent;
+
 use super::*;
 use derive_more::From;
 use derive_new::new;
@@ -16,14 +18,14 @@ pub enum Stmt {
     WhileStmt(WhileStmt),
     DoWhileStmt(DoWhileStmt),
     ReturnStmt(ReturnStmt),
-    SwitchStmt(SwitchStmt),
-    CaseStmt(CaseStmt),
     ImportStmt(ImportStmt),
     BreakStmt(BreakStmt),
     ContinueStmt(ContinueStmt),
     ThrowStmt(ThrowStmt),
     TryCatchStmt(TryCatchStmt),
     CatchStmt(CatchStmt),
+    WithResourceStmt(WithResourceStmt),
+    LabelStmt(LabelStmt),
 }
 
 /// For variable declaration statements, we can represent various situations for
@@ -41,9 +43,22 @@ pub struct DeclStmt {
     /// The declared variable(s).
     pub variables: Vec<VarDecl>,
     /// The expression(s) being assigned to the declared variables.
-    pub expressions: Vec<Expr>,
+    /// None means no value was explicitly assigned, so language-specific defaults come into play.
+    pub expressions: Vec<Option<Expr>>,
     #[new(value = r#""decl_stmt""#)]
     r#type: &'static str,
+}
+
+impl From<Vec<DeclStmt>> for DeclStmt {
+    /// Zip up a set of declarations into a single declaration
+    fn from(decls: Vec<DeclStmt>) -> Self {
+        let vars = decls.iter().flat_map(|rss| rss.variables.clone()).collect();
+        let exprs = decls
+            .iter()
+            .flat_map(|rss| rss.expressions.clone())
+            .collect();
+        DeclStmt::new(vars, exprs)
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -56,6 +71,8 @@ pub struct VarDecl {
     pub is_static: Option<bool>,
     #[new(default)]
     pub is_final: Option<bool>,
+    #[new(value = r#"vec![]"#)]
+    pub annotation: Vec<AnnotationComponent>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, From, new)]
@@ -88,7 +105,7 @@ pub struct ForStmt {
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ForRangeStmt {
     // Containing ExprStmt(BinExpr) or DeclStmt commonly
-    pub init: Vec<Stmt>,
+    pub init: Box<Stmt>,
     pub iterator: Option<Expr>,
     pub body: Block,
     #[new(value = r#""for_range_stmt""#)]
@@ -119,22 +136,6 @@ pub struct ReturnStmt {
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
-pub struct SwitchStmt {
-    pub condition: Expr,
-    pub cases: Vec<CaseStmt>,
-    #[new(value = r#""switch_stmt""#)]
-    r#type: &'static str,
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
-pub struct CaseStmt {
-    pub cond: Option<Expr>,
-    pub body: Block,
-    #[new(value = r#""case_stmt""#)]
-    r#type: &'static str,
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ImportStmt {
     // Whether the import is a specific type or a package/module etc.
     pub container: bool,
@@ -147,12 +148,20 @@ pub struct ImportStmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct BreakStmt {
+    /// Handle rare labelled breaks
+    #[new(value = "Option::None")]
+    pub label: Option<String>,
+
     #[new(value = r#""break_stmt""#)]
     r#type: &'static str,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct ContinueStmt {
+    /// Handle rare labelled continues
+    #[new(value = "Option::None")]
+    pub label: Option<String>,
+
     #[new(value = r#""continue_stmt""#)]
     r#type: &'static str,
 }
@@ -179,4 +188,18 @@ pub struct CatchStmt {
     pub body: Block,
     #[new(value = r#""catch_stmt""#)]
     r#type: &'static str,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct WithResourceStmt {
+    pub resources: DeclStmt,
+    pub body: Block,
+    #[new(value = r#""with_resources_stmt""#)]
+    r#type: &'static str,
+}
+
+/// Represents a label, as in goto or a labelled continue/break
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+pub struct LabelStmt {
+    pub label: String,
 }
