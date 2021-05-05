@@ -14,6 +14,8 @@ derive_more = "0.99.11"
 derive-new = "0.5.8"
 itertools = "0.10.0"
 enum_dispatch = "0.3.5"
+regex = "1.5.3"
+rune = "0.9.0"
 
 [workspace]
 members = ["source-code-parser-web"]
