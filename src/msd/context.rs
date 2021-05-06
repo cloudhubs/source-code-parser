@@ -7,13 +7,14 @@ const TAG_PREFIX: &'static str = "?";
 const RESOLVES_TO: &'static str = "resolves_to";
 
 /// Context used by the Parser, storing local variables (#{varname}) and objects/tags
-struct ParserContext {
+#[derive(Default, Debug, Clone)]
+pub struct ParserContext {
     variables: HashMap<String, HashMap<String, Option<String>>>,
     local_variables: HashMap<String, String>,
 }
 
 /// Interface of the Context, offering ability to create, read, and update objects/tags
-trait ContextObjectActions {
+pub trait ContextObjectActions {
     fn make_obj(&mut self, name: &str);
     fn make_attribute(&mut self, name: &str, attr_name: &str, attr_type: Option<&str>);
     fn make_tag(&mut self, name: &str, resolves_to: &str);
@@ -21,7 +22,7 @@ trait ContextObjectActions {
 }
 
 /// Interface of the Context, offering ability to create, read, and update objects/tags
-trait ContextLocalVariableActions {
+pub trait ContextLocalVariableActions {
     fn make_variable(&mut self, name: &str, val: &str);
     fn get_variable(&self, name: &str) -> Option<String>;
     fn clear_variables(&mut self);

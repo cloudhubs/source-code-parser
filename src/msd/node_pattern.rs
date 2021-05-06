@@ -1,3 +1,4 @@
+// use super::MsdDispatch;
 use crate::ast::*;
 use crate::prophet::*;
 use derive_new::new;
@@ -5,27 +6,27 @@ use regex::Regex;
 use serde::Deserialize;
 
 /// A Node pattern describing a node of interest to the parser.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, new)]
 pub struct NodePattern {
     /// The target AST node type
-    identifier: NodeType,
+    pub identifier: NodeType,
 
     /// A regex-like pattern identifying the specific call.
     /// It's a modified Regex, but more importantly supports variables
     /// with a #varname syntax (with ## being a literal #).
     /// Variables indicate the information we are looking for, like URLs and entity names.
-    pattern: String,
+    pub pattern: String,
 
     /// Sub-patterns for this node pattern to be matched in the AST.
     /// Some subpatterns may be specified as required.
-    subpatterns: Vec<NodePattern>,
+    pub subpatterns: Vec<NodePattern>,
 
     /// A Rune script implementing the callback function interface
-    callback: String,
+    pub callback: String,
 
     /// Indicates whether this pattern is essential for any higher order
     /// pattern to be matched successfully.
-    essential: bool,
+    pub essential: bool,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
