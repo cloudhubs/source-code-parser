@@ -1,10 +1,15 @@
 use std::collections::HashMap;
 
+/// Prefix for an entry in ParserContext.variables indicating it's a tag, not an object
+const TAG_PREFIX: &'static str = "?";
+
+/// Special attribute that's value is the name that a tag should resolve to
 const RESOLVES_TO: &'static str = "resolves_to";
 
 /// Context used by the Parser, storing local variables (#{varname}) and objects/tags
 struct ParserContext {
     variables: HashMap<String, HashMap<String, Option<String>>>,
+    local_variables: HashMap<String, String>,
 }
 
 /// Interface of the Context, offering ability to create, read, and update objects/tags
@@ -13,6 +18,13 @@ trait ContextObjectActions {
     fn make_attribute(&mut self, name: &str, attr_name: &str, attr_type: Option<&str>);
     fn make_tag(&mut self, name: &str, resolves_to: &str);
     fn get_obj(&self, name: &str) -> Option<&HashMap<String, Option<String>>>;
+}
+
+/// Interface of the Context, offering ability to create, read, and update objects/tags
+trait ContextLocalVariableActions {
+    fn make_variable(&mut self, name: &str, val: &str);
+    fn get_variable(&self, name: &str) -> Option<String>;
+    fn clear_variables(&mut self);
 }
 
 impl ContextObjectActions for ParserContext {
@@ -36,14 +48,18 @@ impl ContextObjectActions for ParserContext {
             None => None,
         };
         let vars = self.variables.get_mut(&obj_name).unwrap();
-        if vars.insert(attr_name.into(), attr_type).is_some() {
-            eprintln!("Warning: overwriting an attribute!");
+        match vars.insert(attr_name.into(), attr_type) {
+            Some(Some(overwritten)) => eprintln!(
+                "Warning: overwrote {} on {}.{}!",
+                overwritten, name, attr_name
+            ),
+            _ => {}
         }
     }
 
     fn make_tag(&mut self, name: &str, resolves_to: &str) {
         self.make_attribute(
-            format!("?{}", name).as_str(),
+            format!("{}{}", TAG_PREFIX, name).as_str(),
             RESOLVES_TO,
             resolves_to.into(),
         );
@@ -51,7 +67,7 @@ impl ContextObjectActions for ParserContext {
 
     fn get_obj(&self, name: &str) -> Option<&HashMap<String, Option<String>>> {
         if let Some(obj) = self.variables.get(name.into()) {
-            if name.starts_with("?") {
+            if name.starts_with(TAG_PREFIX) {
                 // Get the object. Extensive `expect`s because, if we don't have a RESOLVES_TO
                 // attribute with a name the tag aliases on it, then we have serious data corruption
                 // we shouldn't just ignore.
@@ -68,5 +84,27 @@ impl ContextObjectActions for ParserContext {
         } else {
             None
         }
+    }
+}
+
+impl ContextLocalVariableActions for ParserContext {
+    fn make_variable(&mut self, name: &str, val: &str) {
+        if let Some(overwritten) = self.local_variables.insert(name.into(), val.into()) {
+            eprintln!(
+                "Warning: overwrote {} with {} for name {}",
+                overwritten, val, name
+            );
+        }
+    }
+
+    fn get_variable(&self, name: &str) -> Option<String> {
+        match self.local_variables.get(name.into()) {
+            Some(value) => Some(value.clone()),
+            None => None,
+        }
+    }
+
+    fn clear_variables(&mut self) {
+        self.local_variables.clear();
     }
 }
