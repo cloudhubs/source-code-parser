@@ -5,6 +5,8 @@ use derive_new::new;
 use regex::Regex;
 use serde::Deserialize;
 
+use super::{ContextLocalVariableActions, ContextObjectActions, ParserContext};
+
 /// A Node pattern describing a node of interest to the parser.
 #[derive(Debug, Clone, Deserialize, new)]
 pub struct NodePattern {
@@ -29,7 +31,13 @@ pub struct NodePattern {
     pub essential: bool,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+impl NodePattern {
+    pub fn matches(&self, node: &impl IntoMsdNode) -> bool {
+        self.identifier == node.into_msd_node()
+    }
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
 pub enum NodeType {
     // Prophet nodes
     ClassOrInterface,
@@ -41,6 +49,7 @@ pub enum NodeType {
     // Body nodes
     CallExpr,
     VarDecl,
+    DeclStmt,
 }
 
 pub trait IntoMsdNode {
@@ -69,21 +78,26 @@ into_msd_node!(
     AnnotationComponent: Annotation,
     // Body node types
     CallExpr: CallExpr,
-    VarDecl: VarDecl
+    VarDecl: VarDecl,
+    DeclStmt: DeclStmt
 );
 
-#[derive(Debug, Clone, new)]
-pub struct CompiledPattern {
+#[derive(Debug, new)]
+pub struct CompiledPattern<'a> {
     pub pattern: Regex,
     pub variables: Vec<String>,
+
+    match_result: Option<regex::Captures<'a>>,
+    reference_vars: Vec<String>,
 }
 
-impl CompiledPattern {
+impl<'a> CompiledPattern<'a> {
     /// Create a compiled pattern from an MSD pattern and the context.
-    pub fn from_pattern(pattern: &str, ctx: ()) -> Result<CompiledPattern, regex::Error> {
+    pub fn from_pattern(pattern: &str) -> Result<CompiledPattern, regex::Error> {
         let tag_regex = Regex::new(r#"#(&)?\{([a-zA-Z_-]+)\}"#)?;
 
         let mut variables = vec![];
+        let mut references = vec![];
 
         let matches = tag_regex.captures_iter(pattern);
         let mut pattern: String = pattern.into();
@@ -96,21 +110,59 @@ impl CompiledPattern {
                 .as_str();
 
             // Replace the capture with the processed capture group
-            let capture_name = if is_ref {
-                // TODO: replace with reference name from ctx if is_ref name
-                name.into()
-            } else {
-                format!("(?P<{}>.*?)", name)
-            };
-            pattern = pattern.as_str().replace(s, &capture_name);
+            pattern = pattern.as_str().replace(s, &format!("(?P<{}>.*?)", name));
 
-            // Insert non-reference variables
-            if !is_ref {
-                variables.push(name.into());
+            // Register variables and references
+            if is_ref {
+                references.push(name.clone().into());
             }
+            variables.push(name.into());
         }
         let transformed_pattern = Regex::new(pattern.as_str())?;
-        Ok(CompiledPattern::new(transformed_pattern, variables))
+        Ok(CompiledPattern::new(
+            transformed_pattern,
+            variables,
+            None,
+            references,
+        ))
+    }
+
+    pub fn matches(&mut self, match_str: &'a str, ctx: &ParserContext) -> bool {
+        match self.pattern.captures(match_str) {
+            Some(matches) => {
+                for reference in self.reference_vars.iter() {
+                    if ctx
+                        .get_object(
+                            matches
+                                .name(reference)
+                                .expect("Reference variable name not found in regex!")
+                                .as_str(),
+                        )
+                        .is_none()
+                    {
+                        return false;
+                    }
+                }
+                self.match_result = Some(matches);
+                true
+            }
+            None => false,
+        }
+    }
+
+    pub fn insert_match_result(&self, ctx: &mut ParserContext) {
+        for var_name in self.variables.iter() {
+            ctx.make_variable(
+                &var_name,
+                &self
+                    .match_result
+                    .as_ref()
+                    .expect("Matches unset when saving results")
+                    .name(&var_name)
+                    .expect("Failed to match a variable name")
+                    .as_str(),
+            );
+        }
     }
 }
 
@@ -122,7 +174,7 @@ mod tests {
     fn test_bson() {
         assert_eq!(
             "BSON_APPEND_(?P<type>.*?)_another_one",
-            CompiledPattern::from_pattern("BSON_APPEND_#{type}_#&{another_one}", ())
+            CompiledPattern::from_pattern("BSON_APPEND_#{type}_#&{another_one}")
                 .expect("Failed to construct regex from pattern input")
                 .pattern
                 .as_str()

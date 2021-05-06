@@ -15,10 +15,10 @@ pub struct ParserContext {
 
 /// Interface of the Context, offering ability to create, read, and update objects/tags
 pub trait ContextObjectActions {
-    fn make_obj(&mut self, name: &str);
+    fn make_object(&mut self, name: &str);
     fn make_attribute(&mut self, name: &str, attr_name: &str, attr_type: Option<&str>);
     fn make_tag(&mut self, name: &str, resolves_to: &str);
-    fn get_obj(&self, name: &str) -> Option<&HashMap<String, Option<String>>>;
+    fn get_object(&self, name: &str) -> Option<&HashMap<String, Option<String>>>;
 }
 
 /// Interface of the Context, offering ability to create, read, and update objects/tags
@@ -29,7 +29,7 @@ pub trait ContextLocalVariableActions {
 }
 
 impl ContextObjectActions for ParserContext {
-    fn make_obj(&mut self, name: &str) {
+    fn make_object(&mut self, name: &str) {
         let obj_name: String = name.into();
         if !self.variables.contains_key(&obj_name) {
             (&mut self.variables).insert(obj_name, HashMap::new());
@@ -40,7 +40,7 @@ impl ContextObjectActions for ParserContext {
         let obj_name: String = name.into();
         if !self.variables.contains_key(&obj_name) {
             eprintln!("Defining attribute on a non-existant object. Defining...");
-            self.make_obj(name);
+            self.make_object(name);
         }
 
         // Insert
@@ -66,13 +66,13 @@ impl ContextObjectActions for ParserContext {
         );
     }
 
-    fn get_obj(&self, name: &str) -> Option<&HashMap<String, Option<String>>> {
+    fn get_object(&self, name: &str) -> Option<&HashMap<String, Option<String>>> {
         if let Some(obj) = self.variables.get(name.into()) {
             if name.starts_with(TAG_PREFIX) {
                 // Get the object. Extensive `expect`s because, if we don't have a RESOLVES_TO
                 // attribute with a name the tag aliases on it, then we have serious data corruption
                 // we shouldn't just ignore.
-                self.get_obj(
+                self.get_object(
                     obj.get(RESOLVES_TO)
                         .expect(format!("Invalid tag! no {} value!", RESOLVES_TO).as_str())
                         .as_ref()
