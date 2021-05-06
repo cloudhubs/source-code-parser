@@ -3,3 +3,6 @@ pub use node_pattern::*;
 
 mod parser;
 pub use parser::*;
+
+mod context;
+pub use context::*;
