@@ -1,4 +1,5 @@
 // use super::MsdDispatch;
+use super::interpreter::NodePatternParser;
 use crate::ast::*;
 use crate::prophet::*;
 use derive_new::new;
@@ -8,8 +9,8 @@ use serde::Deserialize;
 use super::{ContextLocalVariableActions, ContextObjectActions, ParserContext};
 
 /// A Node pattern describing a node of interest to the parser.
-#[derive(Debug, Clone, Deserialize, new)]
-pub struct NodePattern {
+#[derive(Debug, Deserialize, new)]
+pub struct NodePattern<'a> {
     /// The target AST node type
     pub identifier: NodeType,
 
@@ -17,11 +18,12 @@ pub struct NodePattern {
     /// It's a modified Regex, but more importantly supports variables
     /// with a #varname syntax (with ## being a literal #).
     /// Variables indicate the information we are looking for, like URLs and entity names.
-    pub pattern: String,
+    #[serde(skip)]
+    pub compiled_pattern: Option<CompiledPattern<'a>>,
 
     /// Sub-patterns for this node pattern to be matched in the AST.
     /// Some subpatterns may be specified as required.
-    pub subpatterns: Vec<NodePattern>,
+    pub subpatterns: Vec<NodePattern<'a>>,
 
     /// A Rune script implementing the callback function interface
     pub callback: String,
@@ -29,12 +31,46 @@ pub struct NodePattern {
     /// Indicates whether this pattern is essential for any higher order
     /// pattern to be matched successfully.
     pub essential: bool,
+
+    /// Raw pattern defined by the user
+    pub pattern: &'a str,
 }
 
-impl NodePattern {
+impl<'a> NodePattern<'a> {
     pub fn matches(&self, node: &impl IntoMsdNode) -> bool {
         self.identifier == node.into_msd_node()
     }
+}
+
+/// Parse an individual node with this NodePattern, lazily-initializing its CompiledPattern as needed
+#[macro_export]
+macro_rules! msd_node_parse {
+    ( $pattern:ident, $node:ident, $ctx:ident ) => {
+        use crate::msd::context::ContextLocalVariableActions;
+        use crate::msd::interpreter::NodePatternParser;
+
+        // Lazily compile pattern
+        if $pattern.compiled_pattern.is_none() {
+            let compiled_result = super::CompiledPattern::from_pattern(&*$pattern.pattern);
+            match compiled_result {
+                Ok(compiled_result) => {
+                    $pattern.compiled_pattern = Some(compiled_result);
+                }
+                Err(error) => {
+                    eprintln!("{:#?}", error);
+                    return;
+                }
+            };
+        }
+
+        // Search
+        $ctx.frame_number += 1;
+        $node.parse($pattern, $ctx);
+        $ctx.frame_number -= 1;
+        if $ctx.frame_number == 0 {
+            $ctx.clear_variables();
+        }
+    };
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq)]

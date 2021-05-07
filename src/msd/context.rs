@@ -11,6 +11,7 @@ const RESOLVES_TO: &'static str = "resolves_to";
 pub struct ParserContext {
     variables: HashMap<String, HashMap<String, Option<String>>>,
     local_variables: HashMap<String, String>,
+    pub frame_number: i32,
 }
 
 /// Interface of the Context, offering ability to create, read, and update objects/tags
