@@ -106,6 +106,7 @@ msd_dispatch_single_dispatch_impl!(
 );
 
 msd_dispatch_collection_impl!(
+    ModuleComponent: { classes, interfaces },
     AssignExpr: { rhs, lhs },
     InitListExpr: { exprs },
     SwitchExpr: { cases },

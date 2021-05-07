@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+pub type ContextData = HashMap<String, HashMap<String, Option<String>>>;
+
 /// Prefix for an entry in ParserContext.variables indicating it's a tag, not an object
 const TAG_PREFIX: &'static str = "?";
 
@@ -9,9 +11,18 @@ const RESOLVES_TO: &'static str = "resolves_to";
 /// Context used by the Parser, storing local variables (#{varname}) and objects/tags
 #[derive(Default, Debug, Clone)]
 pub struct ParserContext {
-    variables: HashMap<String, HashMap<String, Option<String>>>,
+    variables: ContextData,
     local_variables: HashMap<String, String>,
     pub frame_number: i32,
+}
+
+impl Into<ContextData> for ParserContext {
+    fn into(self) -> ContextData {
+        self.variables
+            .into_iter()
+            .filter(|(key, _)| !key.starts_with("?"))
+            .collect()
+    }
 }
 
 /// Interface of the Context, offering ability to create, read, and update objects/tags
