@@ -163,10 +163,7 @@ impl MsdNodeExplorer for MethodParamComponent {
 
         // Visit other nodes
         if let Some(annotations) = &mut self.annotation {
-            for x in annotations.iter_mut() {
-                x.explore(pattern, ctx);
-            }
-            // explore_all!(pattern, ctx, annotations);
+            explore_all!(pattern, ctx, annotations);
         }
     }
 }
