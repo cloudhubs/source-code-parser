@@ -1,8 +1,11 @@
+use once_cell::sync::OnceCell;
 use rune::{Diagnostics, Options, Sources};
 use runestick::{FromValue, Source, Vm};
 use std::sync::Arc;
 
 use super::{ContextLocalVariableActions, ContextObjectActions, NodePattern, ParserContext};
+
+static EXEC: OnceCell<Executor> = OnceCell::new();
 
 #[derive(Default)]
 pub struct Executor {
@@ -35,26 +38,42 @@ impl Executor {
         pattern: &NodePattern<'_>,
         ctx: ParserContext,
     ) -> runestick::Result<ParserContext> {
-        let mut sources = Sources::new();
-        let main_fn = r#"pub fn main(ctx) { callback(ctx); ctx }"#;
-        let source = format!("{}\n{}", main_fn, pattern.callback);
-        sources.insert(Source::new("callback", source));
+        match &pattern.callback {
+            Some(callback) => {
+                let mut sources = Sources::new();
+                let main_fn = r#"pub fn main(ctx) { callback(ctx); ctx }"#;
+                let source = format!("{}\n{}", main_fn, callback);
+                sources.insert(Source::new("callback", source));
 
-        let mut diagnostics = Diagnostics::new();
+                let mut diagnostics = Diagnostics::new();
 
-        let runtime = Arc::new(self.executor_ctx.runtime());
-        let unit = Arc::new(rune::load_sources(
-            &self.executor_ctx,
-            &Options::default(),
-            &mut sources,
-            &mut diagnostics,
-        )?);
+                let runtime = Arc::new(self.executor_ctx.runtime());
+                let unit = Arc::new(rune::load_sources(
+                    &self.executor_ctx,
+                    &Options::default(),
+                    &mut sources,
+                    &mut diagnostics,
+                )?);
 
-        let vm = Vm::new(runtime, unit);
-        // For some reason we have to pass ownership of the context and retrieve it back from a return value...
-        // This is being done with a wrapper "main" function that calls the callback and returns the context again.
-        let ret_val = vm.execute(&["main"], (ctx,))?.complete()?;
-        let ctx = FromValue::from_value(ret_val)?;
-        Ok(ctx)
+                let vm = Vm::new(runtime, unit);
+                // For some reason we have to pass ownership of the context and retrieve it back from a return value...
+                // This is being done with a wrapper "main" function that calls the callback and returns the context again.
+                let ret_val = vm.execute(&["main"], (ctx,))?.complete()?;
+                let ctx = FromValue::from_value(ret_val)?;
+                Ok(ctx)
+            }
+            None => Ok(ctx),
+        }
+    }
+
+    pub fn get() -> &'static Executor {
+        EXEC.get_or_init(|| {
+            Executor::new()
+                .map_err(|err| {
+                    eprintln!("Failed to initialize callback executor: {:#?}", err);
+                    err
+                })
+                .unwrap()
+        })
     }
 }

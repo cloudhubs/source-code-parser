@@ -26,7 +26,7 @@ pub struct NodePattern<'a> {
     pub subpatterns: Vec<NodePattern<'a>>,
 
     /// A Rune script implementing the callback function interface
-    pub callback: String,
+    pub callback: Option<String>,
 
     /// Indicates whether this pattern is essential for any higher order
     /// pattern to be matched successfully.
@@ -46,6 +46,7 @@ impl<'a> NodePattern<'a> {
 #[macro_export]
 macro_rules! msd_node_parse {
     ( $pattern:ident, $node:ident, $ctx:ident ) => {
+        use crate::msd::callback::Executor;
         use crate::msd::context::ContextLocalVariableActions;
         use crate::msd::interpreter::NodePatternParser;
 
@@ -66,6 +67,17 @@ macro_rules! msd_node_parse {
         // Search
         $ctx.frame_number += 1;
         $node.parse($pattern, $ctx);
+
+        if $pattern.callback.is_some() {
+            let ctx_clone = $ctx.clone();
+            match Executor::get().execute($pattern, ctx_clone) {
+                Ok(new_ctx) => *$ctx = new_ctx,
+                Err(err) => {
+                    eprintln!("Failed to execute callback: {:#?}", err);
+                }
+            }
+        }
+
         $ctx.frame_number -= 1;
         if $ctx.frame_number == 0 {
             $ctx.clear_variables();

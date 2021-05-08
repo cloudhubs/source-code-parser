@@ -17,6 +17,7 @@ enum_dispatch = "0.3.5"
 regex = "1.5.3"
 rune = "0.9.0"
 runestick = "0.9.0"
+once_cell = "1.7.2"
 
 [workspace]
 members = ["source-code-parser-web"]

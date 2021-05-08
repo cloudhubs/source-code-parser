@@ -296,7 +296,7 @@ mod tests {
         let mut c: Expr = CallExpr::new(Box::new(Ident::new("".into()).into()), vec![]).into();
         eprintln!("hello?");
         c.explore(
-            &mut NodePattern::new(NodeType::CallExpr, None, vec![], "".into(), true, "".into()),
+            &mut NodePattern::new(NodeType::CallExpr, None, vec![], None, true, "".into()),
             &mut ParserContext::default(),
         )
     }
