@@ -1,5 +1,4 @@
 mod node_pattern;
-use std::collections::HashMap;
 
 pub use node_pattern::*;
 
@@ -11,6 +10,9 @@ pub use context::*;
 
 mod interpreter;
 pub use interpreter::*;
+
+mod callback;
+pub use callback::*;
 
 use crate::ModuleComponent;
 

@@ -1,5 +1,4 @@
-use super::{CompiledPattern, NodePattern};
-use super::{ContextLocalVariableActions, ParserContext};
+use super::{CompiledPattern, NodePattern, ParserContext};
 use crate::ast::*;
 use crate::prophet::*;
 

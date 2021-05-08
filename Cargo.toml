@@ -16,6 +16,7 @@ itertools = "0.10.0"
 enum_dispatch = "0.3.5"
 regex = "1.5.3"
 rune = "0.9.0"
+runestick = "0.9.0"
 
 [workspace]
 members = ["source-code-parser-web"]

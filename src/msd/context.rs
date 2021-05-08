@@ -1,3 +1,4 @@
+use runestick::Any;
 use std::collections::HashMap;
 
 pub type ContextData = HashMap<String, HashMap<String, Option<String>>>;
@@ -9,7 +10,7 @@ const TAG_PREFIX: &'static str = "?";
 const RESOLVES_TO: &'static str = "resolves_to";
 
 /// Context used by the Parser, storing local variables (#{varname}) and objects/tags
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Any)]
 pub struct ParserContext {
     variables: ContextData,
     local_variables: HashMap<String, String>,
@@ -28,7 +29,7 @@ impl Into<ContextData> for ParserContext {
 /// Interface of the Context, offering ability to create, read, and update objects/tags
 pub trait ContextObjectActions {
     fn make_object(&mut self, name: &str);
-    fn make_attribute(&mut self, name: &str, attr_name: &str, attr_type: Option<&str>);
+    fn make_attribute(&mut self, name: &str, attr_name: &str, attr_type: Option<String>);
     fn make_tag(&mut self, name: &str, resolves_to: &str);
     fn get_object(&self, name: &str) -> Option<&HashMap<String, Option<String>>>;
 }
@@ -48,7 +49,7 @@ impl ContextObjectActions for ParserContext {
         }
     }
 
-    fn make_attribute(&mut self, name: &str, attr_name: &str, attr_type: Option<&str>) {
+    fn make_attribute(&mut self, name: &str, attr_name: &str, attr_type: Option<String>) {
         let obj_name: String = name.into();
         if !self.variables.contains_key(&obj_name) {
             eprintln!("Defining attribute on a non-existant object. Defining...");
@@ -56,10 +57,6 @@ impl ContextObjectActions for ParserContext {
         }
 
         // Insert
-        let attr_type = match attr_type {
-            Some(val) => Some(val.into()),
-            None => None,
-        };
         let vars = self.variables.get_mut(&obj_name).unwrap();
         match vars.insert(attr_name.into(), attr_type) {
             Some(Some(overwritten)) => eprintln!(
@@ -74,7 +71,7 @@ impl ContextObjectActions for ParserContext {
         self.make_attribute(
             format!("{}{}", TAG_PREFIX, name).as_str(),
             RESOLVES_TO,
-            resolves_to.into(),
+            Some(resolves_to.into()),
         );
     }
 
