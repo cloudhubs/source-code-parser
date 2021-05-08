@@ -1,5 +1,5 @@
-use rune::{Diagnostics, Options, Parser, Sources};
-use runestick::{Call, FromValue, IntoTypeHash, Rtti, Source, UnsafeFromValue, Vm};
+use rune::{Diagnostics, Options, Sources};
+use runestick::{FromValue, Source, Vm};
 use std::sync::Arc;
 
 use super::{ContextLocalVariableActions, ContextObjectActions, NodePattern, ParserContext};
@@ -11,6 +11,8 @@ pub struct Executor {
 
 impl Executor {
     pub fn new() -> runestick::Result<Executor> {
+        // Create an empty Context. If we need more default functions, etc we can use
+        // runestick::Context::with_default_modules()
         let mut executor_ctx = runestick::Context::default();
         let mut module = runestick::Module::default();
 
@@ -40,14 +42,15 @@ impl Executor {
 
         let mut diagnostics = Diagnostics::new();
 
-        let unit = rune::load_sources(
+        let runtime = Arc::new(self.executor_ctx.runtime());
+        let unit = Arc::new(rune::load_sources(
             &self.executor_ctx,
             &Options::default(),
             &mut sources,
             &mut diagnostics,
-        )?;
+        )?);
 
-        let vm = Vm::new(Arc::new(self.executor_ctx.runtime()), Arc::new(unit));
+        let vm = Vm::new(runtime, unit);
         // For some reason we have to pass ownership of the context and retrieve it back from a return value...
         // This is being done with a wrapper "main" function that calls the callback and returns the context again.
         let ret_val = vm.execute(&["main"], (ctx,))?.complete()?;
