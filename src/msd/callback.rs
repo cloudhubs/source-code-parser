@@ -13,28 +13,18 @@ impl Executor {
     pub fn new() -> runestick::Result<Executor> {
         let mut executor_ctx = runestick::Context::default();
         let mut module = runestick::Module::default();
-        // TODO: install usable types, functions, etc from callback scripts
-        /*
-        // Installing a function
-        module.function(&["add"], |a: i64| a + 1)?;
-        */
 
-        // Registering a type and methods / associated type functions
+        // Register context type and methods
         module.ty::<ParserContext>()?;
-        // module.function(&["MyBytes", "new"], MyBytes::new)?;
         module.inst_fn("make_object", ParserContext::make_object)?;
         module.inst_fn("make_tag", ParserContext::make_tag)?;
         module.inst_fn("make_variable", ParserContext::make_variable)?;
         module.inst_fn("get_variable", ParserContext::get_variable)?;
         module.inst_fn("clear_variables", ParserContext::clear_variables)?;
         module.inst_fn("make_attribute", ParserContext::make_attribute)?;
-
-        // This seems to be complaining because of lifetimes. I fixed this with make_attribute by
-        // making the attr_type an owned String since we cloned it to one anyways, but I'm not
-        // sure what to do here.
-        // module.inst_fn("get_object", ParserContext::get_object)?;
-
+        module.inst_fn("get_object", ParserContext::get_object)?;
         executor_ctx.install(&module)?;
+
         Ok(Executor { executor_ctx })
     }
 
@@ -65,21 +55,3 @@ impl Executor {
         Ok(ctx)
     }
 }
-
-// impl runestick::Named for ParserContext {
-//     const NAME: runestick::RawStr = runestick::RawStr::from_str("ParserContext");
-// }
-
-// impl runestick::TypeOf for ParserContext {
-//     fn type_hash() -> runestick::Hash {
-//         runestick::Hash::type_hash(&["source_code_parser", "msd", "ParserContext"])
-//     }
-
-//     fn type_info() -> runestick::TypeInfo {
-//         // TODO: How to create a runestick::Rtti?
-//         // runestick::TypeInfo::Typed(Arc::new(/* runestick::Rtti */))
-//         todo!()
-//     }
-// }
-
-// impl runestick::InstallWith for ParserContext {}
