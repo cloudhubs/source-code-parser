@@ -44,8 +44,9 @@ impl Executor {
         ctx: ParserContext,
     ) -> runestick::Result<ParserContext> {
         let mut sources = Sources::new();
-        let callback = &*pattern.callback; //r#"pub fn main(a) { add(a) }"#;
-        sources.insert(Source::new("callback", callback));
+        let main_fn = r#"pub fn main(ctx) { callback(ctx); ctx }"#;
+        let source = format!("{}\n{}", main_fn, pattern.callback);
+        sources.insert(Source::new("callback", source));
 
         let mut diagnostics = Diagnostics::new();
 
@@ -58,9 +59,8 @@ impl Executor {
 
         let vm = Vm::new(Arc::new(self.executor_ctx.runtime()), Arc::new(unit));
         // For some reason we have to pass ownership of the context and retrieve it back from a return value...
-        // We can create a wrapper "main" function that makes sure this happens and then calls the callback
-        // function inside of it, instead of what is being done here.
-        let ret_val = vm.execute(&["callback"], (ctx,))?.complete()?;
+        // This is being done with a wrapper "main" function that calls the callback and returns the context again.
+        let ret_val = vm.execute(&["main"], (ctx,))?.complete()?;
         let ctx = FromValue::from_value(ret_val)?;
         Ok(ctx)
     }
