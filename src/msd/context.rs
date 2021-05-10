@@ -10,7 +10,7 @@ const TAG_PREFIX: &'static str = "?";
 const RESOLVES_TO: &'static str = "resolves_to";
 
 /// Context used by the Parser, storing local variables (#{varname}) and objects/tags
-#[derive(Default, Debug, Clone, Any)]
+#[derive(Default, Debug, Clone, Any, PartialEq)]
 pub struct ParserContext {
     variables: ContextData,
     local_variables: HashMap<String, String>,

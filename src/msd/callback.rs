@@ -15,8 +15,8 @@ pub struct Executor {
 impl Executor {
     pub fn new() -> runestick::Result<Executor> {
         // Create an empty Context. If we need more default functions, etc we can use
-        // runestick::Context::with_default_modules()
-        let mut executor_ctx = runestick::Context::default();
+        // runestick::Context::default()
+        let mut executor_ctx = runestick::Context::with_default_modules()?;
         let mut module = runestick::Module::default();
 
         // Register context type and methods
@@ -41,8 +41,7 @@ impl Executor {
         match &pattern.callback {
             Some(callback) => {
                 let mut sources = Sources::new();
-                let main_fn = r#"pub fn main(ctx) { callback(ctx); ctx }"#;
-                let source = format!("{}\n{}", main_fn, callback);
+                let source = format!("pub fn main(ctx) {{ {} ctx }}", callback);
                 sources.insert(Source::new("callback", source));
 
                 let mut diagnostics = Diagnostics::new();
@@ -75,5 +74,67 @@ impl Executor {
                 })
                 .unwrap()
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::msd::NodeType;
+
+    use super::*;
+
+    #[test]
+    pub fn add_get_variables_from_script() {
+        let pattern = NodePattern::new(
+            NodeType::CallExpr,
+            None,
+            None,
+            vec![],
+            Some(
+                r#"
+            ctx.make_variable("foo", "bar");
+            ctx.get_variable("foo");
+            "#
+                .into(),
+            ),
+            true,
+            "".into(),
+            None,
+        );
+        let mut ctx = ParserContext::default();
+        let old = ctx.clone();
+        ctx = Executor::get().execute(&pattern, ctx).unwrap();
+        assert_ne!(old, ctx);
+        assert_eq!("bar", ctx.get_variable("foo").unwrap())
+    }
+
+    #[test]
+    pub fn add_get_variables_outside_script() {
+        let mut ctx = ParserContext::default();
+        ctx.make_variable("foo", "bar");
+        let pattern = NodePattern::new(
+            NodeType::CallExpr,
+            None,
+            None,
+            vec![],
+            Some(
+                r#"
+            if ctx.get_variable("foo").is_none() {
+                panic("bad");
+            }
+            "#
+                .into(),
+            ),
+            true,
+            "".into(),
+            None,
+        );
+        let old = ctx.clone();
+        ctx = Executor::get().execute(&pattern, ctx).unwrap();
+        assert_eq!(old, ctx);
+        assert_eq!(
+            old.get_variable("foo").unwrap(),
+            ctx.get_variable("foo").unwrap()
+        )
     }
 }

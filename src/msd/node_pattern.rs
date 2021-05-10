@@ -276,7 +276,7 @@ mod tests {
     #[test]
     fn test_bson() {
         assert_eq!(
-            "BSON_APPEND_(?P<type>.*?)_another_one",
+            "BSON_APPEND_(?P<type>.*?)_(?P<another_one>.*?)",
             CompiledPattern::from_pattern("BSON_APPEND_#{type}_#&{another_one}")
                 .expect("Failed to construct regex from pattern input")
                 .pattern
