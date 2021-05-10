@@ -3,7 +3,7 @@ use super::{interpreter::NodePatternParser, Executor};
 use crate::ast::*;
 use crate::prophet::*;
 use derive_new::new;
-use regex::Regex;
+use regex::{Captures, Regex};
 use serde::Deserialize;
 
 use super::{ContextLocalVariableActions, ContextObjectActions, ParserContext};
@@ -21,6 +21,10 @@ pub struct NodePattern<'a> {
     #[serde(skip)]
     pub compiled_pattern: Option<CompiledPattern<'a>>,
 
+    /// A pattern, like compiled_pattern, for checking the type of a variable for inforamtion
+    #[serde(skip)]
+    pub compiled_type_pattern: Option<CompiledPattern<'a>>,
+
     /// Sub-patterns for this node pattern to be matched in the AST.
     /// Some subpatterns may be specified as required.
     pub subpatterns: Vec<NodePattern<'a>>,
@@ -34,6 +38,9 @@ pub struct NodePattern<'a> {
 
     /// Raw pattern defined by the user
     pub pattern: &'a str,
+
+    /// Raw pattern for checking the type defined by the user
+    pub type_pattern: Option<&'a str>,
 }
 
 impl<'a> NodePattern<'a> {
@@ -42,24 +49,39 @@ impl<'a> NodePattern<'a> {
     }
 }
 
+pub fn lazy_compile(pattern: &str) -> Option<CompiledPattern> {
+    let compiled_result = super::CompiledPattern::from_pattern(pattern);
+    match compiled_result {
+        Ok(compiled_result) => Some(compiled_result),
+        Err(error) => {
+            eprintln!("{:#?}", error);
+            None
+        }
+    }
+}
+
 /// Parse an individual node with this NodePattern, lazily-initializing its CompiledPattern as needed
-pub fn msd_node_parse<'a>(
-    pattern: &mut NodePattern<'a>,
-    node: &'a impl NodePatternParser<'a>,
+pub fn msd_node_parse(
+    pattern: &mut NodePattern<'_>,
+    node: &mut impl NodePatternParser,
     ctx: &mut ParserContext,
 ) {
-    // Lazily compile pattern
+    // Lazily compile patterns
     if pattern.compiled_pattern.is_none() {
-        let compiled_result = super::CompiledPattern::from_pattern(&*pattern.pattern);
-        match compiled_result {
-            Ok(compiled_result) => {
-                pattern.compiled_pattern = Some(compiled_result);
-            }
-            Err(error) => {
-                eprintln!("{:#?}", error);
-                return;
-            }
-        };
+        let compiled_pattern = lazy_compile(&*pattern.pattern);
+        if compiled_pattern.is_some() {
+            pattern.compiled_pattern = compiled_pattern;
+        } else {
+            return;
+        }
+    }
+    if pattern.type_pattern.is_some() && pattern.compiled_type_pattern.is_none() {
+        let compiled_pattern = lazy_compile(&*pattern.type_pattern.unwrap());
+        if compiled_pattern.is_some() {
+            pattern.compiled_type_pattern = compiled_pattern;
+        } else {
+            return;
+        }
     }
 
     // Search
@@ -207,6 +229,42 @@ impl<'a> CompiledPattern<'a> {
                     .expect("Failed to match a variable name")
                     .as_str(),
             );
+        }
+    }
+
+    pub fn match_and_insert(&self, match_str: &'a str, ctx: &mut ParserContext) -> bool {
+        let tmp_pattern = self.pattern.clone();
+        match tmp_pattern.captures(&*match_str) {
+            Some(matches) => {
+                // Verify all references
+                for reference in self.reference_vars.iter() {
+                    if ctx
+                        .get_object(
+                            matches
+                                .name(reference)
+                                .expect("Reference variable name not found in regex!")
+                                .as_str(),
+                        )
+                        .is_none()
+                    {
+                        return false;
+                    }
+                }
+
+                // Extract variables to context
+                for var_name in self.variables.iter() {
+                    ctx.make_variable(
+                        &var_name,
+                        matches
+                            .name(&var_name)
+                            .expect("Failed to match a variable name")
+                            .clone()
+                            .as_str(),
+                    );
+                }
+                true
+            }
+            None => false,
         }
     }
 }

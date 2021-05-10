@@ -1,4 +1,4 @@
-use super::{NodePattern, ParserContext, msd_node_parse};
+use super::{msd_node_parse, NodePattern, ParserContext};
 use crate::ast::*;
 use crate::prophet::*;
 use enum_dispatch::enum_dispatch;
@@ -294,10 +294,17 @@ mod tests {
     #[test]
     fn does_this_call() {
         let mut c: Expr = CallExpr::new(Box::new(Ident::new("".into()).into()), vec![]).into();
+        let mut np = NodePattern::new(
+            NodeType::CallExpr,
+            None,
+            None,
+            vec![],
+            None,
+            true,
+            "".into(),
+            None,
+        );
         eprintln!("hello?");
-        c.explore(
-            &mut NodePattern::new(NodeType::CallExpr, None, vec![], None, true, "".into()),
-            &mut ParserContext::default(),
-        )
+        c.explore(&mut np, &mut ParserContext::default())
     }
 }
