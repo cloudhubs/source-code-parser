@@ -65,14 +65,14 @@ pub fn msd_node_parse(
     pattern: &mut NodePattern<'_>,
     node: &mut impl NodePatternParser,
     ctx: &mut ParserContext,
-) {
+) -> Option<()> {
     // Lazily compile patterns
     if pattern.compiled_pattern.is_none() {
         let compiled_pattern = lazy_compile(&*pattern.pattern);
         if compiled_pattern.is_some() {
             pattern.compiled_pattern = compiled_pattern;
         } else {
-            return;
+            return None;
         }
     }
     if pattern.type_pattern.is_some() && pattern.compiled_type_pattern.is_none() {
@@ -80,27 +80,44 @@ pub fn msd_node_parse(
         if compiled_pattern.is_some() {
             pattern.compiled_type_pattern = compiled_pattern;
         } else {
-            return;
+            return None;
         }
     }
 
     // Search
     ctx.frame_number += 1;
-    node.parse(pattern, ctx);
 
-    if pattern.callback.is_some() {
-        let ctx_clone = ctx.clone();
-        match Executor::get().execute(pattern, ctx_clone) {
-            Ok(new_ctx) => *ctx = new_ctx,
-            Err(err) => {
-                eprintln!("Failed to execute callback: {:#?}", err);
+    let passed = if node.parse(pattern, ctx).is_some() {
+        if pattern.callback.is_some() {
+            let ctx_clone = ctx.clone();
+            match Executor::get().execute(pattern, ctx_clone) {
+                Ok(new_ctx) => {
+                    *ctx = new_ctx;
+                    true
+                }
+                Err(err) => {
+                    eprintln!("Failed to execute callback: {:#?}", err);
+                    false
+                }
             }
+        } else {
+            true
         }
-    }
+    } else {
+        false
+    };
 
     ctx.frame_number -= 1;
     if ctx.frame_number == 0 {
         ctx.clear_variables();
+    }
+
+    // Resume the search where we left off, or pass on an error indicating a required subpattern
+    // failed to match, so this pattern should be considered failed.
+    if !passed && ctx.frame_number != 0 {
+        None
+    } else {
+        Some(())
     }
 }
 
@@ -117,6 +134,8 @@ pub enum NodeType {
     CallExpr,
     VarDecl,
     DeclStmt,
+    Ident,
+    Literal,
 }
 
 pub trait IntoMsdNode {
@@ -146,7 +165,9 @@ into_msd_node!(
     // Body node types
     CallExpr: CallExpr,
     VarDecl: VarDecl,
-    DeclStmt: DeclStmt
+    DeclStmt: DeclStmt,
+    Ident: Ident,
+    Literal: Literal
 );
 
 #[derive(Debug, new)]
@@ -154,6 +175,7 @@ pub struct CompiledPattern<'a> {
     pub pattern: Regex,
     pub variables: Vec<String>,
 
+    /// TODO delete, unused
     match_result: Option<regex::Captures<'a>>,
     reference_vars: Vec<String>,
 }
@@ -194,8 +216,9 @@ impl<'a> CompiledPattern<'a> {
         ))
     }
 
-    pub fn matches(&mut self, match_str: &'a str, ctx: &ParserContext) -> bool {
-        match self.pattern.captures(&*match_str) {
+    pub fn matches(&self, match_str: &'a str, ctx: &ParserContext) -> bool {
+        let mut tmp = self.pattern.clone();
+        match tmp.captures(&*match_str) {
             Some(matches) => {
                 for reference in self.reference_vars.iter() {
                     if ctx
@@ -210,25 +233,9 @@ impl<'a> CompiledPattern<'a> {
                         return false;
                     }
                 }
-                self.match_result = Some(matches);
                 true
             }
             None => false,
-        }
-    }
-
-    pub fn insert_match_result(&self, ctx: &mut ParserContext) {
-        for var_name in self.variables.iter() {
-            ctx.make_variable(
-                &var_name,
-                &self
-                    .match_result
-                    .as_ref()
-                    .expect("Matches unset when saving results")
-                    .name(&var_name)
-                    .expect("Failed to match a variable name")
-                    .as_str(),
-            );
         }
     }
 

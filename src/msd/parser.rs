@@ -18,7 +18,7 @@ pub enum ProphetNode {
 #[enum_dispatch(Stmt)]
 #[enum_dispatch(ProphetNode)]
 pub trait MsdNodeExplorer {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext);
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()>;
 }
 
 /// Create a no-operation implementation of exploring a node
@@ -27,7 +27,13 @@ macro_rules! msd_dispatch_default_impl {
     ( $( $struct_name:ty ),+ ) => {
         $(
             impl MsdNodeExplorer for $struct_name {
-                fn explore(&mut self, _pattern: &mut NodePattern<'_>, _ctx: &mut ParserContext)  {}
+                fn explore(&mut self, pattern: &mut NodePattern<'_>, _ctx: &mut ParserContext) -> Option<()> {
+                    if pattern.essential {
+                        None
+                    } else {
+                        Some(())
+                    }
+                }
             }
         )*
     };
@@ -39,10 +45,11 @@ macro_rules! msd_dispatch_single_dispatch_impl {
     ( $( $struct_name:ty: { $( $to_explore:ident ),+ } ),+ ) => {
         $(
             impl MsdNodeExplorer for $struct_name {
-                fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext)  {
+                fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
                     $(
-                        self.$to_explore.explore(pattern, ctx);
+                        self.$to_explore.explore(pattern, ctx)?;
                     )*
+                    Some(())
                 }
             }
         )*
@@ -55,10 +62,11 @@ macro_rules! msd_dispatch_collection_impl {
     ( $( $struct_name:ty: { $( $to_explore:ident ),+ } ),+ ) => {
         $(
             impl MsdNodeExplorer for $struct_name {
-                fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext)  {
+                fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
                     $(
                         explore_all!(pattern, ctx, self.$to_explore);
                     )*
+                    Some(())
                 }
             }
         )*
@@ -68,13 +76,24 @@ macro_rules! msd_dispatch_collection_impl {
 /// Explore all elements in the provided collections
 #[macro_export]
 macro_rules! explore_all {
-    ( $pattern:expr, $ctx:expr, $( $explorable:expr ),+ ) => {
+    ( $pattern:expr, $ctx:expr, $( $explorable:expr ),+ ) => {{
+        let mut explore_all_found_essential = false;
+
         $(
             for x in $explorable.iter_mut() {
-                x.explore($pattern, $ctx);
+                if x.explore($pattern, $ctx).is_some() {
+                    explore_all_found_essential = true;
+                }
             }
         )*
-    };
+
+        // If an essential node had no matches, it's a failure; otherwise, we're good
+        if $pattern.essential && !explore_all_found_essential {
+            None
+        } else {
+            Some(())
+        }
+    }};
 }
 
 msd_dispatch_default_impl!(
@@ -84,8 +103,6 @@ msd_dispatch_default_impl!(
     DotExpr,
     IncDecExpr,
     LogExpr,
-    Ident,
-    Literal,
     IndexExpr,
     EndpointCallExpr,
     ImportStmt,
@@ -114,11 +131,35 @@ msd_dispatch_collection_impl!(
 );
 
 // Information-Bearing Node Exploration
+impl MsdNodeExplorer for Ident {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+        if pattern.matches(self) {
+            msd_node_parse(pattern, self, ctx)
+        } else if pattern.essential {
+            None
+        } else {
+            Some(())
+        }
+    }
+}
+
+impl MsdNodeExplorer for Literal {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+        if pattern.matches(self) {
+            msd_node_parse(pattern, self, ctx)
+        } else if pattern.essential {
+            None
+        } else {
+            Some(())
+        }
+    }
+}
+
 impl MsdNodeExplorer for ClassOrInterfaceComponent {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         // Check if this node needs parsed
         if pattern.matches(self) {
-            msd_node_parse(pattern, self, ctx);
+            msd_node_parse(pattern, self, ctx)?;
         }
 
         // Visit other nodes
@@ -130,61 +171,66 @@ impl MsdNodeExplorer for ClassOrInterfaceComponent {
             self.field_components,
             self.component.methods
         );
+        Some(())
     }
 }
 
 impl MsdNodeExplorer for MethodComponent {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         // Check if this node needs parsed
         if pattern.matches(self) {
-            msd_node_parse(pattern, self, ctx);
+            msd_node_parse(pattern, self, ctx)?;
         }
 
         // Visit other nodes
         if let Some(block) = &mut self.body {
-            block.explore(pattern, ctx);
+            block.explore(pattern, ctx)?;
         }
-        explore_all!(
+
+        let x: Option<()> = explore_all!(
             pattern,
             ctx,
             self.annotations,
             self.parameters,
             self.sub_methods
         );
+        x
     }
 }
 
 impl MsdNodeExplorer for MethodParamComponent {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         // Check if this node needs parsed
         if pattern.matches(self) {
-            msd_node_parse(pattern, self, ctx);
+            msd_node_parse(pattern, self, ctx)?;
         }
 
         // Visit other nodes
         if let Some(annotations) = &mut self.annotation {
-            explore_all!(pattern, ctx, annotations);
+            explore_all!(pattern, ctx, annotations)
+        } else {
+            Some(())
         }
     }
 }
 
 impl MsdNodeExplorer for FieldComponent {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         // Check if this node needs parsed
         if pattern.matches(self) {
-            msd_node_parse(pattern, self, ctx);
+            msd_node_parse(pattern, self, ctx)?;
         }
 
         // Visit other nodes
-        explore_all!(pattern, ctx, self.annotations);
+        explore_all!(pattern, ctx, self.annotations)
     }
 }
 
 impl MsdNodeExplorer for DeclStmt {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         // Check if this node needs parsed
         if pattern.matches(self) {
-            msd_node_parse(pattern, self, ctx);
+            msd_node_parse(pattern, self, ctx)?;
         }
 
         // Visit other nodes
@@ -196,40 +242,42 @@ impl MsdNodeExplorer for DeclStmt {
                 .iter_mut()
                 .flat_map(|e| e)
                 .collect::<Vec<_>>()
-        );
+        )
     }
 }
 
 impl MsdNodeExplorer for VarDecl {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         // Check if this node needs parsed
         if pattern.matches(self) {
-            msd_node_parse(pattern, self, ctx);
+            msd_node_parse(pattern, self, ctx)?;
         }
 
         // Visit other nodes
-        explore_all!(pattern, ctx, self.annotation);
+        explore_all!(pattern, ctx, self.annotation)
     }
 }
 
 impl MsdNodeExplorer for CallExpr {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         // Check if this node needs parsed
         if pattern.matches(self) {
-            msd_node_parse(pattern, self, ctx);
+            msd_node_parse(pattern, self, ctx)?;
         }
 
         // Visit other nodes
-        self.name.as_mut().explore(pattern, ctx);
-        explore_all!(pattern, ctx, self.args);
+        self.name.as_mut().explore(pattern, ctx)?;
+        explore_all!(pattern, ctx, self.args)
     }
 }
 
 impl MsdNodeExplorer for AnnotationComponent {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         // Check if this node needs parsed
         if pattern.matches(self) {
-            msd_node_parse(pattern, self, ctx);
+            msd_node_parse(pattern, self, ctx)
+        } else {
+            Some(())
         }
 
         // Visit other nodes
@@ -241,46 +289,52 @@ impl MsdNodeExplorer for AnnotationComponent {
 // Nodes requiring custom visting because a general macro didn't cover their edge cases
 
 impl MsdNodeExplorer for IfStmt {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
-        self.body.explore(pattern, ctx);
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+        self.body.explore(pattern, ctx)?;
         if let Some(else_body) = &mut self.else_body {
-            else_body.explore(pattern, ctx);
+            else_body.explore(pattern, ctx)
+        } else {
+            Some(())
         }
     }
 }
 
 impl MsdNodeExplorer for ForStmt {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         explore_all!(pattern, ctx, self.init);
         if let Some(condition) = &mut self.condition {
-            condition.explore(pattern, ctx);
+            condition.explore(pattern, ctx)?;
         }
         explore_all!(pattern, ctx, self.post);
         self.body.explore(pattern, ctx)
     }
 }
 impl MsdNodeExplorer for ForRangeStmt {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         if let Some(iter) = &mut self.iterator {
-            iter.explore(pattern, ctx);
+            iter.explore(pattern, ctx)?;
         }
         self.body.explore(pattern, ctx)
     }
 }
 
 impl MsdNodeExplorer for TryCatchStmt {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
-        self.try_body.explore(pattern, ctx);
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+        self.try_body.explore(pattern, ctx)?;
         if let Some(finally_body) = &mut self.finally_body {
-            finally_body.explore(pattern, ctx);
+            finally_body.explore(pattern, ctx)
+        } else {
+            Some(())
         }
     }
 }
 
 impl MsdNodeExplorer for ReturnStmt {
-    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         if let Some(expr) = &mut self.expr {
-            expr.explore(pattern, ctx);
+            expr.explore(pattern, ctx)
+        } else {
+            Some(())
         }
     }
 }
@@ -305,6 +359,6 @@ mod tests {
             None,
         );
         eprintln!("hello?");
-        c.explore(&mut np, &mut ParserContext::default())
+        c.explore(&mut np, &mut ParserContext::default());
     }
 }
