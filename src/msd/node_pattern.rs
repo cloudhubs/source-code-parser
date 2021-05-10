@@ -1,5 +1,5 @@
 // use super::MsdDispatch;
-use super::interpreter::NodePatternParser;
+use super::{interpreter::NodePatternParser, Executor};
 use crate::ast::*;
 use crate::prophet::*;
 use derive_new::new;
@@ -43,46 +43,43 @@ impl<'a> NodePattern<'a> {
 }
 
 /// Parse an individual node with this NodePattern, lazily-initializing its CompiledPattern as needed
-#[macro_export]
-macro_rules! msd_node_parse {
-    ( $pattern:ident, $node:ident, $ctx:ident ) => {
-        use crate::msd::callback::Executor;
-        use crate::msd::context::ContextLocalVariableActions;
-        use crate::msd::interpreter::NodePatternParser;
+pub fn msd_node_parse<'a>(
+    pattern: &mut NodePattern<'a>,
+    node: &'a impl NodePatternParser<'a>,
+    ctx: &mut ParserContext,
+) {
+    // Lazily compile pattern
+    if pattern.compiled_pattern.is_none() {
+        let compiled_result = super::CompiledPattern::from_pattern(&*pattern.pattern);
+        match compiled_result {
+            Ok(compiled_result) => {
+                pattern.compiled_pattern = Some(compiled_result);
+            }
+            Err(error) => {
+                eprintln!("{:#?}", error);
+                return;
+            }
+        };
+    }
 
-        // Lazily compile pattern
-        if $pattern.compiled_pattern.is_none() {
-            let compiled_result = super::CompiledPattern::from_pattern(&*$pattern.pattern);
-            match compiled_result {
-                Ok(compiled_result) => {
-                    $pattern.compiled_pattern = Some(compiled_result);
-                }
-                Err(error) => {
-                    eprintln!("{:#?}", error);
-                    return;
-                }
-            };
-        }
+    // Search
+    ctx.frame_number += 1;
+    node.parse(pattern, ctx);
 
-        // Search
-        $ctx.frame_number += 1;
-        $node.parse($pattern, $ctx);
-
-        if $pattern.callback.is_some() {
-            let ctx_clone = $ctx.clone();
-            match Executor::get().execute($pattern, ctx_clone) {
-                Ok(new_ctx) => *$ctx = new_ctx,
-                Err(err) => {
-                    eprintln!("Failed to execute callback: {:#?}", err);
-                }
+    if pattern.callback.is_some() {
+        let ctx_clone = ctx.clone();
+        match Executor::get().execute(pattern, ctx_clone) {
+            Ok(new_ctx) => *ctx = new_ctx,
+            Err(err) => {
+                eprintln!("Failed to execute callback: {:#?}", err);
             }
         }
+    }
 
-        $ctx.frame_number -= 1;
-        if $ctx.frame_number == 0 {
-            $ctx.clear_variables();
-        }
-    };
+    ctx.frame_number -= 1;
+    if ctx.frame_number == 0 {
+        ctx.clear_variables();
+    }
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
@@ -176,7 +173,7 @@ impl<'a> CompiledPattern<'a> {
     }
 
     pub fn matches(&mut self, match_str: &'a str, ctx: &ParserContext) -> bool {
-        match self.pattern.captures(match_str) {
+        match self.pattern.captures(&*match_str) {
             Some(matches) => {
                 for reference in self.reference_vars.iter() {
                     if ctx
