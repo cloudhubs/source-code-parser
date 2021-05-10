@@ -229,7 +229,53 @@ impl NodePatternParser for CallExpr {
 
 impl NodePatternParser for AnnotationComponent {
     fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
-        Some(())
+        // Verify
+        verify_match(&*self.name, pattern, ctx)?;
+        if let Some(aux_pattern) = &pattern.compiled_type_pattern {
+            if !aux_pattern.matches(&*self.value, ctx) {
+                return None;
+            }
+        }
+
+        // Verify subpatterns
+        explore_all!(pattern, ctx, &mut self.key_value_pairs)?;
+
+        // Write and return
+        write_to_context(
+            &self.name,
+            pattern.essential,
+            &mut pattern.compiled_pattern,
+            ctx,
+        )?;
+        write_to_context(
+            &self.value,
+            pattern.essential,
+            &mut pattern.compiled_pattern,
+            ctx,
+        )
+    }
+}
+
+impl NodePatternParser for AnnotationValuePair {
+    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+        verify_match(&self.key, pattern, ctx)?;
+        if let Some(aux_pattern) = &pattern.compiled_type_pattern {
+            if !aux_pattern.matches(&*self.value, ctx) {
+                return None;
+            }
+        }
+        write_to_context(
+            &self.value,
+            pattern.essential,
+            &mut pattern.compiled_pattern,
+            ctx,
+        )?;
+        write_to_context(
+            &self.key,
+            pattern.essential,
+            &mut pattern.compiled_pattern,
+            ctx,
+        )
     }
 }
 

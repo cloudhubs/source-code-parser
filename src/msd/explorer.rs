@@ -10,6 +10,7 @@ pub enum ProphetNode {
     MethodParamComponent(MethodParamComponent),
     FieldComponent(FieldComponent),
     AnnotationComponent(AnnotationComponent),
+    AnnotationValuePair(AnnotationValuePair),
 }
 
 /// Describes how to visit the nodes in the AST to find nodes of interest
@@ -275,14 +276,21 @@ impl MsdNodeExplorer for AnnotationComponent {
     fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
         // Check if this node needs parsed
         if pattern.matches(self) {
-            msd_node_parse(pattern, self, ctx)
-        } else {
-            Some(())
+            msd_node_parse(pattern, self, ctx)?;
         }
 
         // Visit other nodes
-        // TODO visit key_value_pairs?
-        // explore_all!(pattern, ctx, self.key_value_pairs);
+        explore_all!(pattern, ctx, self.key_value_pairs)
+    }
+}
+
+impl MsdNodeExplorer for AnnotationValuePair {
+    fn explore(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+        if pattern.matches(self) {
+            msd_node_parse(pattern, self, ctx)
+        } else {
+            None
+        }
     }
 }
 

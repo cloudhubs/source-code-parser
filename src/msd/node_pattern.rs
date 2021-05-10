@@ -1,9 +1,9 @@
 // use super::MsdDispatch;
-use super::{interpreter::NodePatternParser, Executor};
+use super::{pattern_parser::NodePatternParser, Executor};
 use crate::ast::*;
 use crate::prophet::*;
 use derive_new::new;
-use regex::{Captures, Regex};
+use regex::Regex;
 use serde::Deserialize;
 
 use super::{ContextLocalVariableActions, ContextObjectActions, ParserContext};
@@ -129,6 +129,7 @@ pub enum NodeType {
     MethodParam,
     Field,
     Annotation,
+    AnnotationValuePair,
 
     // Body nodes
     CallExpr,
@@ -162,6 +163,7 @@ into_msd_node!(
     MethodParamComponent: MethodParam,
     FieldComponent: Field,
     AnnotationComponent: Annotation,
+    AnnotationValuePair: AnnotationValuePair,
     // Body node types
     CallExpr: CallExpr,
     VarDecl: VarDecl,
@@ -217,7 +219,7 @@ impl<'a> CompiledPattern<'a> {
     }
 
     pub fn matches(&self, match_str: &'a str, ctx: &ParserContext) -> bool {
-        let mut tmp = self.pattern.clone();
+        let tmp = self.pattern.clone();
         match tmp.captures(&*match_str) {
             Some(matches) => {
                 for reference in self.reference_vars.iter() {

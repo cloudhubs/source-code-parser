@@ -2,14 +2,14 @@ mod node_pattern;
 
 pub use node_pattern::*;
 
-mod parser;
-pub use parser::*;
+mod explorer;
+pub use explorer::*;
 
 mod context;
 pub use context::*;
 
-mod interpreter;
-pub use interpreter::*;
+mod pattern_parser;
+pub use pattern_parser::*;
 
 mod callback;
 pub use callback::*;
