@@ -29,7 +29,7 @@ impl Into<ContextData> for ParserContext {
 /// Interface of the Context, offering ability to create, read, and update objects/tags
 pub trait ContextObjectActions {
     fn make_object(&mut self, name: &str);
-    fn make_attribute(&mut self, name: &str, attr_name: &str, attr_type: Option<String>);
+    fn make_attribute(&mut self, name: &str, attr_name: &str, attr_value: Option<String>);
     fn make_tag(&mut self, name: &str, resolves_to: &str);
     /// Gets an object by name. The object returned shouldn't be modified from this return value. Use ContextObjectActions::make_attribute
     fn get_object(&self, name: &str) -> Option<HashMap<String, Option<String>>>;

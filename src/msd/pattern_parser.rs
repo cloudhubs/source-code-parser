@@ -169,19 +169,120 @@ impl NodePatternParser for MethodParamComponent {
 
 impl NodePatternParser for FieldComponent {
     fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
-        Some(())
+        // Verify
+        verify_match(&*self.field_name, pattern, ctx)?;
+        if let Some(type_pattern) = &pattern.compiled_type_pattern {
+            if !type_pattern.matches(&self.r#type, ctx) {
+                return None;
+            }
+        }
+
+        // Verify subpatterns
+        explore_all!(
+            pattern,
+            ctx,
+            self.annotations,
+            self.variables
+                .iter()
+                .map(|var| Ident::new(var.clone()))
+                .collect::<Vec<Ident>>()
+        )?;
+
+        // Write and return
+        write_to_context(
+            &self.field_name,
+            pattern.essential,
+            &mut pattern.compiled_pattern,
+            ctx,
+        )?;
+        write_to_context(
+            &self.r#type,
+            pattern.essential,
+            &mut pattern.compiled_type_pattern,
+            ctx,
+        )
     }
 }
 
 impl NodePatternParser for DeclStmt {
     fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+        // let mut decl_patterns = pattern
+        //     .subpatterns
+        //     .iter_mut()
+        //     .filter(|decl| match decl.identifier {
+        //         NodeType::VarDecl => true,
+        //         _ => false,
+        //     })
+        //     .collect::<Vec<&mut NodePattern>>();
+        // let mut non_decl = pattern
+        //     .subpatterns
+        //     .iter_mut()
+        //     .filter(|non_decl| match non_decl.identifier {
+        //         NodeType::VarDecl => false,
+        //         _ => true,
+        //     })
+        //     .collect::<Vec<&mut NodePattern>>();
+
+        // if decl_patterns.len() == non_decl.len() {
+        //     // Case 2: equal lengths
+
+        //     // If can't be right, return
+        //     if self.variables.len() != self.expressions.len() {
+        //         return if pattern.essential { None } else { Some(()) };
+        //     }
+
+        //     // Analyze pattern
+        //     for pattern_index in 0..decl_patterns.len() {
+        //         for i in 0..self.variables.len() {
+        //             // TODO resume here
+        //         }
+        //     }
+        // } else if decl_patterns.len() == 1 {
+        //     // Case 1: one Decl no non-decls
+        //     explore_all!(decl_patterns.iter_mut().next()?, ctx, self.variables);
+        // } else {
+        //     // Case 3: multiple non-Decls to fewer Decls
+        //     //
+        // }
         Some(())
     }
+}
+fn parse_decl() {
+    //
 }
 
 impl NodePatternParser for VarDecl {
     fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
-        Some(())
+        // Verify
+        verify_match(&*self.ident.name, pattern, ctx)?;
+        if let Some(type_pattern) = &pattern.compiled_type_pattern {
+            if let Some(var_type) = &self.var_type {
+                if !type_pattern.matches(var_type, ctx) {
+                    return None;
+                }
+            }
+        }
+
+        // Verify subpatterns
+        explore_all!(pattern, ctx, self.annotation)?;
+
+        // Write and return
+        write_to_context(
+            &self.ident.name,
+            pattern.essential,
+            &mut pattern.compiled_pattern,
+            ctx,
+        )?;
+        if let Some(var_type) = &self.var_type {
+            write_to_context(
+                var_type,
+                pattern.essential,
+                &mut pattern.compiled_type_pattern,
+                ctx,
+            )
+        } else {
+            Some(())
+        }
     }
 }
 
