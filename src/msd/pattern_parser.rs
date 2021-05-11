@@ -2,6 +2,7 @@ use super::NodeType;
 use super::{CompiledPattern, MsdNodeExplorer, NodePattern, ParserContext};
 use crate::prophet::*;
 use crate::{ast::*, explore_all};
+use itertools::Itertools;
 
 /// Defines how to parse an individual node that has been confirmed to be of interest
 pub trait NodePatternParser {
@@ -11,7 +12,7 @@ pub trait NodePatternParser {
 fn write_to_context(
     to_match: &String,
     essential: bool,
-    pattern: &mut Option<CompiledPattern<'_>>,
+    pattern: &mut Option<CompiledPattern>,
     ctx: &mut ParserContext,
 ) -> Option<()> {
     if let Some(compiled_pattern) = pattern.as_mut() {
@@ -206,23 +207,14 @@ impl NodePatternParser for FieldComponent {
 
 impl NodePatternParser for DeclStmt {
     fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
-        let mut decl_patterns = pattern
-            .subpatterns
-            .iter_mut()
-            .filter(|decl| match decl.identifier {
-                NodeType::VarDecl => true,
-                _ => false,
-            })
-            .collect::<Vec<&mut NodePattern>>();
-        let mut non_decl = vec![];
-        // pattern
-        //     .subpatterns
-        //     .iter_mut()
-        //     .filter(|non_decl| match non_decl.identifier {
-        //         NodeType::VarDecl => false,
-        //         _ => true,
-        //     })
-        //     .collect::<Vec<&mut NodePattern>>();
+        let mut decl_patterns: Vec<usize> = vec![];
+        let mut non_decl: Vec<usize> = vec![];
+        for (i, pattern) in pattern.subpatterns.iter().enumerate() {
+            match pattern.identifier {
+                NodeType::VarDecl => decl_patterns.push(i),
+                _ => non_decl.push(i),
+            }
+        }
 
         if decl_patterns.len() == non_decl.len() {
             // Case 2: equal lengths
@@ -235,13 +227,18 @@ impl NodePatternParser for DeclStmt {
             // Analyze pattern
             for pattern_index in 0..decl_patterns.len() {
                 for i in 0..self.variables.len() {
-                    //
-                    self.variables
-                        .get_mut(i)?
-                        .explore(decl_patterns.get_mut(pattern_index)?, ctx)?;
+                    // Parse variable declarations
+                    self.variables.get_mut(i)?.explore(
+                        pattern
+                            .subpatterns
+                            .get_mut(*decl_patterns.get(pattern_index)?)?,
+                        ctx,
+                    )?;
 
                     // Parse equality
-                    let non_decl_pattern = non_decl.get_mut(pattern_index)?;
+                    let non_decl_pattern = pattern
+                        .subpatterns
+                        .get_mut(*non_decl.get_mut(pattern_index)?)?;
                     if let Some(expr) = self.expressions.get_mut(i)?.as_mut() {
                         expr.explore(non_decl_pattern, ctx)?;
                     } else if non_decl_pattern.essential {
@@ -252,7 +249,8 @@ impl NodePatternParser for DeclStmt {
             }
         } else if decl_patterns.len() == 1 {
             // Case 1: one Decl no non-decls
-            explore_all!(decl_patterns.iter_mut().next()?, ctx, self.variables);
+            let pattern = pattern.subpatterns.get_mut(*decl_patterns.iter().next()?)?;
+            explore_all!(pattern, ctx, self.variables);
         } else {
             // Case 3: multiple non-Decls to fewer Decls
             let mut real_expressions = self
@@ -260,16 +258,25 @@ impl NodePatternParser for DeclStmt {
                 .iter_mut()
                 .flat_map(|c| c)
                 .collect::<Vec<&mut Expr>>();
-            match_subsequence(&mut decl_patterns, &mut self.variables, ctx);
-            for pattern in non_decl.iter_mut() {
+            match_subsequence(
+                // Get the actual pattern references from the subpatterns array using the indices in decl_patterns (I'm sorry.)
+                &mut pattern
+                    .subpatterns
+                    .iter_mut()
+                    .enumerate()
+                    .filter(|(ndx, _)| decl_patterns.contains(ndx))
+                    .map(|(_, p)| p)
+                    .collect_vec(),
+                &mut self.variables,
+                ctx,
+            );
+            for ndx in non_decl.iter_mut() {
+                let pattern = pattern.subpatterns.get_mut(*ndx)?;
                 explore_all!(pattern, ctx, real_expressions);
             }
         }
         Some(())
     }
-}
-fn parse_decl() {
-    //
 }
 
 impl NodePatternParser for VarDecl {

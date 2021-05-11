@@ -9,7 +9,7 @@ use serde::Deserialize;
 use super::{ContextLocalVariableActions, ContextObjectActions, ParserContext};
 
 /// A Node pattern describing a node of interest to the parser.
-#[derive(Debug, Deserialize, new)]
+#[derive(Debug, Clone, Deserialize, new)]
 pub struct NodePattern<'a> {
     /// The target AST node type
     pub identifier: NodeType,
@@ -19,11 +19,11 @@ pub struct NodePattern<'a> {
     /// with a #varname syntax (with ## being a literal #).
     /// Variables indicate the information we are looking for, like URLs and entity names.
     #[serde(skip)]
-    pub compiled_pattern: Option<CompiledPattern<'a>>,
+    pub compiled_pattern: Option<CompiledPattern>,
 
     /// A pattern, like compiled_pattern, for checking the type of a variable for inforamtion
     #[serde(skip)]
-    pub compiled_type_pattern: Option<CompiledPattern<'a>>,
+    pub compiled_type_pattern: Option<CompiledPattern>,
 
     /// Sub-patterns for this node pattern to be matched in the AST.
     /// Some subpatterns may be specified as required.
@@ -172,17 +172,17 @@ into_msd_node!(
     Literal: Literal
 );
 
-#[derive(Debug, new)]
-pub struct CompiledPattern<'a> {
+#[derive(Debug, Clone, new)]
+pub struct CompiledPattern {
     pub pattern: Regex,
     pub variables: Vec<String>,
 
     /// TODO delete, unused
-    match_result: Option<regex::Captures<'a>>,
+    // match_result: Option<regex::Captures<'a>>,
     reference_vars: Vec<String>,
 }
 
-impl<'a> CompiledPattern<'a> {
+impl CompiledPattern {
     /// Create a compiled pattern from an MSD pattern and the context.
     pub fn from_pattern(pattern: &str) -> Result<CompiledPattern, regex::Error> {
         let tag_regex = Regex::new(r#"#(&)?\{([a-zA-Z_-]+)\}"#)?;
@@ -213,12 +213,11 @@ impl<'a> CompiledPattern<'a> {
         Ok(CompiledPattern::new(
             transformed_pattern,
             variables,
-            None,
             references,
         ))
     }
 
-    pub fn matches(&self, match_str: &'a str, ctx: &ParserContext) -> bool {
+    pub fn matches(&self, match_str: &str, ctx: &ParserContext) -> bool {
         let tmp = self.pattern.clone();
         match tmp.captures(&*match_str) {
             Some(matches) => {
@@ -241,7 +240,7 @@ impl<'a> CompiledPattern<'a> {
         }
     }
 
-    pub fn match_and_insert(&self, match_str: &'a str, ctx: &mut ParserContext) -> bool {
+    pub fn match_and_insert(&self, match_str: &str, ctx: &mut ParserContext) -> bool {
         let tmp_pattern = self.pattern.clone();
         match tmp_pattern.captures(&*match_str) {
             Some(matches) => {
