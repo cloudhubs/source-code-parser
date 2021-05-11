@@ -23,7 +23,7 @@ pub struct NodePattern {
 
     /// A pattern, like compiled_pattern, for checking the type of a variable for inforamtion
     #[serde(skip)]
-    pub compiled_type_pattern: Option<CompiledPattern>,
+    pub compiled_auxiliary_pattern: Option<CompiledPattern>,
 
     /// Sub-patterns for this node pattern to be matched in the AST.
     /// Some subpatterns may be specified as required.
@@ -40,7 +40,7 @@ pub struct NodePattern {
     pub pattern: String,
 
     /// Raw pattern for checking the type defined by the user
-    pub type_pattern: Option<String>,
+    pub auxiliary_pattern: Option<String>,
 }
 
 impl NodePattern {
@@ -75,10 +75,10 @@ pub fn msd_node_parse(
             return None;
         }
     }
-    if pattern.type_pattern.is_some() && pattern.compiled_type_pattern.is_none() {
-        let compiled_pattern = lazy_compile(&*pattern.type_pattern.clone().unwrap());
+    if pattern.auxiliary_pattern.is_some() && pattern.compiled_auxiliary_pattern.is_none() {
+        let compiled_pattern = lazy_compile(&*pattern.auxiliary_pattern.clone().unwrap());
         if compiled_pattern.is_some() {
-            pattern.compiled_type_pattern = compiled_pattern;
+            pattern.compiled_auxiliary_pattern = compiled_pattern;
         } else {
             return None;
         }

@@ -141,7 +141,7 @@ impl NodePatternParser for MethodParamComponent {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
         verify_match(&*self.parameter_name, pattern, ctx)?;
-        if let Some(type_pattern) = &pattern.compiled_type_pattern {
+        if let Some(type_pattern) = &pattern.compiled_auxiliary_pattern {
             if !type_pattern.matches(&self.r#type, ctx) {
                 return None;
             }
@@ -162,7 +162,7 @@ impl NodePatternParser for MethodParamComponent {
         write_to_context(
             &self.r#type,
             pattern.essential,
-            &mut pattern.compiled_type_pattern,
+            &mut pattern.compiled_auxiliary_pattern,
             ctx,
         )
     }
@@ -172,7 +172,7 @@ impl NodePatternParser for FieldComponent {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
         verify_match(&*self.field_name, pattern, ctx)?;
-        if let Some(type_pattern) = &pattern.compiled_type_pattern {
+        if let Some(type_pattern) = &pattern.compiled_auxiliary_pattern {
             if !type_pattern.matches(&self.r#type, ctx) {
                 return None;
             }
@@ -199,7 +199,7 @@ impl NodePatternParser for FieldComponent {
         write_to_context(
             &self.r#type,
             pattern.essential,
-            &mut pattern.compiled_type_pattern,
+            &mut pattern.compiled_auxiliary_pattern,
             ctx,
         )
     }
@@ -283,7 +283,7 @@ impl NodePatternParser for VarDecl {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
         verify_match(&*self.ident.name, pattern, ctx)?;
-        if let Some(type_pattern) = &pattern.compiled_type_pattern {
+        if let Some(type_pattern) = &pattern.compiled_auxiliary_pattern {
             if let Some(var_type) = &self.var_type {
                 if !type_pattern.matches(var_type, ctx) {
                     return None;
@@ -305,7 +305,7 @@ impl NodePatternParser for VarDecl {
             write_to_context(
                 var_type,
                 pattern.essential,
-                &mut pattern.compiled_type_pattern,
+                &mut pattern.compiled_auxiliary_pattern,
                 ctx,
             )
         } else {
@@ -360,7 +360,7 @@ impl NodePatternParser for AnnotationComponent {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
         verify_match(&*self.name, pattern, ctx)?;
-        if let Some(aux_pattern) = &pattern.compiled_type_pattern {
+        if let Some(aux_pattern) = &pattern.compiled_auxiliary_pattern {
             if !aux_pattern.matches(&*self.value, ctx) {
                 return None;
             }
@@ -388,7 +388,7 @@ impl NodePatternParser for AnnotationComponent {
 impl NodePatternParser for AnnotationValuePair {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         verify_match(&self.key, pattern, ctx)?;
-        if let Some(aux_pattern) = &pattern.compiled_type_pattern {
+        if let Some(aux_pattern) = &pattern.compiled_auxiliary_pattern {
             if !aux_pattern.matches(&*self.value, ctx) {
                 return None;
             }
