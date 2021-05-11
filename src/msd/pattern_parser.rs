@@ -206,15 +206,16 @@ impl NodePatternParser for FieldComponent {
 
 impl NodePatternParser for DeclStmt {
     fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
-        // let mut decl_patterns = pattern
-        //     .subpatterns
-        //     .iter_mut()
-        //     .filter(|decl| match decl.identifier {
-        //         NodeType::VarDecl => true,
-        //         _ => false,
-        //     })
-        //     .collect::<Vec<&mut NodePattern>>();
-        // let mut non_decl = pattern
+        let mut decl_patterns = pattern
+            .subpatterns
+            .iter_mut()
+            .filter(|decl| match decl.identifier {
+                NodeType::VarDecl => true,
+                _ => false,
+            })
+            .collect::<Vec<&mut NodePattern>>();
+        let mut non_decl = vec![];
+        // pattern
         //     .subpatterns
         //     .iter_mut()
         //     .filter(|non_decl| match non_decl.identifier {
@@ -223,27 +224,47 @@ impl NodePatternParser for DeclStmt {
         //     })
         //     .collect::<Vec<&mut NodePattern>>();
 
-        // if decl_patterns.len() == non_decl.len() {
-        //     // Case 2: equal lengths
+        if decl_patterns.len() == non_decl.len() {
+            // Case 2: equal lengths
 
-        //     // If can't be right, return
-        //     if self.variables.len() != self.expressions.len() {
-        //         return if pattern.essential { None } else { Some(()) };
-        //     }
+            // If can't be right, return
+            if self.variables.len() != self.expressions.len() {
+                return if pattern.essential { None } else { Some(()) };
+            }
 
-        //     // Analyze pattern
-        //     for pattern_index in 0..decl_patterns.len() {
-        //         for i in 0..self.variables.len() {
-        //             // TODO resume here
-        //         }
-        //     }
-        // } else if decl_patterns.len() == 1 {
-        //     // Case 1: one Decl no non-decls
-        //     explore_all!(decl_patterns.iter_mut().next()?, ctx, self.variables);
-        // } else {
-        //     // Case 3: multiple non-Decls to fewer Decls
-        //     //
-        // }
+            // Analyze pattern
+            for pattern_index in 0..decl_patterns.len() {
+                for i in 0..self.variables.len() {
+                    //
+                    self.variables
+                        .get_mut(i)?
+                        .explore(decl_patterns.get_mut(pattern_index)?, ctx)?;
+
+                    // Parse equality
+                    let non_decl_pattern = non_decl.get_mut(pattern_index)?;
+                    if let Some(expr) = self.expressions.get_mut(i)?.as_mut() {
+                        expr.explore(non_decl_pattern, ctx)?;
+                    } else if non_decl_pattern.essential {
+                        // If we needed that righthand side, then abort the search
+                        return None;
+                    }
+                }
+            }
+        } else if decl_patterns.len() == 1 {
+            // Case 1: one Decl no non-decls
+            explore_all!(decl_patterns.iter_mut().next()?, ctx, self.variables);
+        } else {
+            // Case 3: multiple non-Decls to fewer Decls
+            let mut real_expressions = self
+                .expressions
+                .iter_mut()
+                .flat_map(|c| c)
+                .collect::<Vec<&mut Expr>>();
+            match_subsequence(&mut decl_patterns, &mut self.variables, ctx);
+            for pattern in non_decl.iter_mut() {
+                explore_all!(pattern, ctx, real_expressions);
+            }
+        }
         Some(())
     }
 }
