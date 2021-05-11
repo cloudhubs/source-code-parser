@@ -47,6 +47,14 @@ impl NodePattern {
     pub fn matches(&self, node: &impl IntoMsdNode) -> bool {
         self.identifier == node.into_msd_node()
     }
+
+    pub fn compile(&mut self) -> Option<()> {
+        self.compiled_pattern = Some(lazy_compile(&*self.pattern)?);
+        if let Some(auxiliary_pattern) = &self.auxiliary_pattern {
+            self.compiled_auxiliary_pattern = Some(lazy_compile(&*auxiliary_pattern)?);
+        }
+        Some(())
+    }
 }
 
 pub fn lazy_compile(pattern: &str) -> Option<CompiledPattern> {
@@ -67,22 +75,7 @@ pub fn msd_node_parse(
     ctx: &mut ParserContext,
 ) -> Option<()> {
     // Lazily compile patterns
-    if pattern.compiled_pattern.is_none() {
-        let compiled_pattern = lazy_compile(&*pattern.pattern);
-        if compiled_pattern.is_some() {
-            pattern.compiled_pattern = compiled_pattern;
-        } else {
-            return None;
-        }
-    }
-    if pattern.auxiliary_pattern.is_some() && pattern.compiled_auxiliary_pattern.is_none() {
-        let compiled_pattern = lazy_compile(&*pattern.auxiliary_pattern.clone().unwrap());
-        if compiled_pattern.is_some() {
-            pattern.compiled_auxiliary_pattern = compiled_pattern;
-        } else {
-            return None;
-        }
-    }
+    pattern.compile()?;
 
     // Search
     ctx.frame_number += 1;
@@ -96,7 +89,7 @@ pub fn msd_node_parse(
                     true
                 }
                 Err(err) => {
-                    eprintln!("Failed to execute callback: {:#?}", err);
+                    // eprintln!("Failed to execute callback: {:#?}", err);
                     false
                 }
             }

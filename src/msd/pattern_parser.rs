@@ -66,18 +66,34 @@ fn match_subsequence<T: MsdNodeExplorer>(
     }
 }
 
-fn verify_match(match_str: &str, pattern: &NodePattern, ctx: &ParserContext) -> Option<()> {
-    if let Some(compiled) = &pattern.compiled_pattern {
-        if !compiled.matches(match_str, ctx) {
-            return None;
+macro_rules! verify_match {
+    ( $match_str:expr, $pattern:expr, $ctx:expr, $essential:expr ) => {
+        if let Some(compiled) = $pattern {
+            if !compiled.matches($match_str, $ctx) {
+                quit!($essential);
+            }
         }
-    }
-    Some(())
+    };
+}
+
+macro_rules! quit {
+    ( $essential:expr ) => {
+        if $essential {
+            return None;
+        } else {
+            return Some(());
+        }
+    };
 }
 
 impl NodePatternParser for ClassOrInterfaceComponent {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
-        verify_match(&self.component.container_name, pattern, ctx)?;
+        verify_match!(
+            &self.component.container_name,
+            &pattern.compiled_pattern,
+            ctx,
+            pattern.essential
+        );
 
         // Check subpatterns
         for pattern in pattern.subpatterns.iter_mut() {
@@ -102,7 +118,12 @@ impl NodePatternParser for ClassOrInterfaceComponent {
 
 impl NodePatternParser for MethodComponent {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
-        verify_match(&self.component.instance_name, pattern, ctx)?;
+        verify_match!(
+            &self.component.instance_name,
+            &pattern.compiled_pattern,
+            ctx,
+            pattern.essential
+        );
 
         // Match method parameters
         let mut params = pattern
@@ -140,12 +161,18 @@ impl NodePatternParser for MethodComponent {
 impl NodePatternParser for MethodParamComponent {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
-        verify_match(&*self.parameter_name, pattern, ctx)?;
-        if let Some(type_pattern) = &pattern.compiled_auxiliary_pattern {
-            if !type_pattern.matches(&self.r#type, ctx) {
-                return None;
-            }
-        }
+        verify_match!(
+            &*self.parameter_name,
+            &pattern.compiled_pattern,
+            ctx,
+            pattern.essential
+        );
+        verify_match!(
+            &*self.r#type,
+            &pattern.compiled_auxiliary_pattern,
+            ctx,
+            pattern.essential
+        );
 
         // Verify subpatterns
         if let Some(annotations) = &mut self.annotation {
@@ -171,12 +198,18 @@ impl NodePatternParser for MethodParamComponent {
 impl NodePatternParser for FieldComponent {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
-        verify_match(&*self.field_name, pattern, ctx)?;
-        if let Some(type_pattern) = &pattern.compiled_auxiliary_pattern {
-            if !type_pattern.matches(&self.r#type, ctx) {
-                return None;
-            }
-        }
+        verify_match!(
+            &*self.field_name,
+            &pattern.compiled_pattern,
+            ctx,
+            pattern.essential
+        );
+        verify_match!(
+            &*self.r#type,
+            &pattern.compiled_auxiliary_pattern,
+            ctx,
+            pattern.essential
+        );
 
         // Verify subpatterns
         explore_all!(
@@ -282,12 +315,22 @@ impl NodePatternParser for DeclStmt {
 impl NodePatternParser for VarDecl {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
-        verify_match(&*self.ident.name, pattern, ctx)?;
-        if let Some(type_pattern) = &pattern.compiled_auxiliary_pattern {
+        verify_match!(
+            &*self.ident.name,
+            &pattern.compiled_pattern,
+            ctx,
+            pattern.essential
+        );
+        if pattern.auxiliary_pattern.is_some() {
             if let Some(var_type) = &self.var_type {
-                if !type_pattern.matches(var_type, ctx) {
-                    return None;
-                }
+                verify_match!(
+                    &*var_type,
+                    &pattern.compiled_auxiliary_pattern,
+                    ctx,
+                    pattern.essential
+                );
+            } else {
+                quit!(pattern.essential);
             }
         }
 
@@ -316,22 +359,72 @@ impl NodePatternParser for VarDecl {
 
 impl NodePatternParser for CallExpr {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
-        let raw_name = match *self.name {
-            Expr::DotExpr(DotExpr { ref selected, .. }) => match selected.as_ref() {
-                Expr::Ident(Ident { ref name, .. }) => name,
-                ref unknown => {
-                    eprintln!("Currently unhandled CallExpression name {:?}", unknown);
-                    return None;
+        // Extract the function name, and the lefthand side's name (if needed)
+        let mut lhs = None;
+        let (raw_name, auxiliary_name) = match *self.name {
+            Expr::DotExpr(DotExpr {
+                ref selected,
+                ref mut expr,
+                ..
+            }) => {
+                // Find the lefthand side's name
+                let aux_name = if pattern.auxiliary_pattern.is_some() {
+                    match expr.as_mut() {
+                        Expr::Ident(Ident { ref name, .. }) => Some(name),
+                        Expr::Literal(Literal { ref value, .. }) => Some(value),
+                        ref unknown => {
+                            eprintln!(
+                                "Currently unhandled CallExpression auxiliary match {:?}",
+                                unknown
+                            );
+                            return None;
+                        }
+                    }
+                } else {
+                    // If no auxiliary pattern is provided, it is assumed we must visit the lefthand side
+                    lhs = Some(expr);
+                    None
+                };
+                match selected.as_ref() {
+                    Expr::Ident(Ident { ref name, .. }) => (name, aux_name),
+                    ref unknown => {
+                        eprintln!("Currently unhandled CallExpression name {:?}", unknown);
+                        return None;
+                    }
                 }
-            },
-            Expr::Ident(Ident { ref name, .. }) => &name,
-            Expr::Literal(Literal { ref value, .. }) => &value,
+            }
+            Expr::Ident(Ident { ref name, .. }) => (name, None),
+            Expr::Literal(Literal { ref value, .. }) => (value, None),
             ref unknown => {
                 eprintln!("Currently unhandled CallExpression name {:?}", unknown);
                 return None;
             }
         };
-        verify_match(&*raw_name, pattern, ctx)?;
+
+        // Verify matches on the function's name and its lefthand side, if the latter was found
+        verify_match!(
+            &*raw_name,
+            &pattern.compiled_pattern,
+            ctx,
+            pattern.essential
+        );
+        if let Some(lhs) = auxiliary_name {
+            verify_match!(
+                &*lhs,
+                &pattern.compiled_auxiliary_pattern,
+                ctx,
+                pattern.essential
+            );
+        } else if pattern.auxiliary_pattern.is_some() {
+            quit!(pattern.essential);
+        }
+
+        // Check lefthand side, if it exists
+        if let Some(lhs) = lhs.as_mut() {
+            for pattern in pattern.subpatterns.iter_mut() {
+                lhs.explore(pattern, ctx);
+            }
+        }
 
         // Match method parameters
         let mut params = pattern
@@ -352,19 +445,35 @@ impl NodePatternParser for CallExpr {
             pattern.essential,
             &mut pattern.compiled_pattern,
             ctx,
-        )
+        )?;
+        if let Some(lhs) = auxiliary_name {
+            write_to_context(
+                lhs,
+                pattern.essential,
+                &mut pattern.compiled_auxiliary_pattern,
+                ctx,
+            )
+        } else {
+            Some(())
+        }
     }
 }
 
 impl NodePatternParser for AnnotationComponent {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
-        verify_match(&*self.name, pattern, ctx)?;
-        if let Some(aux_pattern) = &pattern.compiled_auxiliary_pattern {
-            if !aux_pattern.matches(&*self.value, ctx) {
-                return None;
-            }
-        }
+        verify_match!(
+            &*self.name,
+            &pattern.compiled_pattern,
+            ctx,
+            pattern.essential
+        );
+        verify_match!(
+            &*self.value,
+            &pattern.compiled_auxiliary_pattern,
+            ctx,
+            pattern.essential
+        );
 
         // Verify subpatterns
         explore_all!(pattern, ctx, &mut self.key_value_pairs)?;
@@ -387,12 +496,13 @@ impl NodePatternParser for AnnotationComponent {
 
 impl NodePatternParser for AnnotationValuePair {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
-        verify_match(&self.key, pattern, ctx)?;
-        if let Some(aux_pattern) = &pattern.compiled_auxiliary_pattern {
-            if !aux_pattern.matches(&*self.value, ctx) {
-                return None;
-            }
-        }
+        verify_match!(&self.key, &pattern.compiled_pattern, ctx, pattern.essential);
+        verify_match!(
+            &self.value,
+            &pattern.compiled_auxiliary_pattern,
+            ctx,
+            pattern.essential
+        );
         write_to_context(
             &self.value,
             pattern.essential,
