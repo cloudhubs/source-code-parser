@@ -106,7 +106,11 @@ pub struct Directory {
     path: PathBuf,
 }
 
-pub fn parse_project_context(directory: &Directory) -> std::io::Result<compat::JSSAContext> {
+pub fn parse_project_context_compat(directory: &Directory) -> std::io::Result<compat::JSSAContext> {
+    Ok(parse_project_context(directory)?.into())
+}
+
+pub fn parse_project_context(directory: &Directory) -> std::io::Result<JSSAContext> {
     let modules = parse_directory(directory)?;
     let ctx = JSSAContext {
         component: ComponentInfo {
@@ -119,7 +123,7 @@ pub fn parse_project_context(directory: &Directory) -> std::io::Result<compat::J
         root_path: "".into(),
         modules,
     };
-    Ok(ctx.into())
+    Ok(ctx)
 }
 
 fn flatten_dirs(dir: &Directory) -> Vec<Directory> {

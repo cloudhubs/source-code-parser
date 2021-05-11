@@ -22,6 +22,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(ast)
             .service(ctx)
+            .service(msd)
             .wrap(Logger::default())
             .app_data(web::Json::<Directory>::configure(|cfg| {
                 cfg.limit(1024 * 1024 * 4)

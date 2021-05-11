@@ -17,21 +17,11 @@ pub use callback::*;
 use crate::ModuleComponent;
 
 /// Run the user-defined parsers, in the order they were defined, on our AST
-pub fn run_msd_parse(ast: &mut Vec<ModuleComponent>, msds: &[&str]) -> ContextData {
+pub fn run_msd_parse(ast: &mut Vec<ModuleComponent>, msds: Vec<NodePattern>) -> ContextData {
     let mut ctx = ParserContext::default();
 
     // Explore
-    for mut msd in msds
-        .iter()
-        .flat_map(|msd| match serde_json::from_str(msd) {
-            Ok(pattern) => Some(pattern),
-            Err(error) => {
-                eprintln!("{:#?}", error);
-                None
-            }
-        })
-        .collect::<Vec<NodePattern>>()
-    {
+    for mut msd in msds.into_iter() {
         for module in ast.iter_mut() {
             module.explore(&mut msd, &mut ctx);
         }

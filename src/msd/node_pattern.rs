@@ -10,7 +10,7 @@ use super::{ContextLocalVariableActions, ContextObjectActions, ParserContext};
 
 /// A Node pattern describing a node of interest to the parser.
 #[derive(Debug, Clone, Deserialize, new)]
-pub struct NodePattern<'a> {
+pub struct NodePattern {
     /// The target AST node type
     pub identifier: NodeType,
 
@@ -27,7 +27,7 @@ pub struct NodePattern<'a> {
 
     /// Sub-patterns for this node pattern to be matched in the AST.
     /// Some subpatterns may be specified as required.
-    pub subpatterns: Vec<NodePattern<'a>>,
+    pub subpatterns: Vec<NodePattern>,
 
     /// A Rune script implementing the callback function interface
     pub callback: Option<String>,
@@ -37,13 +37,13 @@ pub struct NodePattern<'a> {
     pub essential: bool,
 
     /// Raw pattern defined by the user
-    pub pattern: &'a str,
+    pub pattern: String,
 
     /// Raw pattern for checking the type defined by the user
-    pub type_pattern: Option<&'a str>,
+    pub type_pattern: Option<String>,
 }
 
-impl<'a> NodePattern<'a> {
+impl NodePattern {
     pub fn matches(&self, node: &impl IntoMsdNode) -> bool {
         self.identifier == node.into_msd_node()
     }
@@ -62,7 +62,7 @@ pub fn lazy_compile(pattern: &str) -> Option<CompiledPattern> {
 
 /// Parse an individual node with this NodePattern, lazily-initializing its CompiledPattern as needed
 pub fn msd_node_parse(
-    pattern: &mut NodePattern<'_>,
+    pattern: &mut NodePattern,
     node: &mut impl NodePatternParser,
     ctx: &mut ParserContext,
 ) -> Option<()> {
@@ -76,7 +76,7 @@ pub fn msd_node_parse(
         }
     }
     if pattern.type_pattern.is_some() && pattern.compiled_type_pattern.is_none() {
-        let compiled_pattern = lazy_compile(&*pattern.type_pattern.unwrap());
+        let compiled_pattern = lazy_compile(&*pattern.type_pattern.clone().unwrap());
         if compiled_pattern.is_some() {
             pattern.compiled_type_pattern = compiled_pattern;
         } else {

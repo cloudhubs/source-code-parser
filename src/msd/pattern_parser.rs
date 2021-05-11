@@ -6,7 +6,7 @@ use itertools::Itertools;
 
 /// Defines how to parse an individual node that has been confirmed to be of interest
 pub trait NodePatternParser {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()>;
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()>;
 }
 
 fn write_to_context(
@@ -66,7 +66,7 @@ fn match_subsequence<T: MsdNodeExplorer>(
     }
 }
 
-fn verify_match(match_str: &str, pattern: &NodePattern<'_>, ctx: &ParserContext) -> Option<()> {
+fn verify_match(match_str: &str, pattern: &NodePattern, ctx: &ParserContext) -> Option<()> {
     if let Some(compiled) = &pattern.compiled_pattern {
         if !compiled.matches(match_str, ctx) {
             return None;
@@ -76,7 +76,7 @@ fn verify_match(match_str: &str, pattern: &NodePattern<'_>, ctx: &ParserContext)
 }
 
 impl NodePatternParser for ClassOrInterfaceComponent {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         verify_match(&self.component.container_name, pattern, ctx)?;
 
         // Check subpatterns
@@ -101,7 +101,7 @@ impl NodePatternParser for ClassOrInterfaceComponent {
 }
 
 impl NodePatternParser for MethodComponent {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         verify_match(&self.component.instance_name, pattern, ctx)?;
 
         // Match method parameters
@@ -138,7 +138,7 @@ impl NodePatternParser for MethodComponent {
 }
 
 impl NodePatternParser for MethodParamComponent {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
         verify_match(&*self.parameter_name, pattern, ctx)?;
         if let Some(type_pattern) = &pattern.compiled_type_pattern {
@@ -169,7 +169,7 @@ impl NodePatternParser for MethodParamComponent {
 }
 
 impl NodePatternParser for FieldComponent {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
         verify_match(&*self.field_name, pattern, ctx)?;
         if let Some(type_pattern) = &pattern.compiled_type_pattern {
@@ -206,7 +206,7 @@ impl NodePatternParser for FieldComponent {
 }
 
 impl NodePatternParser for DeclStmt {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         let mut decl_patterns: Vec<usize> = vec![];
         let mut non_decl: Vec<usize> = vec![];
         for (i, pattern) in pattern.subpatterns.iter().enumerate() {
@@ -280,7 +280,7 @@ impl NodePatternParser for DeclStmt {
 }
 
 impl NodePatternParser for VarDecl {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
         verify_match(&*self.ident.name, pattern, ctx)?;
         if let Some(type_pattern) = &pattern.compiled_type_pattern {
@@ -315,7 +315,7 @@ impl NodePatternParser for VarDecl {
 }
 
 impl NodePatternParser for CallExpr {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         let raw_name = match *self.name {
             Expr::DotExpr(DotExpr { ref selected, .. }) => match selected.as_ref() {
                 Expr::Ident(Ident { ref name, .. }) => name,
@@ -357,7 +357,7 @@ impl NodePatternParser for CallExpr {
 }
 
 impl NodePatternParser for AnnotationComponent {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         // Verify
         verify_match(&*self.name, pattern, ctx)?;
         if let Some(aux_pattern) = &pattern.compiled_type_pattern {
@@ -386,7 +386,7 @@ impl NodePatternParser for AnnotationComponent {
 }
 
 impl NodePatternParser for AnnotationValuePair {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         verify_match(&self.key, pattern, ctx)?;
         if let Some(aux_pattern) = &pattern.compiled_type_pattern {
             if !aux_pattern.matches(&*self.value, ctx) {
@@ -409,7 +409,7 @@ impl NodePatternParser for AnnotationValuePair {
 }
 
 impl NodePatternParser for Ident {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         write_to_context(
             &self.name,
             pattern.essential,
@@ -420,7 +420,7 @@ impl NodePatternParser for Ident {
 }
 
 impl NodePatternParser for Literal {
-    fn parse(&mut self, pattern: &mut NodePattern<'_>, ctx: &mut ParserContext) -> Option<()> {
+    fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         write_to_context(
             &self.value,
             pattern.essential,

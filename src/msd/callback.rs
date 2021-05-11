@@ -35,7 +35,7 @@ impl Executor {
 
     pub fn execute(
         &self,
-        pattern: &NodePattern<'_>,
+        pattern: &NodePattern,
         ctx: ParserContext,
     ) -> runestick::Result<ParserContext> {
         match &pattern.callback {
