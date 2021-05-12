@@ -3,9 +3,6 @@ use std::collections::HashMap;
 
 pub type ContextData = HashMap<String, HashMap<String, Option<String>>>;
 
-/// Prefix for an entry in ParserContext.variables indicating it's a tag, not an object
-const TAG_PREFIX: &'static str = "?";
-
 /// Special attribute that's value is the name that a tag should resolve to
 const RESOLVES_TO: &'static str = "???";
 
@@ -21,7 +18,7 @@ impl Into<ContextData> for ParserContext {
     fn into(self) -> ContextData {
         self.variables
             .into_iter()
-            .filter(|(key, _)| !key.starts_with("?"))
+            .filter(|(_, val)| !val.contains_key(RESOLVES_TO))
             .collect()
     }
 }
@@ -42,10 +39,6 @@ pub trait ContextLocalVariableActions {
     fn get_variable(&self, name: &str) -> Option<String>;
     fn clear_variables(&mut self);
 }
-
-// fn to_tag(base_string: &str) -> String {
-//     format!("{}{}", TAG_PREFIX, base_string)
-// }
 
 impl ParserContext {
     fn do_make_attribute(&mut self, obj_name: &str, attr_name: &str, attr_type: Option<String>) {
@@ -121,17 +114,6 @@ impl ContextObjectActions for ParserContext {
             }
         }
         name.into()
-
-        // while name.starts_with(TAG_PREFIX) {
-        //     name = self
-        //         .variables
-        //         .get(&name)
-        //         .as_ref()?
-        //         .get(RESOLVES_TO)?
-        //         .as_ref()?
-        //         .clone();
-        // }
-        // Some(name)
     }
 }
 

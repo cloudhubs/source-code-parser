@@ -13,14 +13,14 @@
     "subpatterns": [
       {
         "identifier": "VarDecl",
-        "pattern": "#{wrapper_name}",
+        "pattern": "#{wrapper_name}(.*_client_wrapper)",
         "subpatterns": [],
         "essential": true
       },
       {
         "identifier": "CallExpr",
         "pattern": "Pop",
-        "auxiliary_pattern": "#&{pool_name}",
+        "auxiliary_pattern": "#&{pool_name}(.*_client_pool)",
         "subpatterns": [],
         "essential": true
       }
@@ -34,7 +34,7 @@
     "subpatterns": [
       {
         "identifier": "VarDecl",
-        "pattern": "#{client_name}",
+        "pattern": "#{client_name}(.*_client)",
         "subpatterns": [],
         "essential": true
       },
@@ -52,7 +52,7 @@
   {
     "identifier": "CallExpr",
     "pattern": "#{endpoint_name}",
-    "auxiliary_pattern": "#&{client_name}",
+    "auxiliary_pattern": "#&{client_name}(.*_client)",
     "subpatterns": [],
     "callback": "let client_name = ctx.get_variable(\"client_name\").unwrap();let endpoint = ctx.get_variable(\"endpoint_name\").unwrap();ctx.make_attribute(client_name, endpoint, None);",
     "essential": true
