@@ -178,7 +178,7 @@ pub struct CompiledPattern {
 impl CompiledPattern {
     /// Create a compiled pattern from an MSD pattern and the context.
     pub fn from_pattern(pattern: &str) -> Result<CompiledPattern, regex::Error> {
-        let tag_regex = Regex::new(r#"#(&)?\{([a-zA-Z_-]+)\}"#)?;
+        let tag_regex = Regex::new(r#"#(&)?\{([a-zA-Z_-]+)\}(\((.+)\))?"#)?;
 
         let mut variables = vec![];
         let mut references = vec![];
@@ -193,8 +193,16 @@ impl CompiledPattern {
                 .expect("Entire pattern should have matched")
                 .as_str();
 
+            // Find a user-defined capture definition
+            let mut regex_pattern = ".*";
+            if let Some(group) = &captures.get(4) {
+                regex_pattern = group.as_str();
+            }
+
             // Replace the capture with the processed capture group
-            pattern = pattern.as_str().replace(s, &format!("(?P<{}>.*?)", name));
+            pattern = pattern
+                .as_str()
+                .replace(s, &format!("(?P<{}>{})", name, regex_pattern));
 
             // Register variables and references
             if is_ref {
@@ -224,6 +232,7 @@ impl CompiledPattern {
                         )
                         .is_none()
                     {
+                        println!("Failed to find {}={:?}", reference, matches.name(reference));
                         return false;
                     }
                 }

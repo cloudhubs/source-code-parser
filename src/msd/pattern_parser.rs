@@ -18,10 +18,11 @@ fn write_to_context(
     if let Some(compiled_pattern) = pattern.as_mut() {
         if compiled_pattern.match_and_insert(&*to_match.clone(), ctx) {
             return Some(());
+        } else if essential {
+            None
+        } else {
+            Some(())
         }
-    }
-    if essential {
-        None
     } else {
         Some(())
     }
@@ -86,6 +87,23 @@ macro_rules! quit {
     };
 }
 
+#[macro_export]
+macro_rules! explore_all_subpatterns {
+    ( $subpatterns:expr, $ctx:expr, $( $explorable:expr ),+ ) => {
+        use crate::msd::explorer::choose_exit;
+
+        for subpattern in $subpatterns.iter_mut() {
+            let mut explore_all_found_essential = false;
+            $(
+                if explore_all!(subpattern, $ctx, $explorable).is_some() {
+                    explore_all_found_essential = true;
+                }
+            )*
+            choose_exit(subpattern.essential, explore_all_found_essential)?;
+        }
+    };
+}
+
 impl NodePatternParser for ClassOrInterfaceComponent {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         verify_match!(
@@ -96,15 +114,13 @@ impl NodePatternParser for ClassOrInterfaceComponent {
         );
 
         // Check subpatterns
-        for pattern in pattern.subpatterns.iter_mut() {
-            explore_all!(
-                pattern,
-                ctx,
-                self.annotations,
-                self.constructors,
-                self.field_components
-            )?;
-        }
+        explore_all_subpatterns!(
+            pattern.subpatterns,
+            ctx,
+            self.annotations,
+            self.constructors,
+            self.field_components
+        );
 
         // If all subpatterns matched, extract context
         write_to_context(
@@ -176,7 +192,7 @@ impl NodePatternParser for MethodParamComponent {
 
         // Verify subpatterns
         if let Some(annotations) = &mut self.annotation {
-            explore_all!(pattern, ctx, annotations)?;
+            explore_all_subpatterns!(pattern.subpatterns, ctx, annotations);
         }
 
         // Write and return
@@ -212,15 +228,15 @@ impl NodePatternParser for FieldComponent {
         );
 
         // Verify subpatterns
-        explore_all!(
-            pattern,
+        explore_all_subpatterns!(
+            pattern.subpatterns,
             ctx,
             self.annotations,
             self.variables
                 .iter()
                 .map(|var| Ident::new(var.clone()))
                 .collect::<Vec<Ident>>()
-        )?;
+        );
 
         // Write and return
         write_to_context(
@@ -335,7 +351,7 @@ impl NodePatternParser for VarDecl {
         }
 
         // Verify subpatterns
-        explore_all!(pattern, ctx, self.annotation)?;
+        explore_all_subpatterns!(pattern.subpatterns, ctx, self.annotation);
 
         // Write and return
         write_to_context(
@@ -476,7 +492,7 @@ impl NodePatternParser for AnnotationComponent {
         );
 
         // Verify subpatterns
-        explore_all!(pattern, ctx, &mut self.key_value_pairs)?;
+        explore_all_subpatterns!(pattern.subpatterns, ctx, &mut self.key_value_pairs);
 
         // Write and return
         write_to_context(

@@ -7,7 +7,7 @@ pub type ContextData = HashMap<String, HashMap<String, Option<String>>>;
 const TAG_PREFIX: &'static str = "?";
 
 /// Special attribute that's value is the name that a tag should resolve to
-const RESOLVES_TO: &'static str = "resolves_to";
+const RESOLVES_TO: &'static str = "???";
 
 /// Context used by the Parser, storing local variables (#{varname}) and objects/tags
 #[derive(Default, Debug, Clone, Any, PartialEq)]
@@ -33,6 +33,7 @@ pub trait ContextObjectActions {
     fn make_tag(&mut self, name: &str, resolves_to: &str);
     /// Gets an object by name. The object returned shouldn't be modified from this return value. Use ContextObjectActions::make_attribute
     fn get_object(&self, name: &str) -> Option<HashMap<String, Option<String>>>;
+    fn resolve_tag(&self, name: &str) -> String;
 }
 
 /// Interface of the Context, offering ability to create, read, and update objects/tags
@@ -42,64 +43,101 @@ pub trait ContextLocalVariableActions {
     fn clear_variables(&mut self);
 }
 
+// fn to_tag(base_string: &str) -> String {
+//     format!("{}{}", TAG_PREFIX, base_string)
+// }
+
+impl ParserContext {
+    fn do_make_attribute(&mut self, obj_name: &str, attr_name: &str, attr_type: Option<String>) {
+        // If a reference to a non-existant object, create it
+        if !self.variables.contains_key(obj_name) {
+            eprintln!("Defining attribute on a non-existant object. Defining...");
+            self.make_object(obj_name);
+        }
+
+        // Insert
+        let vars = self.variables.get_mut(obj_name).unwrap();
+        match vars.insert(attr_name.into(), attr_type.clone()) {
+            Some(Some(overwritten)) => eprintln!(
+                "Warning: overwrote {} on {}.{}!",
+                overwritten, obj_name, attr_name
+            ),
+            _ => {
+                println!("Made: {}.{}={:?}", obj_name, attr_name, attr_type);
+            }
+        }
+    }
+}
+
 impl ContextObjectActions for ParserContext {
     fn make_object(&mut self, name: &str) {
         let obj_name: String = name.into();
         if !self.variables.contains_key(&obj_name) {
+            println!("Making: {}", obj_name);
             (&mut self.variables).insert(obj_name, HashMap::new());
         }
     }
 
     fn make_attribute(&mut self, name: &str, attr_name: &str, attr_type: Option<String>) {
-        let obj_name: String = name.into();
-        if !self.variables.contains_key(&obj_name) {
-            eprintln!("Defining attribute on a non-existant object. Defining...");
-            self.make_object(name);
-        }
-
-        // Insert
-        let vars = self.variables.get_mut(&obj_name).unwrap();
-        match vars.insert(attr_name.into(), attr_type) {
-            Some(Some(overwritten)) => eprintln!(
-                "Warning: overwrote {} on {}.{}!",
-                overwritten, name, attr_name
-            ),
-            _ => {}
-        }
+        self.do_make_attribute(&*self.resolve_tag(name), attr_name, attr_type);
     }
 
     fn make_tag(&mut self, name: &str, resolves_to: &str) {
-        self.make_attribute(
-            format!("{}{}", TAG_PREFIX, name).as_str(),
-            RESOLVES_TO,
-            Some(resolves_to.into()),
-        );
+        println!("Made: ?{} => {}", name, resolves_to);
+        self.do_make_attribute(name, RESOLVES_TO, Some(resolves_to.into()));
     }
 
     fn get_object(&self, name: &str) -> Option<HashMap<String, Option<String>>> {
-        if let Some(obj) = self.variables.get(name.into()) {
-            if name.starts_with(TAG_PREFIX) {
-                // Get the object. Extensive `expect`s because, if we don't have a RESOLVES_TO
-                // attribute with a name the tag aliases on it, then we have serious data corruption
-                // we shouldn't just ignore.
-                self.get_object(
-                    obj.get(RESOLVES_TO)
-                        .expect(format!("Invalid tag! no {} value!", RESOLVES_TO).as_str())
-                        .as_ref()
-                        .expect(format!("Invalid tag! no {} value!", RESOLVES_TO).as_str())
-                        .as_str(),
-                )
-            } else {
-                Some(obj.clone())
-            }
+        println!("Looking for {}...", name);
+        let name = self.resolve_tag(name);
+
+        if let Some(obj) = self.variables.get(&name) {
+            println!("Retrieved {} Found {:?}", name, obj);
+            Some(obj.clone())
         } else {
             None
         }
+    }
+
+    fn resolve_tag(&self, name: &str) -> String {
+        if let Some(map) = &self.variables.get(name).as_ref() {
+            if map.contains_key(RESOLVES_TO) {
+                if &*map
+                    .get(RESOLVES_TO)
+                    .unwrap()
+                    .as_ref()
+                    .expect("RESOLVES_TO malformed, does not have a value")
+                    == name
+                {
+                    panic!("{}", name);
+                }
+                return self.resolve_tag(
+                    &*map
+                        .get(RESOLVES_TO)
+                        .unwrap()
+                        .as_ref()
+                        .expect("RESOLVES_TO malformed, does not have a value"),
+                );
+            }
+        }
+        name.into()
+
+        // while name.starts_with(TAG_PREFIX) {
+        //     name = self
+        //         .variables
+        //         .get(&name)
+        //         .as_ref()?
+        //         .get(RESOLVES_TO)?
+        //         .as_ref()?
+        //         .clone();
+        // }
+        // Some(name)
     }
 }
 
 impl ContextLocalVariableActions for ParserContext {
     fn make_variable(&mut self, name: &str, val: &str) {
+        println!("Made: ({:?}, {:?})", name, val);
         if let Some(overwritten) = self.local_variables.insert(name.into(), val.into()) {
             eprintln!(
                 "Warning: overwrote {} with {} for name {}",
@@ -109,10 +147,12 @@ impl ContextLocalVariableActions for ParserContext {
     }
 
     fn get_variable(&self, name: &str) -> Option<String> {
-        match self.local_variables.get(name.into()) {
+        let var = match self.local_variables.get(name.into()) {
             Some(value) => Some(value.clone()),
             None => None,
-        }
+        };
+        println!("Found: {:?}", var);
+        var
     }
 
     fn clear_variables(&mut self) {
