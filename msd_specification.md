@@ -45,7 +45,8 @@
 - The callbacks define where the user can populate Objects using the information they've scraped.
 - Each node can be defined with a callback. These incur extra overhead to execute, however, so keeping it to one in the Root Parser is advised for standard cases.
 - Callbacks are in the Rune language, which allows for syntax similar to Rust. See [the Rune book](https://rune-rs.github.io/book/) for details, and the [Rune playground](https://rune-rs.github.io/play/) to experiment.
-- Available within Callbacks:
+- 'Panicking' (aborting the script by calling `panic` or by performing invalid operations) causes the Parser containing the script to report a match failure and the ParserContext to roll back. This allows the user an emergency exit button if the information found was not what the user wants, but will be slower than alternatives and SHOULD NOT be used over native features.
+- API available within Callbacks:
   - Full Rune default library. This includes NO file i/o or network connectivity, so there should be no danger running arbitrary Rune scripts.
   - `ctx`: The parser context
 - `ctx` offers the following methods:
