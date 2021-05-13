@@ -1,3 +1,4 @@
+
 ### General Algorithm/Structures
 
 - The user provides an MSD, a JSON which contains an array of trees
@@ -19,19 +20,23 @@
 
 ### Pattern Matching
 
-- Each Parser has a Pattern and an Auxiliary Pattern. These are applied against information in the tree (see [Parsers](Parsers)).
+- Each Parser has a Pattern and an optional Auxiliary Pattern. These are applied against information in the tree (see [Parsers](Parsers)). For a Parser to begin matching, both the Pattern and Auxiliary Pattern (if provided) must match.
 - The patterns are Regexes with the following added syntax:
-  - `#{varname}`: Expands to `P<varname>.*?`, but copies the captured string into the ParserContext as a variable named `varname`.
+  - `#{varname}`: Expands to `P<varname>.*`, but copies the captured string into the ParserContext as a variable named `varname` in the ParserContext.
   - `#&{object_name}`: Acts like `#{object_name}`, with the added constraint that `object_name`'s captured value must correspond to the name of an existing Object or Tag within the ParserContext.
-- Matches are verified and their variables inserted into the context when a match is confirmed, so they are available to all callbacks in subnodes.
+  - After the close brace, the user may optionally specify an alternate regex the variable must follow in parenthesis, like `#{myvar}([a-z]+)`. This replaces `.*` in the expansion with `[a-z]+`.
+- Matches are verified when a node matches, but their variables are not inserted into the context until the parse is completed and all essential children have matched successfully, so they are not available to callbacks in subnodes.
 
 ### ParserContext
 
 - The ParserContext stores three types of information:
   - Objects: Non-volatile named entitities containing key-value data, like a hash map. Values on keys can be `None`, or null.
+	  - Objects should not attempt having a key `???`, as this is used as an internal sentinel value. User usage may cause undesired behavior or crashes.
   - Tags: Non-volatile aliases for objects which may or may not yet exist. This allows bridging between different names for one object.
+	  - Tags are transparently resolved to Objects, so be careful not to have naming collisions between them.
   - Variables: Temporary key/value pairs. These are scraped from the parser's matches, and used in the callback to create objects. These are cleared whenever a Root Parser finishes matching.
-- Once execution completes, all tags are cleared, and all found Objects are returned.
+	  - Variable names are restricted to `a-z`, `A-Z`, `-`, and `_` at current. This set may be expanded, but will not shrink.
+- When execution completes, only Objects are returned; tags and variables are cleared.
 
 ### Callbacks
 
@@ -79,7 +84,7 @@
 - CallExpr: Describes a method call
   - Subpattern: applied against annotations. All subnodes that could be arguments to the call (CallExpr, VarDecl, Ident, Literal) are applied as a subsequence against method arguments.
   - Pattern: applied against the method name
-  - Auxiliary Pattern: applied against the expected resulting type
+  - Auxiliary Pattern: applied against the lefthand side, if specified. If omitted, all subpatterns are applied against the lefthand side node.
 - VarDecl: Describes a single variable declaration
   - Subpattern: applied against all annotations
   - Pattern: applied against the variable’s name
