@@ -6,6 +6,9 @@ pub type ContextData = HashMap<String, HashMap<String, Option<String>>>;
 /// Special attribute that's value is the name that a tag should resolve to
 const RESOLVES_TO: &'static str = "???";
 
+/// Special attribute indicating an object is transient
+const TRANSIENT: &'static str = "";
+
 /// Context used by the Parser, storing local variables (#{varname}) and objects/tags
 #[derive(Default, Debug, Clone, Any, PartialEq)]
 pub struct ParserContext {
@@ -18,7 +21,7 @@ impl Into<ContextData> for ParserContext {
     fn into(self) -> ContextData {
         self.variables
             .into_iter()
-            .filter(|(_, val)| !val.contains_key(RESOLVES_TO))
+            .filter(|(_, val)| !val.contains_key(RESOLVES_TO) && !val.contains_key(TRANSIENT))
             .collect()
     }
 }
@@ -28,6 +31,8 @@ pub trait ContextObjectActions {
     fn make_object(&mut self, name: &str);
     fn make_attribute(&mut self, name: &str, attr_name: &str, attr_value: Option<String>);
     fn make_tag(&mut self, name: &str, resolves_to: &str);
+    /// Makes an existing object transient, or initializes a new object as transient
+    fn make_transient(&mut self, name: &str);
     /// Gets an object by name. The object returned shouldn't be modified from this return value. Use ContextObjectActions::make_attribute
     fn get_object(&self, name: &str) -> Option<HashMap<String, Option<String>>>;
     fn resolve_tag(&self, name: &str) -> String;
@@ -78,6 +83,11 @@ impl ContextObjectActions for ParserContext {
     fn make_tag(&mut self, name: &str, resolves_to: &str) {
         // println!("Made: ?{} => {}", name, resolves_to);
         self.do_make_attribute(name, RESOLVES_TO, Some(resolves_to.into()));
+    }
+
+    fn make_transient(&mut self, name: &str) {
+        self.make_object(name);
+        self.make_attribute(name, TRANSIENT, None);
     }
 
     fn get_object(&self, name: &str) -> Option<HashMap<String, Option<String>>> {

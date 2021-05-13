@@ -24,6 +24,7 @@ impl Executor {
         module.inst_fn("make_object", ParserContext::make_object)?;
         module.inst_fn("make_tag", ParserContext::make_tag)?;
         module.inst_fn("make_variable", ParserContext::make_variable)?;
+        module.inst_fn("make_transient", ParserContext::make_transient)?;
         module.inst_fn("get_variable", ParserContext::get_variable)?;
         module.inst_fn("clear_variables", ParserContext::clear_variables)?;
         module.inst_fn("make_attribute", ParserContext::make_attribute)?;

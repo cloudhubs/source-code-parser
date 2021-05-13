@@ -54,7 +54,7 @@
     "pattern": "#{endpoint_name}",
     "auxiliary_pattern": "#&{client_name}(.*_client$)",
     "subpatterns": [],
-    "callback": "let client_name = ctx.get_variable(\"client_name\").unwrap();let endpoint = ctx.get_variable(\"endpoint_name\").unwrap();ctx.make_attribute(client_name, endpoint, Some(\"\"));ctx.make_object(endpoint);",
+    "callback": "let client_name = ctx.get_variable(\"client_name\").unwrap();let endpoint = ctx.get_variable(\"endpoint_name\").unwrap();ctx.make_attribute(client_name, endpoint, Some(\"\"));ctx.make_transient(endpoint);",
     "essential": true
   },
   {
