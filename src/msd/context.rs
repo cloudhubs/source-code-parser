@@ -56,7 +56,7 @@ impl ParserContext {
                 overwritten, obj_name, attr_name
             ),
             _ => {
-                println!("Made: {}.{}={:?}", obj_name, attr_name, attr_type);
+                // println!("Made: {}.{}={:?}", obj_name, attr_name, attr_type);
             }
         }
     }
@@ -66,7 +66,7 @@ impl ContextObjectActions for ParserContext {
     fn make_object(&mut self, name: &str) {
         let obj_name: String = name.into();
         if !self.variables.contains_key(&obj_name) {
-            println!("Making: {}", obj_name);
+            // println!("Making: {}", obj_name);
             (&mut self.variables).insert(obj_name, HashMap::new());
         }
     }
@@ -76,16 +76,16 @@ impl ContextObjectActions for ParserContext {
     }
 
     fn make_tag(&mut self, name: &str, resolves_to: &str) {
-        println!("Made: ?{} => {}", name, resolves_to);
+        // println!("Made: ?{} => {}", name, resolves_to);
         self.do_make_attribute(name, RESOLVES_TO, Some(resolves_to.into()));
     }
 
     fn get_object(&self, name: &str) -> Option<HashMap<String, Option<String>>> {
-        println!("Looking for {}...", name);
+        // println!("Looking for {}...", name);
         let name = self.resolve_tag(name);
 
         if let Some(obj) = self.variables.get(&name) {
-            println!("Retrieved {} Found {:?}", name, obj);
+            // println!("Retrieved {} Found {:?}", name, obj);
             Some(obj.clone())
         } else {
             None
@@ -119,7 +119,7 @@ impl ContextObjectActions for ParserContext {
 
 impl ContextLocalVariableActions for ParserContext {
     fn make_variable(&mut self, name: &str, val: &str) {
-        println!("Made: ({:?}, {:?})", name, val);
+        // println!("Made: ({:?}, {:?})", name, val);
         if let Some(overwritten) = self.local_variables.insert(name.into(), val.into()) {
             eprintln!(
                 "Warning: overwrote {} with {} for name {}",
@@ -133,7 +133,7 @@ impl ContextLocalVariableActions for ParserContext {
             Some(value) => Some(value.clone()),
             None => None,
         };
-        println!("Found: {:?}", var);
+        // println!("Found: {:?}", var);
         var
     }
 

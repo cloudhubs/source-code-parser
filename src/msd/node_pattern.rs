@@ -48,16 +48,22 @@ impl NodePattern {
         self.identifier == node.into_msd_node()
     }
 
-    pub fn compile(&mut self) -> Option<()> {
-        self.compiled_pattern = Some(lazy_compile(&*self.pattern)?);
-        if let Some(auxiliary_pattern) = &self.auxiliary_pattern {
-            self.compiled_auxiliary_pattern = Some(lazy_compile(&*auxiliary_pattern)?);
+    /// Lazy-compile the regexes on this NodePattern
+    pub fn lazy_compile(&mut self) -> Option<()> {
+        if self.compiled_pattern.is_none() {
+            self.compiled_pattern = Some(compile_compiled_pattern(&*self.pattern)?);
+        }
+        if self.compiled_auxiliary_pattern.is_none() {
+            if let Some(auxiliary_pattern) = &self.auxiliary_pattern {
+                self.compiled_auxiliary_pattern =
+                    Some(compile_compiled_pattern(&*auxiliary_pattern)?);
+            }
         }
         Some(())
     }
 }
 
-pub fn lazy_compile(pattern: &str) -> Option<CompiledPattern> {
+pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     let compiled_result = super::CompiledPattern::from_pattern(pattern);
     match compiled_result {
         Ok(compiled_result) => Some(compiled_result),
@@ -75,25 +81,30 @@ pub fn msd_node_parse(
     ctx: &mut ParserContext,
 ) -> Option<()> {
     // Lazily compile patterns
-    pattern.compile()?;
+    pattern.lazy_compile()?;
 
     // Search
     ctx.frame_number += 1;
 
-    let passed = if node.parse(pattern, ctx).is_some() {
+    let mut transaction = ctx.clone();
+    let passed = if node.parse(pattern, &mut transaction).is_some() {
         if pattern.callback.is_some() {
-            let ctx_clone = ctx.clone();
-            match Executor::get().execute(pattern, ctx_clone) {
+            let tmp = transaction.clone();
+            match Executor::get().execute(pattern, transaction) {
                 Ok(new_ctx) => {
                     *ctx = new_ctx;
                     true
                 }
                 Err(err) => {
-                    // eprintln!("Failed to execute callback: {:#?}", err);
+                    eprintln!(
+                        "Failed to execute callback ({:#?}) for: {:?}\n{:#?}",
+                        err, pattern.callback, tmp
+                    );
                     false
                 }
             }
         } else {
+            *ctx = transaction;
             true
         }
     } else {
@@ -169,9 +180,6 @@ into_msd_node!(
 pub struct CompiledPattern {
     pub pattern: Regex,
     pub variables: Vec<String>,
-
-    /// TODO delete, unused
-    // match_result: Option<regex::Captures<'a>>,
     reference_vars: Vec<String>,
 }
 
