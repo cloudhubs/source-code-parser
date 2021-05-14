@@ -1,6 +1,6 @@
 use once_cell::sync::OnceCell;
 use rune::{Diagnostics, Options, Sources};
-use runestick::{FromValue, Source, Vm};
+use runestick::{FromValue, Source, Value, Vm};
 use std::sync::Arc;
 
 use super::{ContextLocalVariableActions, ContextObjectActions, NodePattern, ParserContext};
@@ -30,6 +30,10 @@ impl Executor {
         module.inst_fn("make_attribute", ParserContext::make_attribute)?;
         module.inst_fn("get_object", ParserContext::get_object)?;
         module.inst_fn("resolve_tag", ParserContext::resolve_tag)?;
+
+        // Add more option methods
+        module.inst_fn("as_ref", Option::<Value>::as_ref)?;
+        module.inst_fn("clone", Option::<Value>::clone)?;
         executor_ctx.install(&module)?;
 
         Ok(Executor { executor_ctx })

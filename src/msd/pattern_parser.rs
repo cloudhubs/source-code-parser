@@ -36,27 +36,29 @@ fn match_subsequence<T: MsdNodeExplorer>(
     let (mut start, mut end) = (0 as usize, params.len());
     let mut matched = true;
 
-    while end < explorable.len() {
+    while start < explorable.len() {
         // Pre
-        matched = true;
+        //        matched = true;
         let mut pattern_iter = params.iter_mut();
 
         // Perform subsequence matching
         for i in start..end {
             let pattern = pattern_iter.next()?;
             if explorable.get_mut(i)?.explore(pattern, ctx).is_none() {
-                matched = false;
+                //                matched = false;
                 break;
             }
         }
 
         // Post
-        if !matched {
-            start += 1;
+        // if !matched {
+        start += 1;
+        if end < explorable.len() {
             end += 1;
-        } else {
-            break;
         }
+        // } else {
+        //     break;
+        // }
     }
 
     // Determine if we matched the pattern at some point
@@ -386,10 +388,10 @@ impl NodePatternParser for CallExpr {
                         Expr::Ident(Ident { ref name, .. }) => Some(name),
                         Expr::Literal(Literal { ref value, .. }) => Some(value),
                         ref unknown => {
-                            // eprintln!(
-                            //     "Currently unhandled CallExpression auxiliary match {:?}",
-                            //     unknown
-                            // );
+                            eprintln!(
+                                "Currently unhandled CallExpression auxiliary match {:?}",
+                                unknown
+                            );
                             return None;
                         }
                     }

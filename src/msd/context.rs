@@ -49,7 +49,10 @@ impl ParserContext {
     fn do_make_attribute(&mut self, obj_name: &str, attr_name: &str, attr_type: Option<String>) {
         // If a reference to a non-existant object, create it
         if !self.variables.contains_key(obj_name) {
-            eprintln!("Defining attribute on a non-existant object. Defining...");
+            eprintln!(
+                "Defining attribute on a non-existant object. Defining {}...",
+                obj_name
+            );
             self.make_object(obj_name);
         }
 
@@ -86,6 +89,7 @@ impl ContextObjectActions for ParserContext {
     }
 
     fn make_transient(&mut self, name: &str) {
+        println!("Making transient {}", name);
         self.make_object(name);
         self.make_attribute(name, TRANSIENT, None);
     }
