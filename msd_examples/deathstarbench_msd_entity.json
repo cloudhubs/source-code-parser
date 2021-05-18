@@ -45,14 +45,14 @@
             "identifier": "Literal",
             "pattern": "\"#{token}(\\$?.+)\"",
             "subpatterns": [],
-            "callback": "let token = ctx.get_variable(\"token\").unwrap();ctx.make_transient(\"tokens\");let tokens = ctx.get_object(\"tokens\").unwrap();let ndx = 0;while tokens.contains_key(`${ndx}`) {match tokens.get(`${ndx}`).iter().next() {Some(Some(_)) => ndx = ndx + 1,None => break}}ctx.make_attribute(\"tokens\", `${ndx}`, Some(token));ctx.make_attribute(\"tokens\", `${ndx+1}`, None);",
+            "callback": "let token = ctx.get_variable(\"token\").unwrap();ctx.make_transient(\"tokens\");let tokens = ctx.get_object(\"tokens\").unwrap();let ndx = 0;while tokens.contains_key(`${ndx}`) {match tokens.get(`${ndx}`).iter().next() {Some(Some(_)) => { ndx = ndx + 1; },_ => { break; }}}ctx.make_attribute(\"tokens\", `${ndx}`, Some(token));ctx.make_attribute(\"tokens\", `${ndx+1}`, None);",
             "essential": true
           },
           {
             "identifier": "CallExpr",
             "pattern": "BCON_#{token}(.+)",
             "subpatterns": [],
-            "callback": "let token = ctx.get_variable(\"token\").unwrap();ctx.make_transient(\"tokens\");let tokens = ctx.get_object(\"tokens\").unwrap();let ndx = 0;while tokens.contains_key(`${ndx}`) {match tokens.get(`${ndx}`).iter().next() {Some(Some(_)) => ndx = ndx + 1,None => break}}ctx.make_attribute(\"tokens\", `${ndx}`, Some(token));ctx.make_attribute(\"tokens\", `${ndx+1}`, None);",
+            "callback": "let token = ctx.get_variable(\"token\").unwrap();ctx.make_transient(\"tokens\");let tokens = ctx.get_object(\"tokens\").unwrap();let ndx = 0;while tokens.contains_key(`${ndx}`) {match tokens.get(`${ndx}`).iter().next() {Some(Some(_)) => {ndx =  ndx + 1;},_ => { break; }}}ctx.make_attribute(\"tokens\", `${ndx}`, Some(token));ctx.make_attribute(\"tokens\", `${ndx+1}`, None);",
             "essential": false
           }
         ],
