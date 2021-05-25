@@ -23,7 +23,10 @@ impl Modifier {
 // finds and parses modifiers attached to a given AST node
 // note: JS does NOT have a "modifiers" node in the AST, so this function seeks out known modifiers directly off of the root node to examine
 // e.g. it may take a "lexical_declaration" and search for crap on that
+// ergo this function will work differently from the Java one, even though it is based on it
 pub(crate) fn parse_modifiers(ast: &AST, path: &str, package: &str) -> Modifier { 
+    match 
+
     // TODO: everything
     Modifier {
         accessor: AccessorType::Default,

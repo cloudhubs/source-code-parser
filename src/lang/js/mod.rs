@@ -7,6 +7,8 @@ use class_def::*;
 mod modifier;
 use modifier::*;
 
+// main entry point for parsing nodejs
+
 pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
     find_components_internal(ast, String::new(), path)
 }
