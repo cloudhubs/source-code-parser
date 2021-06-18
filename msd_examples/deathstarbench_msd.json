@@ -1,0 +1,90 @@
+[
+  {
+    "identifier": "Field",
+    "pattern": "#{pool_name}",
+    "auxiliary_pattern": "ClientPool<ThriftClient<#{service_name}ServiceClient>>",
+    "subpatterns": [],
+    "callback": "let service_name = ctx.get_variable(\"service_name\").unwrap();let service_tag = ctx.get_variable(\"pool_name\").unwrap();ctx.make_object(service_name);ctx.make_tag(service_tag, service_name);",
+    "essential": true
+  },
+  {
+    "identifier": "DeclStmt",
+    "pattern": "",
+    "subpatterns": [
+      {
+        "identifier": "VarDecl",
+        "pattern": "#{wrapper_name}(.*_client_wrapper)",
+        "subpatterns": [],
+        "essential": true
+      },
+      {
+        "identifier": "CallExpr",
+        "pattern": "Pop",
+        "auxiliary_pattern": "#&{pool_name}(.*_client_pool)",
+        "subpatterns": [],
+        "essential": false
+      }
+    ],
+    "callback": "let wrapper_name = ctx.get_variable(\"wrapper_name\").unwrap();let pool_name = ctx.get_variable(\"pool_name\").unwrap();ctx.make_tag(wrapper_name, pool_name);",
+    "essential": true
+  },
+  {
+    "identifier": "DeclStmt",
+    "pattern": "",
+    "subpatterns": [
+      {
+        "identifier": "VarDecl",
+        "pattern": "#{client_name}(.*_client)",
+        "subpatterns": [],
+        "essential": true
+      },
+      {
+        "identifier": "CallExpr",
+        "pattern": "GetClient",
+        "auxiliary_pattern": "#&{wrapper_name}",
+        "subpatterns": [],
+        "essential": true
+      }
+    ],
+    "callback": "let client_name = ctx.get_variable(\"client_name\").unwrap();let wrapper_name = ctx.get_variable(\"wrapper_name\").unwrap();ctx.make_tag(client_name, wrapper_name);",
+    "essential": true
+  },
+  {
+    "identifier": "CallExpr",
+    "pattern": "#{endpoint_name}",
+    "auxiliary_pattern": "#&{client_name}(.*_client$)",
+    "subpatterns": [],
+    "callback": "let client_name = ctx.get_variable(\"client_name\").unwrap();let endpoint = ctx.get_variable(\"endpoint_name\").unwrap();ctx.make_attribute(client_name, endpoint, Some(\"\"));ctx.make_transient(endpoint);",
+    "essential": true
+  },
+  {
+    "identifier": "ClassOrInterface",
+    "pattern": "#{callee_name}",
+    "subpatterns": [
+      {
+        "identifier": "CallExpr",
+        "pattern": "#&{endpoint_name}",
+        "auxiliary_pattern": "#&{client_name}(.*_client$)",
+        "subpatterns": [],
+        "essential": true,
+        "callback": "let client_name = ctx.get_variable(\"client_name\").unwrap();let endpoint_name = ctx.get_variable(\"endpoint_name\").unwrap();let callee = ctx.get_variable(\"callee_name\").unwrap();let endpoint = ctx.get_object(client_name).unwrap();let new_list = endpoint.get(endpoint_name).unwrap().unwrap().clone();new_list.push_str(callee);new_list.push_str(\", \");ctx.make_attribute(client_name, endpoint_name, Some(new_list));"
+      }
+    ],
+    "essential": true
+  },
+  {
+    "identifier": "ClassOrInterface",
+    "pattern": "#{callee_name}",
+    "subpatterns": [
+      {
+        "identifier": "Field",
+        "pattern": "#{entity_attribute}",
+        "auxiliary_pattern": "#{attribute_type}",
+        "subpatterns": [],
+        "essential": true,
+        "callback": "let client_name = ctx.get_variable(\"client_name\").unwrap();let endpoint_name = ctx.get_variable(\"endpoint_name\").unwrap();let callee = ctx.get_variable(\"callee_name\").unwrap();let endpoint = ctx.get_object(client_name).unwrap();let new_list = endpoint.get(endpoint_name).unwrap().unwrap().clone();new_list.push_str(callee);new_list.push_str(\", \");ctx.make_attribute(client_name, endpoint_name, Some(new_list));"
+      }
+    ],
+    "essential": true
+  }
+]

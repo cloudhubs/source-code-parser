@@ -2,7 +2,11 @@ use actix_web::{post, web, HttpResponse};
 use rust_code_analysis::AstPayload;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use source_code_parser::*;
+use source_code_parser::{
+    self,
+    msd::{run_msd_parse, NodePattern},
+    parse_ast, parse_project_context, parse_project_context_compat, Directory,
+};
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::prelude::*;
@@ -15,8 +19,25 @@ pub struct AstRequest {
 
 #[post("/ctx")]
 pub fn ctx(payload: web::Json<Directory>) -> HttpResponse {
-    match parse_project_context(&payload) {
+    match parse_project_context_compat(&payload) {
         Ok(ctx) => ok(ctx),
+        Err(err) => internal_server_error(err),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct MsdInput {
+    project_dir: Directory,
+    patterns: Vec<NodePattern>,
+}
+
+#[post("/msd")]
+pub fn msd(payload: web::Json<MsdInput>) -> HttpResponse {
+    match parse_project_context(&payload.project_dir) {
+        Ok(mut context) => ok(run_msd_parse(
+            &mut context.modules,
+            payload.patterns.clone(),
+        )),
         Err(err) => internal_server_error(err),
     }
 }
