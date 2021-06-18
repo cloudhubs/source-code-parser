@@ -140,6 +140,12 @@ impl NodePatternParser for MethodComponent {
             &mut pattern.compiled_pattern,
             ctx,
         )?;
+        write_to_context(
+            &self.return_type,
+            pattern.essential,
+            &mut pattern.compiled_auxiliary_pattern,
+            ctx,
+        )?;
 
         // Match method parameters
         let mut params = pattern
@@ -482,10 +488,11 @@ impl NodePatternParser for AnnotationComponent {
             &mut pattern.compiled_pattern,
             ctx,
         )?;
+        // Vincent Changed this!
         write_to_context(
             &self.value,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &mut pattern.compiled_auxiliary_pattern,
             ctx,
         )
     }
@@ -503,7 +510,7 @@ impl NodePatternParser for AnnotationValuePair {
         write_to_context(
             &self.value,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &mut pattern.compiled_auxiliary_pattern,
             ctx,
         )?;
         write_to_context(
