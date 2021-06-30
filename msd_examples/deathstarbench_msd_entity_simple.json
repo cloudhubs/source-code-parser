@@ -1,15 +1,7 @@
 [
   {
-    "identifier": "Field",
-    "pattern": ".*",
-    "auxiliary_pattern": "ClientPool<ThriftClient<#{service_name}ServiceClient>>",
-    "subpatterns": [],
-    "callback": "let service_name = ctx.get_variable(\"service_name\").unwrap();ctx.make_object(service_name);",
-    "essential": true
-  },
-  {
     "identifier": "ClassOrInterface",
-    "pattern": "#&{service_name}Handler",
+    "pattern": "#{service_name}Handler",
     "subpatterns": [
       {
         "identifier": "Method",
