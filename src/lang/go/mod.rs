@@ -27,7 +27,7 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
                 for decl in node.find_all_children_by_type(&["type_spec"]).get_or_insert(vec![]).iter() {
                     match &*decl.r#type {
                         "type_spec" =>  {
-                            parse_struct(&ast, &package, path);
+                            parse_struct(decl, &package, path);
                         },
                         _ => {
                             println!("{}", &decl.r#type);

@@ -15,8 +15,7 @@ pub(crate)fn parse_struct(
         },
         None => InstanceType::ClassComponent,
     };
-
-
+    
     let instance_name = match ast.find_child_by_type(&["type_identifier"]) {
         Some(identifier) => identifier.value.clone(),
         None => "Fail".into(),
