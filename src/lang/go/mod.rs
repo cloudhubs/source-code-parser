@@ -24,15 +24,10 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         match &*node.r#type {
             //"function_declaration" => match transform_into_method()
             "type_declaration" => {
-                for decl in node.find_all_children_by_type(&["type_spec"]).get_or_insert(vec![]).iter() {
-                    match &*decl.r#type {
-                        "type_spec" =>  {
-                            parse_struct(decl, &package, path);
-                        },
-                        _ => {
-                            println!("{}", &decl.r#type);
-                        },
-                    }
+                let types = parse_types(node, &package, path);
+
+                for component in types {
+                    components.push(component);
                 }
             }
             tag => todo!("Cannot identify provided tag {:#?}", tag),
