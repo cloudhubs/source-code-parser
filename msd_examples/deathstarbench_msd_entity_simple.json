@@ -1,0 +1,24 @@
+[
+  {
+    "identifier": "Field",
+    "pattern": ".*",
+    "auxiliary_pattern": "ClientPool<ThriftClient<#{service_name}ServiceClient>>",
+    "subpatterns": [],
+    "callback": "let service_name = ctx.get_variable(\"service_name\").unwrap();ctx.make_object(service_name);",
+    "essential": true
+  },
+  {
+    "identifier": "ClassOrInterface",
+    "pattern": "#&{service_name}Handler",
+    "subpatterns": [
+      {
+        "identifier": "Method",
+        "pattern": "#{endpoint}(^[a-zA-Z]*$)",
+        "subpatterns": [],
+        "callback": "let endpoint = ctx.get_variable(\"endpoint\").unwrap();let service = ctx.get_variable(\"service_name\").unwrap();if (!endpoint.ends_with(\"Handler\")) { ctx.make_attribute(service, endpoint, None); }",
+        "essential": true
+      }
+    ],
+    "essential": true
+  }
+]
