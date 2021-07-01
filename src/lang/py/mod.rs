@@ -35,10 +35,9 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
 
     for node in ast
         .find_all_children_by_type(&[
-            "import_declaration",
+            "import",
             "package_declaration",
             "interface_declaration",
-            "enum_declaration",
             "annotation_declaration",
             "class",
         ])
@@ -46,14 +45,13 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         .iter()
     {
         match &*node.r#type {
-            "import_declaration" => println!("{}", parse_import(&node)),
+            "import" => println!("{}", parse_import(&node)),
             "package_declaration" => {
                 package = parse_package(&node)
                     .expect(&*format!("Malformed package declaration {:#?}!", node));
                 // println!("{}", package);
             }
               "interface_declaration"
-            | "enum_declaration"
             | "annotation_declaration"
             | "class" => match parse_class(node, &*package, path) {
                 Some(class) => {
