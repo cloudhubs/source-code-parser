@@ -88,7 +88,7 @@ pub(crate) fn parse_type(
     Some(ClassOrInterfaceComponent {
         component: ContainerComponent {
             component: component,
-            accessor: AccessorType::Private,
+            accessor: AccessorType::Public,
             stereotype: stereotype,
             methods: methods,
             container_name: instance_name,
@@ -141,7 +141,7 @@ fn parse_fields(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent>  {
                     annotations: vec![],
                     variables: vec![],
                     field_name: field_identifier,
-                    accessor: AccessorType::Private,
+                    accessor: AccessorType::Public,
                     is_static: false,
                     is_final: false,
                     default_value: String::new(),
