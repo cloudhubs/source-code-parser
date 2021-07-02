@@ -17,19 +17,24 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         .find_all_children_by_type(&[
             "type_declaration",
             "func_declaration",
+            "package_clause"
         ])
         .get_or_insert(vec![])
         .iter()
     {
         match &*node.r#type {
             //"function_declaration" => match transform_into_method()
+            "package_clause" => {
+                package = parse_package(node);
+            }
             "type_declaration" => {
-                let types = parse_types(node, &package, path);
+                let types = parse_types(node, &*package, path);
 
                 for component in types {
                     components.push(component);
                 }
             }
+
             tag => todo!("Cannot identify provided tag {:#?}", tag),
         };
     }
@@ -44,4 +49,11 @@ pub fn transform_into_method(ast: AST, module_name: &str, path: &str) -> Option<
     ])
 }
  */
+
+fn parse_package(ast: &AST) -> String {
+   match ast.find_child_by_type(&["package_identifier"]) {
+        Some(pkg) => pkg.value.to_string(),
+        None => "".into(),
+   }
+}
 
