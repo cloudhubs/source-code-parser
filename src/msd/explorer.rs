@@ -124,10 +124,6 @@ pub(crate) fn choose_exit(essential: bool, found: bool) -> Option<()> {
 }
 
 msd_dispatch_default_impl!(
-    BinaryExpr,
-    UnaryExpr,
-    ParenExpr,
-    DotExpr,
     IncDecExpr,
     LogExpr,
     IndexExpr,
@@ -146,7 +142,11 @@ msd_dispatch_single_dispatch_impl!(
     CatchStmt: { body },
     WhileStmt: { condition, body },
     DoWhileStmt: { condition, body },
-    WithResourceStmt: { body, resources }
+    WithResourceStmt: { body, resources },
+    BinaryExpr: { lhs, rhs },
+    UnaryExpr: { expr },
+    ParenExpr: { expr },
+    DotExpr: { expr, selected }
 );
 
 msd_dispatch_collection_impl!(
