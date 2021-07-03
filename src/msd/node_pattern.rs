@@ -111,7 +111,7 @@ pub fn msd_node_parse<N: NodePatternParser + MsdNodeExplorer>(
     ctx.frame_number += 1;
 
     let mut transaction = ctx.clone();
-    let passed = if parse(pattern, node, ctx) {
+    let passed = if parse(pattern, node, &mut transaction) {
         if pattern.callback.is_some() {
             let tmp = transaction.clone();
             match Executor::get().execute(pattern, transaction) {
