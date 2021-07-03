@@ -408,6 +408,7 @@ impl NodePatternParser for CallExpr {
                 };
                 match selected.as_ref() {
                     Expr::Ident(Ident { ref name, .. }) => (name, aux_name),
+                    Expr::Literal(Literal { ref value, .. }) => (value, aux_name),
                     ref unknown => {
                         eprintln!("Currently unhandled CallExpression name {:?}", unknown);
                         return None;
@@ -535,6 +536,7 @@ impl NodePatternParser for Ident {
 
 impl NodePatternParser for Literal {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+        verify_match!(&self.value, &pattern.compiled_pattern, ctx, pattern.essential);
         write_to_context(
             &self.value,
             pattern.essential,
