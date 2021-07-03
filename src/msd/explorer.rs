@@ -440,6 +440,7 @@ mod tests {
             true,
             "".into(),
             None,
+            false,
         );
         eprintln!("hello?");
         c.explore(&mut np, &mut ParserContext::default());

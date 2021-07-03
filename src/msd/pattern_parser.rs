@@ -445,12 +445,12 @@ impl NodePatternParser for CallExpr {
         let mut params = pattern
             .subpatterns
             .iter_mut()
-            .filter(|child| match child.identifier {
-                NodeType::CallExpr | NodeType::VarDecl | NodeType::Ident | NodeType::Literal => {
-                    true
-                }
-                _ => false,
-            })
+            // .filter(|child| match child.identifier {
+            //     NodeType::CallExpr | NodeType::VarDecl | NodeType::Ident | NodeType::Literal => {
+            //         true
+            //     }
+            //     _ => false,
+            // })
             .collect::<Vec<&mut NodePattern>>();
         match_subsequence(&mut params, &mut self.args, ctx)
     }
