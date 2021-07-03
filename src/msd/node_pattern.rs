@@ -1,6 +1,8 @@
+use super::MsdNodeExplorer;
 // use super::MsdDispatch;
 use super::{pattern_parser::NodePatternParser, Executor};
 use crate::ast::*;
+use crate::msd::explorer::choose_exit;
 use crate::prophet::*;
 use derive_new::new;
 use regex::Regex;
@@ -41,11 +43,15 @@ pub struct NodePattern {
 
     /// Raw pattern for checking the type defined by the user
     pub auxiliary_pattern: Option<String>,
+
+    /// Transparently forward to child nodes
+    #[serde(default = "bool::default")]
+    pub transparent: bool,
 }
 
 impl NodePattern {
     pub fn matches(&self, node: &impl IntoMsdNode) -> bool {
-        self.identifier == node.into_msd_node()
+        self.identifier == node.into_msd_node() || self.transparent
     }
 
     /// Lazy-compile the regexes on this NodePattern
@@ -74,10 +80,28 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     }
 }
 
-/// Parse an individual node with this NodePattern, lazily-initializing its CompiledPattern as needed
-pub fn msd_node_parse(
+fn parse<N: NodePatternParser + MsdNodeExplorer>(
     pattern: &mut NodePattern,
-    node: &mut impl NodePatternParser,
+    node: &mut N,
+    ctx: &mut ParserContext,
+) -> bool {
+    if !pattern.transparent {
+        node.parse(pattern, ctx).is_some()
+    } else {
+        let mut explore_all_found_essential = false;
+        for subpattern in pattern.subpatterns.iter_mut() {
+            if node.explore(subpattern, ctx).is_some() {
+                explore_all_found_essential = true;
+            }
+        }
+        choose_exit(pattern.essential, explore_all_found_essential).is_some()
+    }
+}
+
+/// Parse an individual node with this NodePattern, lazily-initializing its CompiledPattern as needed
+pub fn msd_node_parse<N: NodePatternParser + MsdNodeExplorer>(
+    pattern: &mut NodePattern,
+    node: &mut N,
     ctx: &mut ParserContext,
 ) -> Option<()> {
     // Lazily compile patterns
@@ -87,7 +111,7 @@ pub fn msd_node_parse(
     ctx.frame_number += 1;
 
     let mut transaction = ctx.clone();
-    let passed = if node.parse(pattern, &mut transaction).is_some() {
+    let passed = if parse(pattern, node, ctx) {
         if pattern.callback.is_some() {
             let tmp = transaction.clone();
             match Executor::get().execute(pattern, transaction) {

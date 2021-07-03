@@ -68,16 +68,12 @@ pub(crate) fn find_type(ast: &AST) -> String {
 
 /// Parse the a `type_arguments` node
 pub(crate) fn parse_type_args(ast: &AST) -> String {
-    // Vincent's changes here
-    let mut generic = String::new();
-    if let Some(basetype) = ast.find_all_children_by_type(&["type_identifier"]) {
-        generic.push_str(&*basetype[0].r#value);
-        if let Some(args) = ast.find_all_children_by_type(&["type_arguments"]) {
-            for param in args[0].children.iter() {
-                match &*param.r#value {
-                    "," | "<" | ">" => generic.push_str(&*param.r#value),
-                    _ => generic.push_str(&*parse_type(param)),
-                }
+    let mut generic = find_type(ast);
+    if let Some(args) = ast.find_all_children_by_type(&["type_arguments"]) {
+        for param in args[0].children.iter() {
+            match &*param.r#value {
+                "," | "<" | ">" => generic.push_str(&*param.r#value),
+                _ => generic.push_str(&*parse_type(param)),
             }
         }
     }
