@@ -1,7 +1,9 @@
 use crate::parse::AST;
 use crate::prophet::*;
+use crate::go::util::vartype::find_type;
+use crate::go::util::identifier::parse_identifier;
 
-pub(crate) fn parse_types(
+pub(crate) fn parse_struct(
     ast: &AST,
     package: &str,
     path: &str
@@ -10,7 +12,7 @@ pub(crate) fn parse_types(
 
     for node in ast.find_all_children_by_type(&["type_spec"]).get_or_insert(vec![]).iter() {
         match &*node.r#type {
-            "type_spec" => match parse_type(node, &package, path) {
+            "type_spec" => match parse_struct_internal(node, &package, path) {
                 Some(struct_type) => vec.push(ComponentType::ClassOrInterfaceComponent(struct_type)),
                 None => {}
             },
@@ -21,7 +23,7 @@ pub(crate) fn parse_types(
     vec
 }
 
-pub(crate) fn parse_type(
+pub(crate) fn parse_struct_internal(
     ast: &AST,
     package: &str,
     path: &str
@@ -64,7 +66,7 @@ pub(crate) fn parse_type(
 
     // Find bounds
     let (start, end) = match ast.span {
-        Some(span) => (span.0 as i32, span.1 as i32),
+        Some(span) => (span.0 as i32, span.2 as i32),
         None => (0, 0),
     };
 
@@ -78,7 +80,7 @@ pub(crate) fn parse_type(
     for child in ast.children.iter() {
         match &*child.r#type {
             "struct_type" => {
-                parse_type_body(child, &component, &mut methods, &mut fields);
+                parse_struct_body(child, &component, &mut methods, &mut fields);
             },
             _ => {},
         }
@@ -92,18 +94,16 @@ pub(crate) fn parse_type(
             stereotype: stereotype,
             methods: methods,
             container_name: instance_name,
-            line_count: end - start + 1,
+            line_count: (end - start) + 1,
         },
         declaration_type: declaration_type,
         annotations: vec![],
         constructors: constructors,
-        field_components: fields
+        field_components: fields,
     })
-
-
 }
 
-fn parse_type_body(
+fn parse_struct_body(
     ast: &AST,
     component: &ComponentInfo,
     methods: &mut Vec<MethodComponent>,
@@ -122,15 +122,21 @@ fn parse_fields(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent>  {
     for node in ast.children.iter() {
         match &*node.r#type {
             "field_declaration" => {
+                let field_identifier = parse_identifier(node);
+                /*
                 let field_identifier = match node.find_child_by_type(&["field_identifier"]) {
                     Some(field_id) => field_id.value.clone(),
                     None => "".into(),
                 };
+                */
+
+                let type_identifier = find_type(node);
+                /*
                 let type_identifier = match node.find_child_by_type(&["type_identifier"]) {
                     Some(r#type) => r#type.value.to_string(),
                     None => "".into(),
                 };
-
+                */
                 fields.push(FieldComponent {
                     component: ComponentInfo {
                         path: component.path.clone(),
