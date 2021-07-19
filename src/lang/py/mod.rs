@@ -3,7 +3,14 @@ use std::collections::HashMap;
 use crate::parse::AST;
 use crate::prophet::*;
 
+mod class_def;
+use class_def::*;
 
+mod method_body;
+mod method_def;
+mod modifier;
+mod util;
+mod function_def;
 
 /// Topmost level of the Python parser, provides public API
 
@@ -35,25 +42,18 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
 
     for node in ast
         .find_all_children_by_type(&[
-            "import",
-            "package_declaration",
-            "interface_declaration",
-            "annotation_declaration",
-            "class",
+            "import_from_statement",
+            "import_statement",
+            "class_definition",
+            "function_definition",
         ])
         .get_or_insert(vec![])
         .iter()
     {
         match &*node.r#type {
-            "import" => println!("{}", parse_import(&node)),
-            "package_declaration" => {
-                package = parse_package(&node)
-                    .expect(&*format!("Malformed package declaration {:#?}!", node));
-                // println!("{}", package);
-            }
-              "interface_declaration"
-            | "annotation_declaration"
-            | "class" => match parse_class(node, &*package, path) {
+            "import_statement" => println!("{}", parse_import(&node)),
+            "import_from_statement" => println!("{}", parse_import_from(&node)),
+            | "class_definition" => match parse_class(node, &*package, path) {
                 Some(class) => {
                     // Save the methods
                     for method in class.component.methods.iter() {
@@ -98,27 +98,25 @@ fn create_module(package: &str, path: &str, components: &Vec<ComponentType>) -> 
     return ComponentType::ModuleComponent(module);
 }
 
-/// Take in the AST node containing the package declaration, and--if it is not malformed--return a string representing the package
-fn parse_package(ast: &AST) -> Option<String> {
-    let result = ast.find_child_by_type(&["identifier", "scoped_identifier"])?;
-    let mut buffer = String::new();
-    for member in result.children.iter() {
-        if member.r#type == "scoped_identifier" {
-            buffer = format!("{}{}", parse_package(result)?, buffer);
-        } else {
-            buffer.push_str(&*member.value);
-        }
-    }
-    Some(buffer)
-}
 
 /// Take the AST node containing an import statement, and return back the String describing the package imported
 fn parse_import(ast: &AST) -> String {
     let mut buffer = String::new();
     for child in ast.children.iter() {
         match &*child.r#type {
-            "identifier" | "." | "*" => buffer.push_str(&*child.value),
+            "identifier" | "dotted_name" | "as" | "aliased_import" | "." => buffer.push_str(&*child.value),
             _ => buffer.push_str(&*parse_import(child)),
+        };
+    }
+    buffer
+}
+
+fn parse_import_from(ast: &AST) -> String {
+    let mut buffer = String::new();
+    for child in ast.children.iter() {
+        match &*child.r#type {
+            "from" | "identifier" | "dotted_name" | "as" | "aliased_import" | "." => buffer.push_str(&*child.value),
+            _ => buffer.push_str(&*parse_import_from(child)),
         };
     }
     buffer
