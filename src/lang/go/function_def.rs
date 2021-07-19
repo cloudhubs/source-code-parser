@@ -13,6 +13,7 @@ pub(crate) fn parse_function(
     let fn_identifier = parse_identifier(ast);
     //get return type
     let return_type = find_type(ast);
+
     let component = ComponentInfo {
         path: path.to_string(),
         package_name: module_name.to_string(),
@@ -49,7 +50,7 @@ pub(crate) fn parse_function(
             instance_name: fn_identifier.clone(),
             instance_type: InstanceType::MethodComponent
         },
-        accessor: AccessorType::Private,
+        accessor: AccessorType::Public,
         method_name: fn_identifier,
         return_type: return_type,
         parameters: parameters,
