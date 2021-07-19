@@ -3,25 +3,15 @@ use crate::prophet::*;
 use crate::go::util::vartype::find_type;
 use crate::go::util::identifier::parse_identifier;
 
-pub(crate) fn parse_struct(
-    ast: &AST,
-    package: &str,
-    path: &str
-) -> Vec<ComponentType>{
-    let mut vec = vec![];
+pub(crate) fn parse_struct(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceComponent> {
+    let node = match ast.find_child_by_type(&["type_spec"]) {
+        Some(type_node) => type_node,
+        None => ast
+    };
 
-    for node in ast.find_all_children_by_type(&["type_spec"]).get_or_insert(vec![]).iter() {
-        match &*node.r#type {
-            "type_spec" => match parse_struct_internal(node, &package, path) {
-                Some(struct_type) => vec.push(ComponentType::ClassOrInterfaceComponent(struct_type)),
-                None => {}
-            },
-            tag => todo!("Cannot identify provided tag {:#?}", tag),
-        };
-    }
-
-    vec
+    parse_struct_internal(node, &package, path)
 }
+
 
 pub(crate) fn parse_struct_internal(
     ast: &AST,

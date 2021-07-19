@@ -10,6 +10,7 @@ mod util;
 use class_def::*;
 use function_def::*;
 use crate::go::util::identifier::parse_identifier;
+use std::borrow::Borrow;
 
 pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
     find_components_internal(ast, String::new(), path)
@@ -17,7 +18,9 @@ pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
 
 fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<ComponentType> {
     let mut components = vec![];
+    let mut types = HashMap::new();
 
+    //first parse for all nodes EXCEPT for "method_declaration"
     for node in ast
         .find_all_children_by_type(&[
             "type_declaration",
@@ -37,15 +40,59 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
                 package = parse_package(node);
             },
             "type_declaration" => {
-                let types = parse_struct(node, &*package, path);
-
-                for component in types {
-                    components.push(component);
+                match parse_struct(node, &*package, path) {
+                    Some(struct_type) => {
+                        let struct_name = struct_type.component.container_name.clone();
+                        types.insert(struct_name, struct_type);
+                    },
+                    None => {}
                 }
             },
             "import_declaration" => println!("{}", parse_import(node)),
             tag => todo!("Cannot identify provided tag {:#?}", tag),
         };
+    }
+
+    //now parse "method_declaration" nodes
+    for node in ast
+        .find_all_children_by_type(&["method_declaration"])
+        .get_or_insert(vec![])
+        .iter()
+    {
+        let tuple = parse_method(node, &*package, path);
+
+        match types.get(&tuple.0) {
+            Some(parent_struct) => {
+                //create a copy of the instance of the original struct and add the method to it
+                let mut new_methods = parent_struct.component.methods.clone();
+                new_methods.push(tuple.1.clone());
+
+                let parent_component = parent_struct.component.clone();
+                let new_parent_struct = ClassOrInterfaceComponent {
+                        component: ContainerComponent {
+                            component: parent_component.component.clone(),
+                            accessor: parent_component.accessor.clone(),
+                            stereotype: parent_component.stereotype.clone(),
+                            methods: new_methods,
+                            container_name: parent_component.container_name.clone(),
+                            line_count: parent_component.line_count.clone(),
+                        },
+                        declaration_type: ContainerType::Class,
+                        annotations: parent_struct.annotations.clone(),
+                        constructors: parent_struct.constructors.clone(),
+                        field_components: parent_struct.field_components.clone(),
+                };
+
+                types.insert(tuple.0, new_parent_struct);
+            },
+            None => {},
+        }
+
+    }
+
+    //push types onto the components vector
+    for (k, v) in types {
+        components.push(ComponentType::ClassOrInterfaceComponent(v));
     }
 
     components
