@@ -110,7 +110,6 @@ pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str)
         }
     };
 
-
     let func = MethodComponent {
         component: ComponentInfo {
             path: path.into(),

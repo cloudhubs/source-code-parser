@@ -90,7 +90,7 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
 
     }
 
-    //push types onto the components vector
+    //push the now updated types with their member methods onto the components vector
     for (k, v) in types {
         components.push(ComponentType::ClassOrInterfaceComponent(v));
     }

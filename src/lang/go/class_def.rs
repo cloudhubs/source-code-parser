@@ -12,7 +12,6 @@ pub(crate) fn parse_struct(ast: &AST, package: &str, path: &str) -> Option<Class
     parse_struct_internal(node, &package, path)
 }
 
-
 pub(crate) fn parse_struct_internal(
     ast: &AST,
     package: &str,
@@ -113,20 +112,8 @@ fn parse_fields(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent>  {
         match &*node.r#type {
             "field_declaration" => {
                 let field_identifier = parse_identifier(node);
-                /*
-                let field_identifier = match node.find_child_by_type(&["field_identifier"]) {
-                    Some(field_id) => field_id.value.clone(),
-                    None => "".into(),
-                };
-                */
-
                 let type_identifier = find_type(node);
-                /*
-                let type_identifier = match node.find_child_by_type(&["type_identifier"]) {
-                    Some(r#type) => r#type.value.to_string(),
-                    None => "".into(),
-                };
-                */
+
                 fields.push(FieldComponent {
                     component: ComponentInfo {
                         path: component.path.clone(),
