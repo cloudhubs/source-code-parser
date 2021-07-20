@@ -38,7 +38,7 @@ pub(crate) fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodCompon
             "modifiers" => {
                 modifier = parse_modifiers(member, &*component.path, &*component.package_name)
             }
-            "formal_parameters" => parameters = parse_method_parameters(member, &component),
+            "parameters" => parameters = parse_method_parameters(member, &component),
             "constructor_body" | "block" => {
                 body = Some(parse_block(member, &component));
             }

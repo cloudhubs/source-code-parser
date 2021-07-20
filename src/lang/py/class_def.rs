@@ -15,7 +15,7 @@ pub(crate) fn parse_class(
     path: &str,
 ) -> Option<ClassOrInterfaceComponent> {
     // Get container info
-    let instance_type = match ast.find_child_by_type(&["class", "interface", "enum", "annotation"])
+    let instance_type = match ast.find_child_by_type(&["class"])
     {
         Some(r#type) => match &*r#type.value {
             "interface" => InstanceType::InterfaceComponent,
@@ -65,7 +65,7 @@ pub(crate) fn parse_class(
             "modifiers" => {
                 modifier = parse_modifiers(member, &*component.path, &*component.package_name)
             }
-            "class_body" | "interface_body" | "enum_body" | "annotation_body" => {
+            "block" => {
                 parse_class_body(
                     member,
                     &component,
@@ -106,21 +106,17 @@ fn parse_class_body(
     // Traverse body
     for member in ast.children.iter() {
         match &*member.r#type {
-            "constructor_declaration" | "static_initializer" => {
-                constructors.push(parse_method(member, component))
-            }
-            "method_declaration" => methods.push(parse_method(member, component)),
-            "field_declaration" => fields.append(&mut parse_field(member, component)),
-            "class_declaration"
-            | "interface_declaration"
-            | "enum_declaration"
-            | "annotation_declaration" => { /* None, since these were extracted + handled elsewhere */
+            "function_definition" => methods.push(parse_method(member, component)),
+            "class_definition"
+            => { /* None, since these were extracted + handled elsewhere */
             }
             unknown => log_unknown_tag(unknown, "class body"),
         }
     }
 }
 
+//There are no fields or field equivalents in Python
+/*
 /// Parses a single field in a class
 fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
     let variables: Vec<String> = ast
@@ -160,3 +156,4 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
         })
         .collect()
 }
+*/

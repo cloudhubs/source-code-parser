@@ -10,7 +10,7 @@ mod method_body;
 mod method_def;
 mod modifier;
 mod util;
-mod function_def;
+//mod function_def;
 
 /// Topmost level of the Python parser, provides public API
 
