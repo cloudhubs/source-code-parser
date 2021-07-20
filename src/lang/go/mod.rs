@@ -108,14 +108,49 @@ fn parse_import(ast: &AST) -> String {
         match &*node.r#type {
             "import_spec" => {
                 match node.find_child_by_type(&["interpreted_string_literal"]) {
-                    Some(import) => buffer.push_str(&*import.value),
+                    Some(import) => buffer.push_str(&*trim_import((&*import.value).to_string())),
                     None => {}
                 }
             },
+            "import_spec_list" => {
+                for import_node in node.children.iter() {
+                    match &*import_node.r#type {
+                        "import_spec" => {
+                            match import_node.find_child_by_type(&["interpreted_string_literal"]) {
+                                Some(import) => {
+                                    buffer.push_str(&*trim_import((&*import.value).to_string()));
+                                    buffer.push_str("\n");
+                                },
+                                None => {}
+                            }
+                        },
+                        _ => {}
+                    }
+                }
+            }
             _ => buffer.push_str(&*parse_import(node))
         }
+    }
+
+    //to remove the last newline for multiple imports
+    if buffer.ends_with('\n') {
+        buffer.pop();
     }
 
     buffer
 }
 
+/// removes the quotations surrounding the values of the "interpreted_string_literal" nodes
+fn trim_import(import_str: String) -> String {
+    let mut str = import_str.clone();
+
+    /// additional checks to see if the string actually begins and ends with quotation marks
+    if str.starts_with('\"') {
+        str.remove(0);
+    }
+    if str.ends_with('\"') {
+        str.pop();
+    }
+
+    str
+}
