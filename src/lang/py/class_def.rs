@@ -18,7 +18,6 @@ pub(crate) fn parse_class(
     let instance_type = match ast.find_child_by_type(&["class"])
     {
         Some(r#type) => match &*r#type.value {
-            "interface" => InstanceType::InterfaceComponent,
             _ => InstanceType::ClassComponent,
         },
         None => InstanceType::ClassComponent,
@@ -29,7 +28,6 @@ pub(crate) fn parse_class(
     };
 
     let declaration_type = match instance_type {
-        InstanceType::InterfaceComponent => ContainerType::Interface,
         _ => ContainerType::Class,
     };
     let component = ComponentInfo {
@@ -39,7 +37,6 @@ pub(crate) fn parse_class(
             "{}::{}",
             instance_name,
             match instance_type {
-                InstanceType::InterfaceComponent => "InterfaceComponent",
                 _ => "ClassComponent",
             }
         ),
