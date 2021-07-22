@@ -394,13 +394,7 @@ impl NodePatternParser for CallExpr {
                     match expr.as_mut() {
                         Expr::Ident(Ident { ref name, .. }) => Some(name),
                         Expr::Literal(Literal { ref value, .. }) => Some(value),
-                        ref unknown => {
-                            eprintln!(
-                                "Currently unhandled CallExpression auxiliary match {:?}",
-                                unknown
-                            );
-                            return None;
-                        }
+                        ref unknown => None
                     }
                 } else {
                     // If no auxiliary pattern is provided, it is assumed we must visit the lefthand side
@@ -410,18 +404,12 @@ impl NodePatternParser for CallExpr {
                 match selected.as_ref() {
                     Expr::Ident(Ident { ref name, .. }) => (name, aux_name),
                     Expr::Literal(Literal { ref value, .. }) => (value, aux_name),
-                    ref unknown => {
-                        eprintln!("Currently unhandled CallExpression name {:?}", unknown);
-                        return None;
-                    }
+                    ref unknown => None
                 }
             }
             Expr::Ident(Ident { ref name, .. }) => (name, None),
             Expr::Literal(Literal { ref value, .. }) => (value, None),
-            ref unknown => {
-                eprintln!("Currently unhandled CallExpression name {:?}", unknown);
-                return None;
-            }
+            ref unknown => None
         };
 
         // Verify matches on the function's name and its lefthand side, if the latter was found

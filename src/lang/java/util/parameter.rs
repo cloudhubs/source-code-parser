@@ -39,7 +39,7 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
         match &*part_defn.r#type {
             "variable_declarator" => match part_defn.find_child_by_type(&["identifier"]) {
                 Some(ident) => name = ident.value.clone(),
-                None => eprintln!("Variable declarator with no variable name!"),
+                None => {}
             },
             "identifier" => name = part_defn.value.clone(),
             "modifiers" => {

@@ -42,7 +42,7 @@ pub(crate) fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodCompon
             "constructor_body" | "block" => {
                 body = Some(parse_block(member, &component));
             }
-            _ => {} // unknown => println!("{} unknown", unknown),
+            _ => {}
         }
     }
 

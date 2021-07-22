@@ -108,7 +108,6 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             modules,
             methods,
         };
-        // println!("{:#?}", ctx);
         ctx
     }
 }

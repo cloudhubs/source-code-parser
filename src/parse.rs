@@ -90,7 +90,6 @@ impl AST {
             LANG::Python => (vec![], Language::Python),
             LANG::Go => (vec![], Language::Go),
             lang => {
-                println!("unsupported lang: {:?}", lang);
                 (vec![], Language::Unknown)
                 // todo!();
             }
@@ -162,11 +161,9 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
         let module_name = mod_path.clone();
 
         // Get directory
-        println!("trying to read {:?}", dir.path);
         let read_dir = match std::fs::read_dir(dir.path) {
             Ok(dir) => dir,
             Err(err) => {
-                eprintln!("Could not read directory: {:?}", err);
                 continue;
             }
         };
@@ -187,7 +184,6 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
                 let (components, lang) = match parse_file(&mut file, &entry.path()) {
                     Ok(res) => res,
                     Err(err) => {
-                        eprintln!("Could not read file {:?}: {:#?}", entry.path(), err);
                         continue;
                     }
                 };
@@ -206,12 +202,7 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
                                 ContainerType::Interface => {
                                     module.interfaces.push(component);
                                 }
-                                r#type => {
-                                    println!(
-                                        "got other label when it should have been class/ifc: {:#?}",
-                                        r#type
-                                    );
-                                }
+                                r#type => {}
                             }
                         }
                         ComponentType::MethodComponent(method) => {
@@ -229,7 +220,6 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
         modules.push(module);
     }
 
-    println!("Finished parsing file!");
     Ok(merge_modules(modules, language))
 }
 
@@ -288,8 +278,6 @@ pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<(Vec<Componen
         Some((ast, lang)) => (ast, lang),
         None => return Ok((vec![], Language::Unknown)),
     };
-
-    println!("Parsing file: {:?}", path.to_str().unwrap_or_default());
 
     Ok(ast.transform(lang, path.to_str().unwrap_or_default()))
 }

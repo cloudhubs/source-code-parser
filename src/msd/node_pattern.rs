@@ -73,10 +73,7 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     let compiled_result = super::CompiledPattern::from_pattern(pattern);
     match compiled_result {
         Ok(compiled_result) => Some(compiled_result),
-        Err(error) => {
-            eprintln!("{:#?}", error);
-            None
-        }
+        Err(error) => None
     }
 }
 
@@ -119,13 +116,7 @@ pub fn msd_node_parse<N: NodePatternParser + MsdNodeExplorer>(
                     *ctx = new_ctx;
                     true
                 }
-                Err(err) => {
-                    eprintln!(
-                        "Failed to execute callback ({:#?}) for: {:?}\n{:#?}",
-                        err, pattern.callback, tmp
-                    );
-                    false
-                }
+                Err(err) => false
             }
         } else {
             *ctx = transaction;
@@ -264,7 +255,6 @@ impl CompiledPattern {
                         )
                         .is_none()
                     {
-                        println!("Failed to find {}={:?}", reference, matches.name(reference));
                         return false;
                     }
                 }
