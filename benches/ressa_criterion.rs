@@ -1,4 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use rgsl::statistics::*;
 
 extern crate source_code_parser;
 use source_code_parser::*;
@@ -6076,17 +6077,26 @@ fn criterion_benchmark(c: &mut Criterion) {
     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
 
     let dir = serde_json::from_str::<Directory>(directory_json).unwrap();
+    let mem = vec![];
     c.bench_function("LAAST", move |b| {
         b.iter(|| {
             epoch.advance().unwrap();
-            eprintln!("{} alloced bytes", allocated.read().unwrap());
+            let before = allocated.read().unwrap();
             let _ctx = black_box(parse_project_context(&dir)).unwrap();
             // println!("{}", x);
             // black_box(Box::leak(Box::new(1)));
             epoch.advance().unwrap();
-            eprintln!("{} alloced bytes after", allocated.read().unwrap());
+            mem.push(allocated.read().unwrap() - before);
         })
     });
+    let len = mem.len();
+    println!(
+        "{} +/- {} ({}, {})",
+        mean(mem, 1, len),
+        sd(mem, 1, len),
+        min(mem, 1, len),
+        max(mem, 1, len)
+    );
 }
 
 criterion_group!(benches, criterion_benchmark);
