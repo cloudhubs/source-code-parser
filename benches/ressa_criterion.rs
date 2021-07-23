@@ -2,7 +2,10 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use statistical::*;
 
 extern crate source_code_parser;
-use source_code_parser::*;
+use source_code_parser::{
+    msd::{run_msd_parse, NodePattern},
+    *,
+};
 
 const directory_json: &'static str = r#"
 {
@@ -250,18 +253,191 @@ const directory_json: &'static str = r#"
   }
 "#;
 
+const msds_json_endpoint_simple: &'static str = r##"
+[
+  {
+    "identifier": "ClassOrInterface",
+    "pattern": "#{service_name}Handler",
+    "subpatterns": [
+      {
+        "identifier": "Method",
+        "pattern": "#{endpoint}(^[a-zA-Z]*$)",
+        "subpatterns": [],
+        "callback": "let endpoint = ctx.get_variable(\"endpoint\").unwrap();let service = ctx.get_variable(\"service_name\").unwrap();if (!endpoint.ends_with(\"Handler\")) { ctx.make_attribute(service, endpoint, None); }",
+        "essential": true
+      }
+    ],
+    "essential": true
+  }
+]
+"##;
+
+const msds_json_entity: &'static str = r##"
+[
+  {
+    "identifier": "Method",
+    "pattern": "#{container}",
+    "subpatterns": [
+      {
+        "identifier": "CallExpr",
+        "pattern": "mongoc_client_get_collection",
+        "subpatterns": [
+          {
+            "identifier": "Literal",
+            "pattern": "\"#{collection}\"",
+            "subpatterns": [],
+            "essential": true
+          }
+        ],
+        "essential": true
+      }
+    ],
+    "callback": "let container = ctx.get_variable(\"container\").unwrap();let collection = ctx.get_variable(\"collection\").unwrap();ctx.make_object(collection);ctx.make_transient(container);",
+    "essential": true
+  },
+  {
+    "identifier": "Method",
+    "pattern": "#&{_method_name}",
+    "subpatterns": [
+      {
+        "identifier": "CallExpr",
+        "pattern": "mongoc_client_get_collection",
+        "subpatterns": [
+          {
+            "identifier": "Literal",
+            "pattern": "\"#{collection_name}\"",
+            "subpatterns": [],
+            "essential": true
+          }
+        ],
+        "essential": true
+      },
+      {
+        "identifier": "CallExpr",
+        "pattern": "BCON_NEW",
+        "subpatterns": [
+          {
+            "identifier": "Literal",
+            "pattern": "\"#{token}(\\$?.+)\"",
+            "subpatterns": [],
+            "callback": "let token = ctx.get_variable(\"token\").unwrap();ctx.make_transient(\"tokens\");let tokens = ctx.get_object(\"tokens\").unwrap();let ndx = 0;while tokens.contains_key(`${ndx}`) {match tokens.get(`${ndx}`).iter().next() {Some(Some(_)) => { ndx = ndx + 1; },_ => { break; }}}ctx.make_attribute(\"tokens\", `${ndx}`, Some(token));ctx.make_attribute(\"tokens\", `${ndx+1}`, None);",
+            "essential": true
+          },
+          {
+            "identifier": "CallExpr",
+            "pattern": "BCON_#{token}(.+)",
+            "subpatterns": [],
+            "callback": "let token = ctx.get_variable(\"token\").unwrap();ctx.make_transient(\"tokens\");let tokens = ctx.get_object(\"tokens\").unwrap();let ndx = 0;while tokens.contains_key(`${ndx}`) {match tokens.get(`${ndx}`).iter().next() {Some(Some(_)) => {ndx =  ndx + 1;},_ => { break; }}}ctx.make_attribute(\"tokens\", `${ndx}`, Some(token));ctx.make_attribute(\"tokens\", `${ndx+1}`, None);",
+            "essential": false
+          }
+        ],
+        "callback": "fn done(ndx, tokens) {match tokens.get(`${ndx}`).iter().next() {Some(Some(_)) => false,_ => true}}fn parse_pair(parent_tag, tokens, ndx, ctx) {loop {ndx = do_parse_pair(parent_tag, tokens, ndx, ctx);if done(ndx, tokens) { break; }match tokens.get(`${ndx}`).iter().next() {Some(Some(token)) => {if token == \"}\" { break; }}_ => {},}}ndx}fn do_parse_pair(parent_tag, tokens, ndx, ctx) {ndx = choose_action(parent_tag, tokens, ndx, ctx);loop {    match tokens.get(`${ndx}`).iter().next() {    Some(Some(token)) => {    if token == \"{\" {    ndx = choose_action(parent_tag, tokens, ndx + 1, ctx);    } else { break; }    }_ => return -100,    }    }let lhs = tokens.get(`${ndx}`).iter().next().unwrap().iter().next().unwrap();ndx = choose_action(`${parent_tag}.${lhs}`, tokens, ndx + 1, ctx);if done(ndx, tokens) { return -100; }let rhs = tokens.get(`${ndx}`).iter().next().unwrap().iter().next().unwrap();if rhs == \"}\" || rhs == \"]\" { return ndx; }if rhs == \"[\" { return parse_array_literal(parent_tag, tokens, ndx - 1, ctx); }ctx.make_attribute(parent_tag, lhs, Some(rhs));ndx + 1}fn do_and(parent_tag, tokens, ndx, ctx) {loop {    match tokens.get(`${ndx}`).iter().next() {    Some(Some(token)) => {    if token != \"]\" {    ndx = choose_action(parent_tag, tokens, ndx + 1, ctx);    } else {    break;    }    }_ => return -100,    }    }ndx}fn parse_array(parent_tag, tokens, ndx, ctx) {let array_name = tokens.get(`${ndx + 1}`).iter().next();array_name = match array_name {Some(Some(val)) => val,_ => return -100,};ctx.make_attribute(parent_tag, array_name, Some(\"[]\"));choose_action(`${parent_tag}.${array_name}`, tokens, ndx + 2, ctx) + 1}fn parse_array_literal(parent_tag, tokens, ndx, ctx) {let array_name = tokens.get(`${ndx}`).iter().next();array_name = match array_name {Some(Some(val)) => val,_ => return -100,};ctx.make_attribute(parent_tag, array_name, Some(\"[]\"));do_each(`${parent_tag}.${array_name}`, tokens, ndx + 2, ctx) + 1}fn do_each(parent_tag, tokens, ndx, ctx) {loop {    match tokens.get(`${ndx}`).iter().next() {    Some(Some(token)) => {    if token != \"]\" {    ndx = parse_pair(parent_tag, tokens, ndx + 1, ctx);    } else {    break;    }    }_ => return -100,    }    }    ndx}fn do_elemMatch(parent_tag, tokens, ndx, ctx) { parse_pair(parent_tag, tokens, ndx, ctx) }fn choose_action(parent, tokens, ndx, ctx) {if done(ndx, tokens) { return -1; }    match tokens.get(`${ndx}`).iter().next() {    Some(Some(token)) => match token {    \"$and\" => do_and(parent, tokens, ndx + 1, ctx),    \"$not\" => parse_pair(parent, tokens, ndx + 1, ctx),    \"$push\" => parse_array(parent, tokens, ndx + 1, ctx),    \"$pull\" => parse_array(parent, tokens, ndx + 1, ctx),    \"$each\" => do_each(parent, tokens, ndx + 1, ctx),    \"projection\" => panic(\"Unhandled\"),    \"$elemMatch\" => do_elemMatch(parent, tokens, ndx + 1, ctx),    \"{\" => parse_pair(parent, tokens, ndx + 1, ctx),    \"}\" => ndx + 1,    \"$position\" => ndx + 2,    \"$set\" => choose_action(parent, tokens, ndx + 1, ctx),    other => {    if !other.starts_with(\"$\") {    return ndx;    } else {    panic(\"Unknown command\");    }    }    }    _ => ndx    }}fn cleanup(ctx) {ctx.make_transient(\"tokens\");let tokens = ctx.get_object(\"tokens\").unwrap();let ndx = 0;while tokens.contains_key(`${ndx}`) {ctx.make_attribute(\"tokens\", `${ndx}`, None);ndx = ndx + 1;}}let tokens = ctx.get_object(\"tokens\").unwrap();let coll = ctx.get_variable(\"collection_name\").unwrap();match tokens.get(\"0\").iter().next() {Some(Some(token)) => {if token.starts_with(\"$\") || token == \"{\" || token == \"[\" {choose_action(coll, tokens, 0, ctx);} else if token != \"projection\" {parse_pair(coll, tokens, 0, ctx);} else {cleanup(ctx);panic(\"unhandled\");}}_ => {cleanup(ctx);panic(\"No tokens\");}}cleanup(ctx);",
+        "essential": true
+      }
+    ],
+    "essential": true
+  }
+]
+"##;
+
+const msds_json_endpoint: &'static str = r##"
+[
+  {
+    "identifier": "Field",
+    "pattern": "#{pool_name}",
+    "auxiliary_pattern": "ClientPool<ThriftClient<#{service_name}ServiceClient>>",
+    "subpatterns": [],
+    "callback": "let service_name = ctx.get_variable(\"service_name\").unwrap();let service_tag = ctx.get_variable(\"pool_name\").unwrap();ctx.make_object(service_name);ctx.make_tag(service_tag, service_name);",
+    "essential": true
+  },
+  {
+    "identifier": "DeclStmt",
+    "pattern": "",
+    "subpatterns": [
+      {
+        "identifier": "VarDecl",
+        "pattern": "#{wrapper_name}(.*_client_wrapper)",
+        "subpatterns": [],
+        "essential": true
+      },
+      {
+        "identifier": "CallExpr",
+        "pattern": "Pop",
+        "auxiliary_pattern": "#&{pool_name}(.*_client_pool)",
+        "subpatterns": [],
+        "essential": false
+      }
+    ],
+    "callback": "let wrapper_name = ctx.get_variable(\"wrapper_name\").unwrap();let pool_name = ctx.get_variable(\"pool_name\").unwrap();ctx.make_tag(wrapper_name, pool_name);",
+    "essential": true
+  },
+  {
+    "identifier": "DeclStmt",
+    "pattern": "",
+    "subpatterns": [
+      {
+        "identifier": "VarDecl",
+        "pattern": "#{client_name}(.*_client)",
+        "subpatterns": [],
+        "essential": true
+      },
+      {
+        "identifier": "CallExpr",
+        "pattern": "GetClient",
+        "auxiliary_pattern": "#&{wrapper_name}",
+        "subpatterns": [],
+        "essential": true
+      }
+    ],
+    "callback": "let client_name = ctx.get_variable(\"client_name\").unwrap();let wrapper_name = ctx.get_variable(\"wrapper_name\").unwrap();ctx.make_tag(client_name, wrapper_name);",
+    "essential": true
+  },
+  {
+    "identifier": "CallExpr",
+    "pattern": "#{endpoint_name}",
+    "auxiliary_pattern": "#&{client_name}(.*_client$)",
+    "subpatterns": [],
+    "callback": "let client_name = ctx.get_variable(\"client_name\").unwrap();let endpoint = ctx.get_variable(\"endpoint_name\").unwrap();ctx.make_attribute(client_name, endpoint, Some(\"\"));ctx.make_transient(endpoint);",
+    "essential": true
+  },
+  {
+    "identifier": "ClassOrInterface",
+    "pattern": "#{callee_name}",
+    "subpatterns": [
+      {
+        "identifier": "CallExpr",
+        "pattern": "#&{endpoint_name}",
+        "auxiliary_pattern": "#&{client_name}(.*_client$)",
+        "subpatterns": [],
+        "essential": true,
+        "callback": "let client_name = ctx.get_variable(\"client_name\").unwrap();let endpoint_name = ctx.get_variable(\"endpoint_name\").unwrap();let callee = ctx.get_variable(\"callee_name\").unwrap();let endpoint = ctx.get_object(client_name).unwrap();let new_list = endpoint.get(endpoint_name).unwrap().unwrap().clone();new_list.push_str(callee);new_list.push_str(\", \");ctx.make_attribute(client_name, endpoint_name, Some(new_list));"
+      }
+    ],
+    "essential": true
+  },
+  {
+    "identifier": "ClassOrInterface",
+    "pattern": "#{callee_name}",
+    "subpatterns": [
+      {
+        "identifier": "Field",
+        "pattern": "#{entity_attribute}",
+        "auxiliary_pattern": "#{attribute_type}",
+        "subpatterns": [],
+        "essential": true,
+        "callback": "let client_name = ctx.get_variable(\"client_name\").unwrap();let endpoint_name = ctx.get_variable(\"endpoint_name\").unwrap();let callee = ctx.get_variable(\"callee_name\").unwrap();let endpoint = ctx.get_object(client_name).unwrap();let new_list = endpoint.get(endpoint_name).unwrap().unwrap().clone();new_list.push_str(callee);new_list.push_str(\", \");ctx.make_attribute(client_name, endpoint_name, Some(new_list));"
+      }
+    ],
+    "essential": true
+  }
+]
+
+"##;
+
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-// fn fibonacci(n: u64) -> u64 {
-//     match n {
-//         0 => 1,
-//         1 => 1,
-//         n => fibonacci(n - 1) + fibonacci(n - 2),
-//     }
-// }
-
-fn criterion_benchmark(c: &mut Criterion) {
+fn laast_benchmark(c: &mut Criterion) {
     let epoch = jemalloc_ctl::epoch::mib().unwrap();
     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
 
@@ -272,8 +448,6 @@ fn criterion_benchmark(c: &mut Criterion) {
             epoch.advance().unwrap();
             let before = allocated.read().unwrap();
             let _ctx = black_box(parse_project_context(&dir)).unwrap();
-            // println!("{}", x);
-            // black_box(Box::leak(Box::new(1)));
             epoch.advance().unwrap();
             mem.push((allocated.read().unwrap() - before) as f64);
         })
@@ -287,5 +461,51 @@ fn criterion_benchmark(c: &mut Criterion) {
     );
 }
 
-criterion_group!(benches, criterion_benchmark);
+fn ressa_benchmark(c: &mut Criterion, name: &str, msds_json: &str) {
+    let epoch = jemalloc_ctl::epoch::mib().unwrap();
+    let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
+
+    let dir = serde_json::from_str::<Directory>(directory_json).unwrap();
+    let ctx = parse_project_context(&dir).unwrap();
+    let msds = serde_json::from_str::<Vec<NodePattern>>(msds_json).unwrap();
+    let mut mem = vec![];
+    c.bench_function(name, |b| {
+        b.iter(|| {
+            epoch.advance().unwrap();
+            let before = allocated.read().unwrap();
+            let _ctx = black_box(run_msd_parse(&mut ctx.modules.clone(), msds.clone()));
+            epoch.advance().unwrap();
+            let after = allocated.read().unwrap();
+            println!("{} - {}", after, before);
+            mem.push((after - before) as f64);
+        })
+    });
+    let mean = mean(&mem);
+    println!(
+        "{} +/- {} ({})",
+        mean,
+        standard_deviation(&mem, Some(mean)),
+        median(&mem)
+    );
+}
+
+fn ressa_benchmark_endpoint_simple(c: &mut Criterion) {
+    ressa_benchmark(c, "RESSA Endpoint Simple", msds_json_endpoint_simple)
+}
+
+fn ressa_benchmark_endpoint(c: &mut Criterion) {
+    ressa_benchmark(c, "RESSA Endpint (Call Graph)", msds_json_endpoint)
+}
+
+fn ressa_benchmark_entity(c: &mut Criterion) {
+    ressa_benchmark(c, "RESSA Entity", msds_json_entity)
+}
+
+criterion_group!(
+    benches,
+    laast_benchmark,
+    ressa_benchmark_endpoint_simple,
+    ressa_benchmark_endpoint,
+    ressa_benchmark_entity
+);
 criterion_main!(benches);
