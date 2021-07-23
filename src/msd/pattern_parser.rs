@@ -141,13 +141,6 @@ impl NodePatternParser for MethodComponent {
             ctx,
         )?;
 
-        write_to_context(
-            &self.return_type,
-            pattern.essential,
-            &mut pattern.compiled_auxiliary_pattern,
-            ctx,
-        )?;
-
         // Match method parameters
         let mut params = pattern
             .subpatterns
@@ -409,7 +402,6 @@ impl NodePatternParser for CallExpr {
                 };
                 match selected.as_ref() {
                     Expr::Ident(Ident { ref name, .. }) => (name, aux_name),
-                    Expr::Literal(Literal { ref value, .. }) => (value, aux_name),
                     ref unknown => {
                         eprintln!("Currently unhandled CallExpression name {:?}", unknown);
                         return None;
@@ -453,12 +445,12 @@ impl NodePatternParser for CallExpr {
         let mut params = pattern
             .subpatterns
             .iter_mut()
-            // .filter(|child| match child.identifier {
-            //     NodeType::CallExpr | NodeType::VarDecl | NodeType::Ident | NodeType::Literal => {
-            //         true
-            //     }
-            //     _ => false,
-            // })
+            .filter(|child| match child.identifier {
+                NodeType::CallExpr | NodeType::VarDecl | NodeType::Ident | NodeType::Literal => {
+                    true
+                }
+                _ => false,
+            })
             .collect::<Vec<&mut NodePattern>>();
         match_subsequence(&mut params, &mut self.args, ctx)
     }
@@ -493,7 +485,7 @@ impl NodePatternParser for AnnotationComponent {
         write_to_context(
             &self.value,
             pattern.essential,
-            &mut pattern.compiled_auxiliary_pattern,
+            &mut pattern.compiled_pattern,
             ctx,
         )
     }
@@ -511,7 +503,7 @@ impl NodePatternParser for AnnotationValuePair {
         write_to_context(
             &self.value,
             pattern.essential,
-            &mut pattern.compiled_auxiliary_pattern,
+            &mut pattern.compiled_pattern,
             ctx,
         )?;
         write_to_context(
@@ -536,7 +528,6 @@ impl NodePatternParser for Ident {
 
 impl NodePatternParser for Literal {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
-        verify_match!(&self.value, &pattern.compiled_pattern, ctx, pattern.essential);
         write_to_context(
             &self.value,
             pattern.essential,

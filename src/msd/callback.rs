@@ -106,7 +106,6 @@ mod tests {
             true,
             "".into(),
             None,
-            false,
         );
         let mut ctx = ParserContext::default();
         let old = ctx.clone();
@@ -135,7 +134,6 @@ mod tests {
             true,
             "".into(),
             None,
-            false,
         );
         let old = ctx.clone();
         ctx = Executor::get().execute(&pattern, ctx).unwrap();

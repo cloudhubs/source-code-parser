@@ -1,5 +1,5 @@
 /// Handles variable type parsing, needed in several modules
-use crate::java::util::stringify_tree_children;
+use crate::js::util::stringify_tree_children;
 use crate::AST;
 
 /// Type indicating no type found

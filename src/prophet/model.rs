@@ -70,6 +70,7 @@ pub enum Language {
     Cpp,
     Python,
     Go,
+    Mozjs,
     // ...
     #[serde(rename = "N/A")]
     Unknown,
@@ -82,6 +83,7 @@ impl Into<Language> for LANG {
             LANG::Java => Language::Java,
             LANG::Python => Language::Python,
             LANG::Go => Language::Go,
+            LANG::Mozjs => Language::Mozjs,
             _ => Language::Unknown,
         }
     }

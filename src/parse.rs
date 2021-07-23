@@ -89,6 +89,7 @@ impl AST {
             LANG::Java => (java::find_components(self, path), lang.into()),
             LANG::Python => (vec![], Language::Python),
             LANG::Go => (vec![], Language::Go),
+            LANG::Mozjs => (js::find_components(self, path), lang.into()),
             lang => {
                 println!("unsupported lang: {:?}", lang);
                 (vec![], Language::Unknown)
@@ -237,6 +238,7 @@ fn merge_modules(modules: Vec<ModuleComponent>, lang: Language) -> Vec<ModuleCom
     let modules = match lang {
         Language::Cpp => cpp::merge_modules(modules),
         Language::Java => java::merge_modules(modules),
+        Language::Mozjs => js::merge_modules(modules),
         _ => modules,
     };
 
