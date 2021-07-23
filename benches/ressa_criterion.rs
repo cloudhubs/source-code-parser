@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use rgsl::statistics::*;
+use statistical::*;
 
 extern crate source_code_parser;
 use source_code_parser::*;
@@ -278,13 +278,11 @@ fn criterion_benchmark(c: &mut Criterion) {
             mem.push(allocated.read().unwrap() - before);
         })
     });
-    let len = mem.len();
     println!(
-        "{} +/- {} ({}, {})",
-        mean(mem, 1, len),
-        sd(mem, 1, len),
-        min(mem, 1, len),
-        max(mem, 1, len)
+        "{} +/- {} ({})",
+        mean(mem),
+        standard_deviation(mem),
+        median(mem)
     );
 }
 
