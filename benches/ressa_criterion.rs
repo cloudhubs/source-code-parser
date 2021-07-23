@@ -266,8 +266,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
 
     let dir = serde_json::from_str::<Directory>(directory_json).unwrap();
-    let mem = vec![];
-    c.bench_function("LAAST", move |b| {
+    let mut mem = vec![];
+    c.bench_function("LAAST", |b| {
         b.iter(|| {
             epoch.advance().unwrap();
             let before = allocated.read().unwrap();
@@ -275,14 +275,15 @@ fn criterion_benchmark(c: &mut Criterion) {
             // println!("{}", x);
             // black_box(Box::leak(Box::new(1)));
             epoch.advance().unwrap();
-            mem.push(allocated.read().unwrap() - before);
+            mem.push((allocated.read().unwrap() - before) as f64);
         })
     });
+    let mean = mean(&mem);
     println!(
         "{} +/- {} ({})",
-        mean(mem),
-        standard_deviation(mem),
-        median(mem)
+        mean,
+        standard_deviation(&mem, Some(mean)),
+        median(&mem)
     );
 }
 
