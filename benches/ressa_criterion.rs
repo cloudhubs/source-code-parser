@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use statistical::*;
 
 extern crate source_code_parser;
 use source_code_parser::{
-    msd::{run_msd_parse, NodePattern},
+    msd::{run_msd_parse, Executor, NodePattern, ParserContext},
     *,
 };
 
@@ -501,11 +503,48 @@ fn ressa_benchmark_entity(c: &mut Criterion) {
     ressa_benchmark(c, "RESSA Entity", msds_json_entity)
 }
 
+fn rune_benchmark(c: &mut Criterion) {
+    let epoch = jemalloc_ctl::epoch::mib().unwrap();
+    let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
+
+    let msds = serde_json::from_str::<Vec<NodePattern>>(msds_json_endpoint_simple).unwrap();
+    let msd = msds
+        .get(0)
+        .unwrap()
+        .clone()
+        .subpatterns
+        .get(0)
+        .unwrap()
+        .clone();
+    let ex = Executor::new().unwrap();
+    let mut mem = vec![];
+    c.bench_function("Rune", |b| {
+        b.iter(|| {
+            epoch.advance().unwrap();
+            let before = allocated.read().unwrap();
+
+            let _ctx = black_box(ex.execute(&msd, ParserContext::default()));
+            epoch.advance().unwrap();
+            let after = allocated.read().unwrap();
+            println!("{} - {}", after, before);
+            mem.push((after - before) as f64);
+        })
+    });
+    let mean = mean(&mem);
+    println!(
+        "{} +/- {} ({})",
+        mean,
+        standard_deviation(&mem, Some(mean)),
+        median(&mem)
+    );
+}
+
 criterion_group!(
     benches,
-    laast_benchmark,
-    ressa_benchmark_endpoint_simple,
-    ressa_benchmark_endpoint,
-    ressa_benchmark_entity
+    // laast_benchmark,
+    // ressa_benchmark_endpoint_simple,
+    // ressa_benchmark_endpoint,
+    // ressa_benchmark_entity
+    rune_benchmark
 );
 criterion_main!(benches);
