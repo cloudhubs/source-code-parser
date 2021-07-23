@@ -1,4 +1,3 @@
-use crate::java::method_body::log_unknown_tag;
 use crate::java::method_def::parse_method;
 use crate::java::modifier::{find_modifier, parse_modifiers, Modifier};
 use crate::java::util::vartype::find_type;
@@ -74,7 +73,7 @@ pub(crate) fn parse_class(
                     &mut fields,
                 );
             }
-            unknown_type => log_unknown_tag(unknown_type, "class"),
+            unknown_type => {}
         };
     }
 
@@ -116,7 +115,7 @@ fn parse_class_body(
             | "enum_declaration"
             | "annotation_declaration" => { /* None, since these were extracted + handled elsewhere */
             }
-            unknown => log_unknown_tag(unknown, "class body"),
+            unknown => {}
         }
     }
 }

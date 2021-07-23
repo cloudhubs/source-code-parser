@@ -19,5 +19,20 @@ rune = "0.9.0"
 runestick = "0.9.0"
 once_cell = "1.7.2"
 
+[dev-dependencies]
+iai = "0.1.1"
+criterion = { version = "0.3.4", features = ["real_blackbox"] }
+chrono = "0.4.19"
+jemallocator = "0.3.2"
+jemalloc-ctl = "0.3.3"
+
 [workspace]
 members = ["source-code-parser-web"]
+
+[[bench]]
+name = "laast_iai"
+harness = false
+
+[[bench]]
+name = "ressa_criterion"
+harness = false

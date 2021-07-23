@@ -394,7 +394,7 @@ impl NodePatternParser for CallExpr {
                     match expr.as_mut() {
                         Expr::Ident(Ident { ref name, .. }) => Some(name),
                         Expr::Literal(Literal { ref value, .. }) => Some(value),
-                        ref unknown => None
+                        ref unknown => None,
                     }
                 } else {
                     // If no auxiliary pattern is provided, it is assumed we must visit the lefthand side
@@ -404,12 +404,12 @@ impl NodePatternParser for CallExpr {
                 match selected.as_ref() {
                     Expr::Ident(Ident { ref name, .. }) => (name, aux_name),
                     Expr::Literal(Literal { ref value, .. }) => (value, aux_name),
-                    ref unknown => None
+                    ref unknown => return None,
                 }
             }
             Expr::Ident(Ident { ref name, .. }) => (name, None),
             Expr::Literal(Literal { ref value, .. }) => (value, None),
-            ref unknown => None
+            ref unknown => return None,
         };
 
         // Verify matches on the function's name and its lefthand side, if the latter was found
@@ -524,7 +524,12 @@ impl NodePatternParser for Ident {
 
 impl NodePatternParser for Literal {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
-        verify_match!(&self.value, &pattern.compiled_pattern, ctx, pattern.essential);
+        verify_match!(
+            &self.value,
+            &pattern.compiled_pattern,
+            ctx,
+            pattern.essential
+        );
         write_to_context(
             &self.value,
             pattern.essential,

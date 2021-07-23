@@ -1,8 +1,8 @@
 use crate::java::method_body::node::{parse_child_nodes, parse_node};
 use crate::java::method_body::parse_block;
 use crate::java::util::parameter::parse_method_parameters;
+use crate::java::util::vartype::find_type;
 use crate::java::util::vartype::parse_type_args;
-use crate::java::{method_body::log_unknown_tag, util::vartype::find_type};
 
 use crate::ast::*;
 use crate::ComponentInfo;
@@ -40,10 +40,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "cast_expression" => parse_cast(ast, component),
 
         // Base case
-        unknown => {
-            log_unknown_tag(unknown, "expressions");
-            None
-        }
+        unknown => None,
     }
 }
 
@@ -84,7 +81,7 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
                 let result = format!("{}{}", generic, comp.value);
                 name = Some(Literal::new(result).into());
             }
-            unknown => log_unknown_tag(unknown, "method_invoke"),
+            unknown => {}
         }
     }
 
@@ -163,9 +160,7 @@ fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Expr {
                     .flat_map(|expr| expr)
                     .collect()
             }
-            unknown => {
-                log_unknown_tag(unknown, "parse_object_creation");
-            }
+            unknown => {}
         }
     }
 
@@ -319,7 +314,7 @@ pub(crate) fn parse_switch(ast: &AST, component: &ComponentInfo) -> Option<Expr>
                     gen_cases(&mut cases, &guard, &in_case);
                 }
             }
-            unknown => log_unknown_tag(unknown, "switch"),
+            unknown => {}
         }
     }
 
