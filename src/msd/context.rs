@@ -59,10 +59,13 @@ impl ParserContext {
         // Insert
         let vars = self.variables.get_mut(obj_name).unwrap();
         match vars.insert(attr_name.into(), attr_type.clone()) {
-            Some(Some(overwritten)) => eprintln!(
-                "Warning: overwrote {} on {}.{}!",
-                overwritten, obj_name, attr_name
-            ),
+            Some(Some(overwritten)) =>
+                ()
+            //     eprintln!(
+            //     "Warning: overwrote {} on {}.{}!",
+            //     overwritten, obj_name, attr_name
+            // )
+            ,
             _ => {
                 // println!("Made: {}.{}={:?}", obj_name, attr_name, attr_type);
             }
@@ -89,7 +92,7 @@ impl ContextObjectActions for ParserContext {
     }
 
     fn make_transient(&mut self, name: &str) {
-        println!("Making transient {}", name);
+        // println!("Making transient {}", name);
         self.make_object(name);
         self.make_attribute(name, TRANSIENT, None);
     }
@@ -135,10 +138,10 @@ impl ContextLocalVariableActions for ParserContext {
     fn make_variable(&mut self, name: &str, val: &str) {
         // println!("Made: ({:?}, {:?})", name, val);
         if let Some(overwritten) = self.local_variables.insert(name.into(), val.into()) {
-            eprintln!(
-                "Warning: overwrote {} with {} for name {}",
-                overwritten, val, name
-            );
+            // eprintln!(
+            //     "Warning: overwrote {} with {} for name {}",
+            //     overwritten, val, name
+            // );
         }
     }
 
