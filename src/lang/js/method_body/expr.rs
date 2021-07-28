@@ -84,7 +84,6 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
                 let result = format!("{}{}", generic, comp.value);
                 name = Some(Literal::new(result).into());
             }
-            "formal_parameters" => {println!("formal parameter found!");}
             unknown => log_unknown_tag(unknown, "method_invoke"),
         }
     }
@@ -162,7 +161,7 @@ fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Expr {
     for child in ast.children.iter() {
         match &*child.r#type {
             "type_identifier" => name = child.value.clone(),
-            "formal_parameters" | "arguments" => {
+            "arguments" => {
                 arg_list = parse_child_nodes(child, component)
                     .into_iter()
                     .map(|node| match node {

@@ -107,7 +107,6 @@ fn parse_class_body(
     for member in ast.children.iter() {
         match &*member.r#type {
             "method_definition" => {
-                println!("parsing method");
                 let mut b = true;
                 for m in member.children.iter(){
                     if &*m.r#value == "constructor"{
@@ -117,7 +116,6 @@ fn parse_class_body(
                     }
                 }
                 if b{
-                    println!("looking at method");
                 methods.push(parse_method(member, component))
                 }},
             "field_declaration" => fields.append(&mut parse_field(member, component)),

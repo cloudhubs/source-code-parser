@@ -12,7 +12,6 @@ use crate::prophet::*;
 
 /// Parse the AST for a specified method
 pub(crate) fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
-    println!("landed in parse_method");
     // Define new component info
     let component = ComponentInfo {
         path: component.path.clone(),
@@ -46,14 +45,6 @@ pub(crate) fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodCompon
             }
             "formal_parameters" => {parameters.push(parse_parameter(member, &component));}
             _ => {} 
-
-            /*
-            "formal_parameters" => parameters = parse_method_parameters(member, &component),
-            "constructor_body" | "statement_block" => {
-                body = Some(parse_block(member, &component));
-            }
-            _ => {} // unknown => println!("{} unknown", unknown),
-            */
         }
     }
 
