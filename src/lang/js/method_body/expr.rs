@@ -29,7 +29,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "array_access" => parse_array_access(ast, component),
 
         // Language statements
-        "method_invocation" => parse_method(ast, component).into(),
+        "call_expression" => parse_method(ast, component).into(),
         "lambda_expression" => parse_lambda(ast, component),
         "switch_statement" => parse_switch(ast, component),
         "parenthesized_expression" => parse_expr(&ast.children[1], component),
@@ -71,7 +71,7 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     for comp in ast.children.iter() {
         match &*comp.r#type {
             "type_arguments" => generic = parse_type_args(ast),
-            "argument_list" => {
+            "arguments" => {
                 args.append(
                     &mut comp
                         .children
@@ -84,6 +84,7 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
                 let result = format!("{}{}", generic, comp.value);
                 name = Some(Literal::new(result).into());
             }
+            "formal_parameters" => {println!("formal parameter found!");}
             unknown => log_unknown_tag(unknown, "method_invoke"),
         }
     }
@@ -161,7 +162,7 @@ fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Expr {
     for child in ast.children.iter() {
         match &*child.r#type {
             "type_identifier" => name = child.value.clone(),
-            "argument_list" => {
+            "formal_parameters" | "arguments" => {
                 arg_list = parse_child_nodes(child, component)
                     .into_iter()
                     .map(|node| match node {

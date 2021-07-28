@@ -3,6 +3,7 @@ use crate::js::modifier::parse_modifiers;
 use crate::js::modifier::Modifier;
 use crate::js::util::parameter::parse_method_parameters;
 use crate::js::util::vartype::find_type;
+use crate::js::util::parameter::parse_parameter;
 use crate::parse::AST;
 use crate::prophet::*;
 
@@ -11,6 +12,7 @@ use crate::prophet::*;
 
 /// Parse the AST for a specified method
 pub(crate) fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodComponent {
+    println!("landed in parse_method");
     // Define new component info
     let component = ComponentInfo {
         path: component.path.clone(),
@@ -39,11 +41,16 @@ pub(crate) fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodCompon
             "modifiers" => {
                 modifier = parse_modifiers(member, &*component.path, &*component.package_name)
             }
+
+            /*
             "formal_parameters" => parameters = parse_method_parameters(member, &component),
             "constructor_body" | "statement_block" => {
                 body = Some(parse_block(member, &component));
             }
             _ => {} // unknown => println!("{} unknown", unknown),
+            */
+            "formal_parameters" => {parameters.push(parse_parameter(member, &component));}
+            _ => {} 
         }
     }
 

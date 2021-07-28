@@ -13,6 +13,8 @@ pub(crate) fn parse_method_parameters(
     ast: &AST,
     component: &ComponentInfo,
 ) -> Vec<MethodParamComponent> {
+    
+    println!("made it to parse_method_parameters");
     let mut params = vec![];
 
     for parameter in ast.children.iter() {
@@ -29,7 +31,7 @@ pub(crate) fn parse_method_parameters(
 }
 
 /// Parse the AST containing a single parameter to a method
-fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent {
+pub(crate) fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent {
     let mut name = String::new();
     let mut modifier = Modifier::new();
     let param_type = find_type(ast);
