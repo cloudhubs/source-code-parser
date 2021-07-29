@@ -88,7 +88,7 @@ impl AST {
             LANG::Cpp => (cpp::find_components(self, path, path), lang.into()),
             LANG::Java => (java::find_components(self, path), lang.into()),
             LANG::Python => (vec![], Language::Python),
-            LANG::Go => (vec![], Language::Go),
+            LANG::Go => (go::find_components(self, path), lang.into()),
             lang => {
                 println!("unsupported lang: {:?}", lang);
                 (vec![], Language::Unknown)
