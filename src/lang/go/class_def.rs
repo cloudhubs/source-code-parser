@@ -3,29 +3,35 @@ use crate::prophet::*;
 use crate::go::util::vartype::find_type;
 use crate::go::util::identifier::parse_identifier;
 
-pub(crate) fn parse_struct(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceComponent> {
+pub(crate) fn parse_type(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceComponent> {
     let node = match ast.find_child_by_type(&["type_spec"]) {
         Some(type_node) => type_node,
         None => ast
     };
 
-    parse_struct_internal(node, &package, path)
+    parse_type_internal(node, &package, path)
 }
 
-pub(crate) fn parse_struct_internal(
+pub(crate) fn parse_type_internal(
     ast: &AST,
     package: &str,
     path: &str
 ) -> Option<ClassOrInterfaceComponent> {
     //determine the type of the instance
-    let instance_type = match ast.find_child_by_type(&["struct_type"]) {
-        Some(r#type) => match &*r#type.value {
-            "interface" => InstanceType::InterfaceComponent,
+
+    let instance_type = match ast.find_child_by_type(&["struct_type", "interface_type"]) {
+        Some(node) => match &*node.r#type {
+            "interface_type" => InstanceType::InterfaceComponent,
             _ => InstanceType::ClassComponent,
         },
         None => InstanceType::ClassComponent,
     };
-
+    /*
+    let instance_type = match ast.find_child_by_type(&["struct_type"]) {
+        Some(child) => InstanceType::ClassComponent,
+        None => InstanceType::InterfaceComponent,
+    };
+    */
     //find the name of the type
     let instance_name = match ast.find_child_by_type(&["type_identifier"]) {
         Some(identifier) => identifier.value.clone(),

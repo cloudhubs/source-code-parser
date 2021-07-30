@@ -40,11 +40,11 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
                 package = parse_package(node);
             },
             "type_declaration" => {
-                match parse_struct(node, &*package, path) {
-                    Some(struct_type) => {
-                        let struct_name = struct_type.component.container_name.clone();
-                        types.insert(struct_name, struct_type);
-                    },
+                match parse_type(node, &*package, path) {
+                    Some(type_decl) => {
+                        let type_name = type_decl.component.container_name.clone();
+                        types.insert(type_name, type_decl);
+                    }
                     None => {}
                 }
             },
@@ -77,7 +77,7 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
                             container_name: parent_component.container_name.clone(),
                             line_count: parent_component.line_count.clone(),
                         },
-                        declaration_type: ContainerType::Class,
+                        declaration_type: parent_struct.declaration_type.clone(),
                         annotations: parent_struct.annotations.clone(),
                         constructors: parent_struct.constructors.clone(),
                         field_components: parent_struct.field_components.clone(),
