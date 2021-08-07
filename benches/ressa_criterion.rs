@@ -1,6 +1,11 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use rune::{Diagnostics, Options, Sources};
+use runestick::{Context, FromValue, Module, Source, Unit};
 use statistical::*;
 
 extern crate source_code_parser;
@@ -516,27 +521,106 @@ fn rune_benchmark(c: &mut Criterion) {
         .get(0)
         .unwrap()
         .clone();
-    let ex = Executor::new().unwrap();
-    let mut mem = vec![];
+
+    // let mut mem: Vec<f64> = vec![];
     c.bench_function("Rune", |b| {
         b.iter(|| {
             epoch.advance().unwrap();
             let before = allocated.read().unwrap();
 
-            let _ctx = black_box(ex.execute(&msd, ParserContext::default()));
+            // let mut s = Sources::new();
+            // s.insert(Source::new("a", "".to_string()));
+
+            let ctx = black_box(
+                Executor::new()
+                    .unwrap()
+                    .execute(&msd, ParserContext::default()),
+            );
+            if let Err(e) = ctx {
+                eprintln!("{:#?}", e);
+                panic!("bye");
+            }
             epoch.advance().unwrap();
             let after = allocated.read().unwrap();
             println!("{} - {}", after, before);
-            mem.push((after - before) as f64);
+            // mem.push((after - before) as f64);
         })
     });
-    let mean = mean(&mem);
-    println!(
-        "{} +/- {} ({})",
-        mean,
-        standard_deviation(&mem, Some(mean)),
-        median(&mem)
-    );
+    // let mean = mean(&mem);
+    // println!(
+    //     "{} +/- {} ({})",
+    //     mean,
+    //     standard_deviation(&mem, Some(mean)),
+    //     median(&mem)
+    // );
+}
+
+fn rune_bench(source: &str) -> runestick::Result<()> {
+    let mut context = Context::default();
+
+    let module = Module::default();
+    context.install(&module)?;
+
+    let mut sources = Sources::new();
+    sources.insert(Source::new("test", source));
+
+    let mut diagnostics = Diagnostics::new();
+
+    let unit = rune::load_sources(
+        &context,
+        &Options::default(),
+        &mut sources,
+        &mut diagnostics,
+    )?;
+
+    let vm = runestick::Vm::new(Arc::new(context.runtime()), Arc::new(unit));
+    vm.execute(&["main"], ())?.complete()?;
+
+    Ok(())
+}
+
+fn rune_benchmark_good(c: &mut Criterion) {
+    let epoch = jemalloc_ctl::epoch::mib().unwrap();
+    let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
+
+    c.bench_function("Rune 1", |b| {
+        b.iter(|| {
+            epoch.advance().unwrap();
+            let before = allocated.read().unwrap();
+
+            black_box(rune_bench(
+                r#"
+            struct User {
+            }
+            
+            impl User {
+            }
+            "#,
+            ));
+
+            epoch.advance().unwrap();
+            let after = allocated.read().unwrap();
+            println!("{} - {}", after, before);
+        })
+    });
+}
+
+fn rune_benchmark_bad(c: &mut Criterion) {
+    let epoch = jemalloc_ctl::epoch::mib().unwrap();
+    let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
+
+    c.bench_function("Rune 2", |b| {
+        b.iter(|| {
+            epoch.advance().unwrap();
+            let before = allocated.read().unwrap();
+
+            black_box(rune_bench(r#"pub fn main() { }"#));
+
+            epoch.advance().unwrap();
+            let after = allocated.read().unwrap();
+            println!("{} - {}", after, before);
+        })
+    });
 }
 
 criterion_group!(
@@ -545,6 +629,8 @@ criterion_group!(
     // ressa_benchmark_endpoint_simple,
     // ressa_benchmark_endpoint,
     // ressa_benchmark_entity
-    rune_benchmark
+    // rune_benchmark
+    rune_benchmark_good,
+    rune_benchmark_bad
 );
 criterion_main!(benches);
