@@ -1,3 +1,5 @@
+use crate::ast::Expr;
+use crate::java::method_body::expr::parse_assignment;
 use crate::{ast::Block, ComponentInfo, AST};
 
 use self::node::parse_child_nodes;
@@ -22,4 +24,8 @@ pub(crate) fn is_common_junk_tag(tag: &str) -> bool {
         "(" | ")" | "{" | "}" | "->" | ";" | "," | "." | "..." => true,
         _ => false,
     }
+}
+
+pub(crate) fn parse_assignment_pub(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    parse_assignment(ast, component)
 }

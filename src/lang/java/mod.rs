@@ -49,7 +49,9 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         .iter()
     {
         match &*node.r#type {
-            "import_declaration" => {parse_import(&node);},
+            "import_declaration" => {
+                parse_import(&node);
+            }
             "package_declaration" => {
                 package = parse_package(&node)
                     .expect(&*format!("Malformed package declaration {:#?}!", node));

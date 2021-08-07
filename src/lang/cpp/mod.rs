@@ -528,6 +528,7 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
                     is_final: false,
                     default_value: "".to_string(),
                     r#type: field_type,
+                    expression: None
                 };
 
                 fields.push(ComponentType::FieldComponent(field));

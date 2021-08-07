@@ -73,7 +73,7 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     let compiled_result = super::CompiledPattern::from_pattern(pattern);
     match compiled_result {
         Ok(compiled_result) => Some(compiled_result),
-        Err(error) => None
+        Err(error) => None,
     }
 }
 
@@ -116,7 +116,7 @@ pub fn msd_node_parse<N: NodePatternParser + MsdNodeExplorer>(
                     *ctx = new_ctx;
                     true
                 }
-                Err(err) => false
+                Err(err) => false,
             }
         } else {
             *ctx = transaction;

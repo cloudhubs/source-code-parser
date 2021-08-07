@@ -245,12 +245,17 @@ impl NodePatternParser for FieldComponent {
             &mut pattern.compiled_pattern,
             ctx,
         )?;
+        let mut expr_vec = Vec::new();
+        if let Some(expr) = &mut self.expression {
+            expr_vec.push(expr);
+        }
 
         // Verify subpatterns
         explore_all_subpatterns!(
             pattern.subpatterns,
             ctx,
             self.annotations,
+            expr_vec,
             self.variables
                 .iter()
                 .map(|var| Ident::new(var.clone()))

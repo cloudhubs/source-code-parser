@@ -1,3 +1,4 @@
+use crate::ast::Expr;
 use super::*;
 use crate::ast::Block;
 use serde::Serialize;
@@ -175,6 +176,7 @@ pub struct FieldComponent {
     #[serde(rename = "default_value_string")]
     pub default_value: String,
     pub r#type: String,
+    pub expression: Option<Expr>
     // is_collection -- may make sense as a field due to language differences
 }
 
