@@ -1,3 +1,5 @@
+use crate::java::method_body::parse_assignment_pub;
+use crate::ast::Expr;
 use crate::java::method_body::log_unknown_tag;
 use crate::java::method_def::parse_method;
 use crate::java::modifier::{find_modifier, parse_modifiers, Modifier};
@@ -123,13 +125,13 @@ fn parse_class_body(
 
 /// Parses a single field in a class
 fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
-    let variables: Vec<String> = ast
-        .find_all_children_by_type(&["variable_declarator"])
-        .get_or_insert(vec![])
-        .iter()
-        .flat_map(|var_decl| var_decl.find_child_by_type(&["identifier"]))
-        .map(|identifier| identifier.value.clone())
-        .collect();
+    // let variables: Vec<String> = ast
+    //     .find_all_children_by_type(&["variable_declarator"])
+    //     .get_or_insert(vec![])
+    //     .iter()
+    //     .flat_map(|var_decl| var_decl.find_child_by_type(&["identifier"]))
+    //     .map(|identifier| identifier.value.clone())
+    //     .collect();
     let modifier = find_modifier(ast, &*component.path, &*component.package_name);
     let r#type = find_type(ast);
     let component = ComponentInfo {
@@ -138,25 +140,68 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
         instance_name: component.instance_name.clone(),
         instance_type: InstanceType::FieldComponent,
     };
+    let fields: Vec<FieldComponent> = ast
+        .find_all_children_by_type(&["variable_declarator"])
+        .get_or_insert(vec![])
+        .iter()
+        .filter(|var_decl| var_decl.find_child_by_type(&["identifier"]).is_some())
+        .map(|var_decl| {
+            let field_name = var_decl.find_child_by_type(&["identifier"]).unwrap().value.clone();
+            let expr: Option<Expr> = parse_assignment_pub(var_decl, &component);
+            FieldComponent {
+                component: ComponentInfo {
+                    path: component.path.clone(),
+                    package_name: component.package_name.clone(),
+                    instance_name: field_name.clone(),
+                    instance_type: InstanceType::FieldComponent,
+                },
+                annotations: modifier.annotations.clone(),
+                variables: vec![],
+                field_name,
+                accessor: modifier.accessor.clone(),
+                is_static: modifier.is_static.clone(),
+                is_final: modifier.is_final.clone(),
+                default_value: String::new(),
+                r#type: r#type.clone(),
+                expression: expr
+            }
+        })
+        .collect();
+    return fields;
+    
 
     // TODO: How to handle field_name, default_value?
-    variables
-        .into_iter()
-        .map(|field_name| FieldComponent {
-            component: ComponentInfo {
-                path: component.path.clone(),
-                package_name: component.package_name.clone(),
-                instance_name: field_name.clone(),
-                instance_type: InstanceType::FieldComponent,
-            },
-            annotations: modifier.annotations.clone(),
-            variables: vec![],
-            field_name,
-            accessor: modifier.accessor.clone(),
-            is_static: modifier.is_static.clone(),
-            is_final: modifier.is_final.clone(),
-            default_value: String::new(),
-            r#type: r#type.clone(),
-        })
-        .collect()
+    // variables
+    //     .into_iter()
+    //     .map(|field_name| FieldComponent {
+    //         component: ComponentInfo {
+    //             path: component.path.clone(),
+    //             package_name: component.package_name.clone(),
+    //             instance_name: field_name.clone(),
+    //             instance_type: InstanceType::FieldComponent,
+    //         },
+    //         annotations: modifier.annotations.clone(),
+    //         variables: vec![],
+    //         field_name,
+    //         accessor: modifier.accessor.clone(),
+    //         is_static: modifier.is_static.clone(),
+    //         is_final: modifier.is_final.clone(),
+    //         default_value: String::new(),
+    //         r#type: r#type.clone(),
+    //     })
+    //     .collect()
 }
+
+// fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+//     match &*ast.r#type {
+//         // Variables an initialization
+//         "variable_declarator" | "assignment_expression" => parse_assignment(ast, component),
+//         // Base case
+//         unknown => {
+//             log_unknown_tag(unknown, "expressions");
+//             None
+//         }
+//     }
+// }
+
+

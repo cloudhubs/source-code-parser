@@ -121,8 +121,8 @@ pub fn msd_node_parse<N: NodePatternParser + MsdNodeExplorer>(
                 }
                 Err(err) => {
                     eprintln!(
-                        "Failed to execute callback ({:#?}) for: {:?}\n{:#?}",
-                        err, pattern.callback, tmp
+                        "Failed to execute callback ({:#?}) for: {:?}",
+                        err, pattern.callback
                     );
                     false
                 }

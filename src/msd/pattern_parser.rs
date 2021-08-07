@@ -4,6 +4,8 @@ use crate::{ast::*, explore_all};
 use crate::{msd::choose_exit, prophet::*};
 use itertools::Itertools;
 
+use std::iter;
+
 /// Defines how to parse an individual node that has been confirmed to be of interest
 pub trait NodePatternParser {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()>;
@@ -245,12 +247,17 @@ impl NodePatternParser for FieldComponent {
             &mut pattern.compiled_pattern,
             ctx,
         )?;
+        let mut expr_vec = Vec::new();
+        if let Some(expr) = &mut self.expression {
+            expr_vec.push(expr);
+        }
 
         // Verify subpatterns
         explore_all_subpatterns!(
             pattern.subpatterns,
             ctx,
             self.annotations,
+            expr_vec,
             self.variables
                 .iter()
                 .map(|var| Ident::new(var.clone()))
@@ -395,10 +402,10 @@ impl NodePatternParser for CallExpr {
                         Expr::Ident(Ident { ref name, .. }) => Some(name),
                         Expr::Literal(Literal { ref value, .. }) => Some(value),
                         ref unknown => {
-                            eprintln!(
-                                "Currently unhandled CallExpression auxiliary match {:?}",
-                                unknown
-                            );
+                            // eprintln!(
+                            //     "Currently unhandled CallExpression auxiliary match {:?}",
+                            //     unknown
+                            // );
                             return None;
                         }
                     }
@@ -411,7 +418,7 @@ impl NodePatternParser for CallExpr {
                     Expr::Ident(Ident { ref name, .. }) => (name, aux_name),
                     Expr::Literal(Literal { ref value, .. }) => (value, aux_name),
                     ref unknown => {
-                        eprintln!("Currently unhandled CallExpression name {:?}", unknown);
+                        // eprintln!("Currently unhandled CallExpression name {:?}", unknown);
                         return None;
                     }
                 }
@@ -419,7 +426,7 @@ impl NodePatternParser for CallExpr {
             Expr::Ident(Ident { ref name, .. }) => (name, None),
             Expr::Literal(Literal { ref value, .. }) => (value, None),
             ref unknown => {
-                eprintln!("Currently unhandled CallExpression name {:?}", unknown);
+                // eprintln!("Currently unhandled CallExpression name {:?}", unknown);
                 return None;
             }
         };

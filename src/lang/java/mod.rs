@@ -21,11 +21,11 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
         let name = module.module_name.clone();
         println!("Mod. Name: {}", name);
         if packages.contains_key(&name) {
-            println!("Merging...");
+            // println!("Merging...");
             let orig_module = packages.get_mut(&name).expect("Contains key lied to me!");
             orig_module.merge_into(module);
         } else {
-            println!("New! {}", module.module_name);
+            // println!("New! {}", module.module_name);
             packages.insert(name, module);
         }
     }
