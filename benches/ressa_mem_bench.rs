@@ -1,3 +1,5 @@
+use std::ops::RemAssign;
+
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use statistical::*;
 
@@ -13,19 +15,24 @@ use source_code_parser::{
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-fn laast_benchmark(c: &mut Criterion) {
+fn ressa_benchmark(c: &mut Criterion, name: &str, msds_json: &str) {
     let epoch = jemalloc_ctl::epoch::mib().unwrap();
     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
 
     let dir = serde_json::from_str::<Directory>(directory_json_dsb).unwrap();
+    let ctx = parse_project_context(&dir).unwrap();
+    let msds = serde_json::from_str::<Vec<NodePattern>>(msds_json).unwrap();
     let mut mem = vec![];
-    c.bench_function("LAAST", |b| {
+    c.bench_function(name, |b| {
+        epoch.advance().unwrap();
+        let before = allocated.read().unwrap();
         b.iter(|| {
+            let ctx = run_msd_parse(&mut ctx.modules.clone(), msds.clone());
+            black_box(ctx);
             epoch.advance().unwrap();
-            let before = allocated.read().unwrap();
-            let _ctx = black_box(parse_project_context(&dir)).unwrap();
-            epoch.advance().unwrap();
-            mem.push((allocated.read().unwrap() - before) as f64);
+            let after = allocated.read().unwrap();
+            println!("{} - {}", after, before);
+            mem.push((after - before) as f64);
         })
     });
     let mean = mean(&mem);
@@ -37,27 +44,24 @@ fn laast_benchmark(c: &mut Criterion) {
     );
 }
 
-fn ressa_benchmark(c: &mut Criterion, name: &str, msds_json: &str) {
-    let dir = serde_json::from_str::<Directory>(directory_json_dsb).unwrap();
-    let ctx = parse_project_context(&dir).unwrap();
-    let msds = serde_json::from_str::<Vec<NodePattern>>(msds_json).unwrap();
-    c.bench_function(name, |b| {
-        b.iter(|| {
-            let _ctx = black_box(run_msd_parse(&mut ctx.modules.clone(), msds.clone()));
-        })
-    });
+fn ressa_benchmark_endpoint_simple_dsb(c: &mut Criterion) {
+    ressa_benchmark(
+        c,
+        "RESSA Endpoint (DeathStarBench Simple)",
+        msds_json_endpoint_simple_dsb,
+    )
 }
 
-fn ressa_benchmark_endpoint_simple(c: &mut Criterion) {
-    ressa_benchmark(c, "RESSA Endpoint Simple", msds_json_endpoint_simple_dsb)
+fn ressa_benchmark_endpoint_dsb(c: &mut Criterion) {
+    ressa_benchmark(
+        c,
+        "RESSA Endpoint (DeathStarBench Call Graph)",
+        msds_json_endpoint_dsb,
+    )
 }
 
-fn ressa_benchmark_endpoint(c: &mut Criterion) {
-    ressa_benchmark(c, "RESSA Endpint (Call Graph)", msds_json_endpoint_dsb)
-}
-
-fn ressa_benchmark_entity(c: &mut Criterion) {
-    ressa_benchmark(c, "RESSA Entity", msds_json_entity_dsb)
+fn ressa_benchmark_entity_dsb(c: &mut Criterion) {
+    ressa_benchmark(c, "RESSA Entity (DeathStarBench)", msds_json_entity_dsb)
 }
 
 fn ressa_benchmark_endpoint_tt(c: &mut Criterion) {
