@@ -1,4 +1,10 @@
-use std::{fs::File, ops::RemAssign};
+use std::{
+    fs::{File, OpenOptions},
+    ops::RemAssign,
+    path::Path,
+};
+
+use pprof::criterion::{Output, PProfProfiler};
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use statistical::*;
@@ -52,17 +58,33 @@ fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
         standard_deviation(&mem, Some(mean)),
         median(&mem)
     );
-
-    if let Ok(report) = guard.report().build() {
-        let file = File::create(format!("{}.flamegraph.svg", ressa_json)).unwrap();
-        report.flamegraph(file).unwrap();
+    match guard.report().build() {
+        Ok(report) => {
+            let p = format!(
+                "/home/jacob/dev/rust/source-code-parser/target/criterion/{}/flamegraph.svg",
+                name
+            );
+            let file = match OpenOptions::new()
+                .truncate(true)
+                .create(true)
+                .write(true)
+                .open(&*p)
+            {
+                Ok(file) => file,
+                Err(err) => panic!("{:?} - {}", err, p),
+            };
+            report.flamegraph(file).unwrap();
+        }
+        Err(err) => {
+            panic!("flamegraph - {:?}", err);
+        }
     };
 }
 
 fn ressa_benchmark_endpoint_simple_dsb(c: &mut Criterion) {
     ressa_benchmark(
         c,
-        "ReSSA Endpoint (DeathStarBench Simple)",
+        "ressa_endpoint_deathstarbench_simple",
         ressa_json_endpoint_simple_dsb,
     )
 }
@@ -70,21 +92,21 @@ fn ressa_benchmark_endpoint_simple_dsb(c: &mut Criterion) {
 fn ressa_benchmark_endpoint_dsb(c: &mut Criterion) {
     ressa_benchmark(
         c,
-        "ReSSA Endpoint (DeathStarBench Call Graph)",
+        "ressa_endpoint_deathstarbench_call_graph",
         ressa_json_endpoint_dsb,
     )
 }
 
 fn ressa_benchmark_entity_dsb(c: &mut Criterion) {
-    ressa_benchmark(c, "ReSSA Entity (DeathStarBench)", ressa_json_entity_dsb)
+    ressa_benchmark(c, "ressa_entity_deathstarbench", ressa_json_entity_dsb)
 }
 
 fn ressa_benchmark_endpoint_tt(c: &mut Criterion) {
-    ressa_benchmark(c, "ReSSA Endpoint (TrainTicket)", ressa_json_endpoint_tt)
+    ressa_benchmark(c, "ressa_endpoint_trainticket", ressa_json_endpoint_tt)
 }
 
 fn ressa_benchmark_entity_tt(c: &mut Criterion) {
-    ressa_benchmark(c, "ReSSA Entity (TrainTicket)", ressa_json_entity_tt)
+    ressa_benchmark(c, "reessa_entity_trainticket", ressa_json_entity_tt)
 }
 
 criterion_group!(
