@@ -1,15 +1,24 @@
 use once_cell::sync::OnceCell;
 use rune::{Diagnostics, Options, Sources};
-use runestick::{FromValue, Source, Value, Vm};
-use std::sync::Arc;
+use runestick::{FromValue, RuntimeContext, Source, Unit, Value, Vm};
+use std::sync::{Arc, Mutex};
 
 use super::{ContextLocalVariableActions, ContextObjectActions, NodePattern, ParserContext};
 
 static EXEC: OnceCell<Executor> = OnceCell::new();
 
-#[derive(Default)]
+static EXEC2: OnceCell<Arc<Mutex<Executor>>> = OnceCell::new();
+
+// #[derive(Default)]
 pub struct Executor {
     executor_ctx: runestick::Context,
+    runtime: Arc<RuntimeContext>,
+    options: Options,
+    sources: Sources,
+    n: usize,
+    // unit: Arc<Unit>,
+    // diagnostics: Diagnostics,
+    // sources: Sources,
 }
 
 impl Executor {
@@ -36,35 +45,76 @@ impl Executor {
         module.inst_fn("clone", Option::<Value>::clone)?;
         executor_ctx.install(&module)?;
 
-        Ok(Executor { executor_ctx })
+        let runtime = Arc::new(executor_ctx.runtime());
+
+        // let mut sources = Sources::new();
+        // let source = format!("pub fn main(ctx) {{ ctx }}");
+        // sources.insert(Source::new("callback", source));
+
+        // let mut diagnostics = Diagnostics::new();
+
+        // let unit = Arc::news(
+        //     rune::load_sources(
+        //         &executor_ctx,
+        //         &Options::default(),
+        //         &mut sources,
+        //         &mut diagnostics,
+        //     )
+        //     .unwrap(),
+        // );
+
+        Ok(Executor {
+            executor_ctx,
+            runtime,
+            options: Options::default(),
+            sources: Sources::new(),
+            n: 0,
+            // unit,
+            // diagnostics,
+            // sources,
+        })
     }
 
     pub fn execute(
-        &self,
+        &mut self,
         pattern: &NodePattern,
         ctx: ParserContext,
     ) -> runestick::Result<ParserContext> {
         match &pattern.callback {
             Some(callback) => {
-                let mut sources = Sources::new();
-                let source = format!("pub fn main(ctx) {{ {} ctx }}", callback);
-                sources.insert(Source::new("callback", source));
+                // let mut sources = Sources::new();
+                // let source = format!("pub fn main(ctx) {{ {} ctx }}", callback);
+                self.sources.insert(Source::new(
+                    "callback",
+                    r#"
+                    struct User {
+                    }
+                    
+                    impl User {
+                        fn set_active(self) {
+                        }
+                    }
+                    "#
+                    .to_string(),
+                ));
 
                 let mut diagnostics = Diagnostics::new();
 
                 let runtime = Arc::new(self.executor_ctx.runtime());
                 let unit = Arc::new(rune::load_sources(
                     &self.executor_ctx,
-                    &Options::default(),
-                    &mut sources,
+                    &self.options, //&Options::default(),
+                    &mut self.sources,
                     &mut diagnostics,
                 )?);
 
-                let vm = Vm::new(runtime, unit);
-                // For some reason we have to pass ownership of the context and retrieve it back from a return value...
-                // This is being done with a wrapper "main" function that calls the callback and returns the context again.
-                let ret_val = vm.execute(&["main"], (ctx,))?.complete()?;
-                let ctx = FromValue::from_value(ret_val)?;
+                // let vm = Vm::new(runtime, unit);
+
+                // // For some reason we have to pass ownership of the context and retrieve it back from a return value...
+                // // This is being done with a wrapper "main" function that calls the callback and returns the context again.
+                // let ret_val = vm.execute(&["Bob::foo"], ())?.complete()?;
+                // let v: i32 = FromValue::from_value(ret_val)?;
+                // eprintln!("{}", v);
                 Ok(ctx)
             }
             None => Ok(ctx),
@@ -72,13 +122,13 @@ impl Executor {
     }
 
     pub fn get() -> &'static Executor {
-        EXEC.get_or_init(|| {
-            Executor::new()
-                .map_err(|err| {
-                    err
-                })
-                .unwrap()
-        })
+        EXEC.get_or_init(|| Executor::new().map_err(|err| err).unwrap())
+    }
+
+    pub fn get2() -> Arc<Mutex<Executor>> {
+        EXEC2
+            .get_or_init(|| Arc::new(Mutex::new(Executor::new().map_err(|err| err).unwrap())))
+            .clone()
     }
 }
 
@@ -109,7 +159,11 @@ mod tests {
         );
         let mut ctx = ParserContext::default();
         let old = ctx.clone();
-        ctx = Executor::get().execute(&pattern, ctx).unwrap();
+        ctx = Executor::get2()
+            .lock()
+            .unwrap()
+            .execute(&pattern, ctx)
+            .unwrap();
         assert_ne!(old, ctx);
         assert_eq!("bar", ctx.get_variable("foo").unwrap())
     }
@@ -137,7 +191,11 @@ mod tests {
             false,
         );
         let old = ctx.clone();
-        ctx = Executor::get().execute(&pattern, ctx).unwrap();
+        ctx = Executor::get2()
+            .lock()
+            .unwrap()
+            .execute(&pattern, ctx)
+            .unwrap();
         assert_eq!(old, ctx);
         assert_eq!(
             old.get_variable("foo").unwrap(),

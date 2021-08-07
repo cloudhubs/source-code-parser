@@ -120,7 +120,7 @@ impl ContextLocalVariableActions for ParserContext {
     }
 
     fn get_variable(&self, name: &str) -> Option<String> {
-        let var = match self.local_variables.get(name.into()) {
+        let var = match self.local_variables.get(name) {
             Some(value) => Some(value.clone()),
             None => None,
         };

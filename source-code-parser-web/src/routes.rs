@@ -27,8 +27,8 @@ pub fn ctx(payload: web::Json<Directory>) -> HttpResponse {
 
 #[derive(Deserialize)]
 pub struct MsdInput {
-    project_dir: Directory,
-    patterns: Vec<NodePattern>,
+    pub project_dir: Directory,
+    pub patterns: Vec<NodePattern>,
 }
 
 #[post("/msd")]

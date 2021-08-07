@@ -73,7 +73,7 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     let compiled_result = super::CompiledPattern::from_pattern(pattern);
     match compiled_result {
         Ok(compiled_result) => Some(compiled_result),
-        Err(error) => None
+        Err(error) => None,
     }
 }
 
@@ -111,12 +111,16 @@ pub fn msd_node_parse<N: NodePatternParser + MsdNodeExplorer>(
     let passed = if parse(pattern, node, &mut transaction) {
         if pattern.callback.is_some() {
             let tmp = transaction.clone();
-            match Executor::get().execute(pattern, transaction) {
+            match Executor::get2()
+                .lock()
+                .expect("poisoned")
+                .execute(pattern, transaction)
+            {
                 Ok(new_ctx) => {
                     *ctx = new_ctx;
                     true
                 }
-                Err(err) => false
+                Err(err) => false,
             }
         } else {
             *ctx = transaction;
