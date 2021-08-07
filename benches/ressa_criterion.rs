@@ -39,43 +39,43 @@ fn laast_benchmark(c: &mut Criterion) {
     );
 }
 
-fn ressa_benchmark(c: &mut Criterion, name: &str, msds_json: &str) {
+fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
     let dir = serde_json::from_str::<Directory>(directory_json_dsb).unwrap();
     let ctx = parse_project_context(&dir).unwrap();
-    let msds = serde_json::from_str::<Vec<NodePattern>>(msds_json).unwrap();
+    let ressa = serde_json::from_str::<Vec<NodePattern>>(ressa_json).unwrap();
     c.bench_function(name, |b| {
         b.iter(|| {
-            let _ctx = black_box(run_msd_parse(&mut ctx.modules.clone(), msds.clone()));
+            let _ctx = black_box(run_msd_parse(&mut ctx.modules.clone(), ressa.clone()));
         })
     });
 }
 
 fn ressa_benchmark_endpoint_simple(c: &mut Criterion) {
-    ressa_benchmark(c, "RESSA Endpoint Simple", msds_json_endpoint_simple_dsb)
+    ressa_benchmark(c, "ReSSA Endpoint Simple", ressa_json_endpoint_simple_dsb)
 }
 
 fn ressa_benchmark_endpoint(c: &mut Criterion) {
-    ressa_benchmark(c, "RESSA Endpint (Call Graph)", msds_json_endpoint_dsb)
+    ressa_benchmark(c, "ReSSA Endpint (Call Graph)", ressa_json_endpoint_dsb)
 }
 
 fn ressa_benchmark_entity(c: &mut Criterion) {
-    ressa_benchmark(c, "RESSA Entity", msds_json_entity_dsb)
+    ressa_benchmark(c, "ReSSA Entity", ressa_json_entity_dsb)
 }
 
 fn ressa_benchmark_endpoint_tt(c: &mut Criterion) {
-    ressa_benchmark(c, "RESSA Endpoint (TrainTicket)", msds_json_endpoint_tt)
+    ressa_benchmark(c, "ReSSA Endpoint (TrainTicket)", ressa_json_endpoint_tt)
 }
 
 fn ressa_benchmark_entity_tt(c: &mut Criterion) {
-    ressa_benchmark(c, "RESSA Entity (TrainTicket)", msds_json_entity_tt)
+    ressa_benchmark(c, "ReSSA Entity (TrainTicket)", ressa_json_entity_tt)
 }
 
 // fn rune_benchmark(c: &mut Criterion) {
 //     let epoch = jemalloc_ctl::epoch::mib().unwrap();
 //     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
 
-//     let msds = serde_json::from_str::<Vec<NodePattern>>(msds_json_endpoint_simple).unwrap();
-//     let msd = msds
+//     let ressa = serde_json::from_str::<Vec<NodePattern>>(ressa_json_endpoint_simple).unwrap();
+//     let msd = ressa
 //         .get(0)
 //         .unwrap()
 //         .clone()

@@ -1768,7 +1768,7 @@ pub const directory_json_tt: &'static str = format!(
     dir = trainticket_root
 );
 
-pub const msds_json_endpoint_simple_dsb: &'static str = r##"
+pub const ressa_json_endpoint_simple_dsb: &'static str = r##"
 [
   {
     "identifier": "ClassOrInterface",
@@ -1787,7 +1787,7 @@ pub const msds_json_endpoint_simple_dsb: &'static str = r##"
 ]
 "##;
 
-pub const msds_json_entity_dsb: &'static str = r##"
+pub const ressa_json_entity_dsb: &'static str = r##"
 [
   {
     "identifier": "Method",
@@ -1855,7 +1855,7 @@ pub const msds_json_entity_dsb: &'static str = r##"
 ]
 "##;
 
-pub const msds_json_endpoint_dsb: &'static str = r##"
+pub const ressa_json_endpoint_dsb: &'static str = r##"
 [
   {
     "identifier": "Field",
@@ -1949,7 +1949,7 @@ pub const msds_json_endpoint_dsb: &'static str = r##"
 
 "##;
 
-pub const msds_json_endpoint_tt: &'static str = r##"
+pub const ressa_json_endpoint_tt: &'static str = r##"
 [
   {
     "identifier": "ClassOrInterface",
@@ -2116,7 +2116,7 @@ pub const msds_json_endpoint_tt: &'static str = r##"
 ]
 "##;
 
-pub const msds_json_entity_tt: &'static str = r##"
+pub const ressa_json_entity_tt: &'static str = r##"
 [
   {
     "identifier": "ClassOrInterface",

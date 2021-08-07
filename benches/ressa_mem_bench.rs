@@ -15,13 +15,14 @@ use source_code_parser::{
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-fn ressa_benchmark(c: &mut Criterion, name: &str, msds_json: &str) {
+fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
     let epoch = jemalloc_ctl::epoch::mib().unwrap();
     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
+    let guard = pprof::ProfilerGuard::new(100).unwrap();
 
     let dir = serde_json::from_str::<Directory>(directory_json_dsb).unwrap();
     let ctx = parse_project_context(&dir).unwrap();
-    let msds = serde_json::from_str::<Vec<NodePattern>>(msds_json).unwrap();
+    let msds = serde_json::from_str::<Vec<NodePattern>>(ressa_json).unwrap();
     let mut mem = vec![];
     c.bench_function(name, |b| {
         epoch.advance().unwrap();
@@ -42,12 +43,17 @@ fn ressa_benchmark(c: &mut Criterion, name: &str, msds_json: &str) {
         standard_deviation(&mem, Some(mean)),
         median(&mem)
     );
+
+    if let Ok(report) = guard.report().build() {
+        let file = File::create(format!("{}.flamegraph.svg", ressa_json)).unwrap();
+        report.flamegraph(file).unwrap();
+    };
 }
 
 fn ressa_benchmark_endpoint_simple_dsb(c: &mut Criterion) {
     ressa_benchmark(
         c,
-        "RESSA Endpoint (DeathStarBench Simple)",
+        "ReSSA Endpoint (DeathStarBench Simple)",
         msds_json_endpoint_simple_dsb,
     )
 }
@@ -55,21 +61,21 @@ fn ressa_benchmark_endpoint_simple_dsb(c: &mut Criterion) {
 fn ressa_benchmark_endpoint_dsb(c: &mut Criterion) {
     ressa_benchmark(
         c,
-        "RESSA Endpoint (DeathStarBench Call Graph)",
+        "ReSSA Endpoint (DeathStarBench Call Graph)",
         msds_json_endpoint_dsb,
     )
 }
 
 fn ressa_benchmark_entity_dsb(c: &mut Criterion) {
-    ressa_benchmark(c, "RESSA Entity (DeathStarBench)", msds_json_entity_dsb)
+    ressa_benchmark(c, "ReSSA Entity (DeathStarBench)", msds_json_entity_dsb)
 }
 
 fn ressa_benchmark_endpoint_tt(c: &mut Criterion) {
-    ressa_benchmark(c, "RESSA Endpoint (TrainTicket)", msds_json_endpoint_tt)
+    ressa_benchmark(c, "ReSSA Endpoint (TrainTicket)", msds_json_endpoint_tt)
 }
 
 fn ressa_benchmark_entity_tt(c: &mut Criterion) {
-    ressa_benchmark(c, "RESSA Entity (TrainTicket)", msds_json_entity_tt)
+    ressa_benchmark(c, "ReSSA Entity (TrainTicket)", msds_json_entity_tt)
 }
 
 criterion_group!(
