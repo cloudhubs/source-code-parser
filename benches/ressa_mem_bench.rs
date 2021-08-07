@@ -15,6 +15,13 @@ use source_code_parser::{
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
+fn prune_callbacks(np: &mut NodePattern) {
+    np.callback = None;
+    np.subpatterns
+        .iter_mut()
+        .for_each(|sub| prune_callbacks(sub));
+}
+
 fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
     let epoch = jemalloc_ctl::epoch::mib().unwrap();
     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
@@ -22,7 +29,9 @@ fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
 
     let dir = serde_json::from_str::<Directory>(&*directory_json_dsb()).unwrap();
     let ctx = parse_project_context(&dir).unwrap();
-    let msds = serde_json::from_str::<Vec<NodePattern>>(ressa_json).unwrap();
+    let mut msds = serde_json::from_str::<Vec<NodePattern>>(ressa_json).unwrap();
+    msds.iter_mut().for_each(|msd| prune_callbacks(msd));
+
     let mut mem = vec![];
     c.bench_function(name, |b| {
         epoch.advance().unwrap();

@@ -37,3 +37,7 @@ harness = false
 [[bench]]
 name = "ressa_criterion"
 harness = false
+
+[[bench]]
+name = "ressa_mem_bench"
+harness = false

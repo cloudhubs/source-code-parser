@@ -21,7 +21,7 @@ fn laast_benchmark(c: &mut Criterion, name: &str, dir: &str) {
 
     let dir = serde_json::from_str::<Directory>(dir).unwrap();
     let mut mem = vec![];
-    c.bench_function("LAAST", |b| {
+    c.bench_function(name, |b| {
         b.iter(|| {
             epoch.advance().unwrap();
             let before = allocated.read().unwrap();
