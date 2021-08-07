@@ -106,6 +106,7 @@ mod tests {
                     is_final: false,
                     default_value: "".to_string(),
                     r#type: "String".to_string(),
+                    expression: None,
                 }],
             }],
             interfaces: vec![],

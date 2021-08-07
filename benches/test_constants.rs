@@ -1,8 +1,9 @@
 pub const deathstarbench_root: &'static str = "/home/jacob/dev/DeathStarBench/mediaMicroservices";
-pub const trainticket_root: &'static str = "DOWNLOAD_AND_INSERT";
+pub const trainticket_root: &'static str = "/home/jacob/dev/train-ticket";
 
-pub const directory_json_dsb: &'static str = format!(
-    r#"
+pub fn directory_json_dsb() -> String {
+    format!(
+        r#"
 {{
     "instanceType": "DirectoryComponent",
     "path": "",
@@ -247,10 +248,13 @@ pub const directory_json_dsb: &'static str = format!(
     "numFiles": 0
   }}
 "#,
-    dir = deathstarbench_root
-);
-pub const directory_json_tt: &'static str = format!(
-    r#"{{
+        dir = deathstarbench_root
+    )
+}
+
+pub fn directory_json_tt() -> String {
+    format!(
+        r#"{{
   "path": "{dir}",
   "files": [],
   "subDirectories": [
@@ -1765,8 +1769,9 @@ pub const directory_json_tt: &'static str = format!(
       }}
   ]
 }}"#,
-    dir = trainticket_root
-);
+        dir = trainticket_root
+    )
+}
 
 pub const ressa_json_endpoint_simple_dsb: &'static str = r##"
 [
