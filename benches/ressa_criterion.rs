@@ -51,31 +51,39 @@ fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
 }
 
 fn ressa_benchmark_endpoint_simple(c: &mut Criterion) {
-    ressa_benchmark(c, "ReSSA Endpoint Simple", ressa_json_endpoint_simple_dsb)
+    ressa_benchmark(
+        c,
+        "ressa_endpoint_deathstarbench_simple",
+        ressa_json_endpoint_simple_dsb,
+    )
 }
 
 fn ressa_benchmark_endpoint(c: &mut Criterion) {
-    ressa_benchmark(c, "ReSSA Endpint (Call Graph)", ressa_json_endpoint_dsb)
+    ressa_benchmark(
+        c,
+        "ressa_endpoint_deathstarbench_call_graph",
+        ressa_json_endpoint_dsb,
+    )
 }
 
 fn ressa_benchmark_entity(c: &mut Criterion) {
-    ressa_benchmark(c, "ReSSA Entity", ressa_json_entity_dsb)
+    ressa_benchmark(c, "ressa_entity_deathstarbench", ressa_json_entity_dsb)
 }
 
 fn ressa_benchmark_endpoint_tt(c: &mut Criterion) {
-    ressa_benchmark(c, "ReSSA Endpoint (TrainTicket)", ressa_json_endpoint_tt)
+    ressa_benchmark(c, "ressa_endpoint_trainticket", ressa_json_endpoint_tt)
 }
 
 fn ressa_benchmark_entity_tt(c: &mut Criterion) {
-    ressa_benchmark(c, "ReSSA Entity (TrainTicket)", ressa_json_entity_tt)
+    ressa_benchmark(c, "ressa_entity_trainticket", ressa_json_entity_tt)
 }
 
 fn laast_benchmark_dsb(c: &mut Criterion) {
-    laast_benchmark(c, "LAAST DeathStarBench", &*directory_json_dsb())
+    laast_benchmark(c, "laast_deathstarbench", &*directory_json_dsb())
 }
 
 fn laast_benchmark_tt(c: &mut Criterion) {
-    laast_benchmark(c, "LAAST TrainTicket", &*directory_json_tt())
+    laast_benchmark(c, "laast_trainticket", &*directory_json_tt())
 }
 
 // fn rune_benchmark(c: &mut Criterion) {

@@ -31,7 +31,6 @@ fn prune_callbacks(np: &mut NodePattern) {
 fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
     let epoch = jemalloc_ctl::epoch::mib().unwrap();
     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
-    let guard = pprof::ProfilerGuard::new(100).unwrap();
 
     let dir = serde_json::from_str::<Directory>(&*directory_json_dsb()).unwrap();
     let ctx = parse_project_context(&dir).unwrap();
@@ -39,10 +38,11 @@ fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
     msds.iter_mut().for_each(|msd| prune_callbacks(msd));
 
     let mut mem = vec![];
+    let guard = pprof::ProfilerGuard::new(100).unwrap();
     c.bench_function(name, |b| {
-        epoch.advance().unwrap();
-        let before = allocated.read().unwrap();
         b.iter(|| {
+            epoch.advance().unwrap();
+            let before = allocated.read().unwrap();
             let ctx = run_msd_parse(&mut ctx.modules.clone(), msds.clone());
             black_box(ctx);
             epoch.advance().unwrap();
@@ -51,13 +51,6 @@ fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
             mem.push((after - before) as f64);
         })
     });
-    let mean = mean(&mem);
-    println!(
-        "{} +/- {} ({})",
-        mean,
-        standard_deviation(&mem, Some(mean)),
-        median(&mem)
-    );
     match guard.report().build() {
         Ok(report) => {
             let p = format!(
@@ -79,6 +72,13 @@ fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
             panic!("flamegraph - {:?}", err);
         }
     };
+    let mean = mean(&mem);
+    println!(
+        "{} +/- {} ({})",
+        mean,
+        standard_deviation(&mem, Some(mean)),
+        median(&mem)
+    );
 }
 
 fn ressa_benchmark_endpoint_simple_dsb(c: &mut Criterion) {
@@ -106,7 +106,7 @@ fn ressa_benchmark_endpoint_tt(c: &mut Criterion) {
 }
 
 fn ressa_benchmark_entity_tt(c: &mut Criterion) {
-    ressa_benchmark(c, "reessa_entity_trainticket", ressa_json_entity_tt)
+    ressa_benchmark(c, "ressa_entity_trainticket", ressa_json_entity_tt)
 }
 
 criterion_group!(
