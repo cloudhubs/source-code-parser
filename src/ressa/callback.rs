@@ -46,6 +46,9 @@ impl Executor {
     ) -> runestick::Result<ParserContext> {
         match &pattern.callback {
             Some(callback) => {
+                if callback.trim().is_empty() {
+                    return Ok(ctx);
+                }
                 let mut sources = Sources::new();
                 let source = format!("pub fn main(ctx) {{ {} ctx }}", callback);
                 sources.insert(Source::new("callback", source));

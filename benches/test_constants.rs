@@ -1481,9 +1481,9 @@ pub fn directory_json_tt() -> String {
                   "subDirectories": []
               }},
               {{
-                  "path": "{dir}/ts-execute-service/src/main/java/execute/controlller",
+                  "path": "{dir}/ts-execute-service/src/main/java/execute/controller",
                   "files": [
-                      "{dir}/ts-execute-service/src/main/java/execute/controller/ExecuteControlller.java"
+                      "{dir}/ts-execute-service/src/main/java/execute/controller/ExecuteController.java"
                   ],
                   "subDirectories": []
               }},
