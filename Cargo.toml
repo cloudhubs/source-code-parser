@@ -31,14 +31,14 @@ pprof = { version = "0.5.0", features = ["flamegraph", "criterion"] }
 [workspace]
 members = ["source-code-parser-web"]
 
-# [[bench]]
-# name = "iai"
-# harness = false
+[[bench]]
+name = "iai"
+harness = false
 
 [[bench]]
 name = "criterion"
 harness = false
 
-# [[bench]]
-# name = "ressa_mem_bench"
-# harness = false
+[[bench]]
+name = "ressa_mem_bench"
+harness = false
