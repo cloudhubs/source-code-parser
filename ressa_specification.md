@@ -1,7 +1,7 @@
 
 ### General Algorithm/Structures
 
-- The user provides an MSD, a JSON which contains an array of trees
+- The user provides a ReSSA, a JSON which contains an array of trees
   - Each node contained immediately within the array is a "Root Parser". All other nodes are considered "Parsers".
     - Both describe a node within the AST we expect to find.
   - Root Parsers:

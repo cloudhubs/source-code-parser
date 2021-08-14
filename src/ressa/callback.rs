@@ -85,7 +85,7 @@ impl Executor {
 
 #[cfg(test)]
 mod tests {
-    use crate::msd::NodeType;
+    use crate::ressa::NodeType;
 
     use super::*;
 
