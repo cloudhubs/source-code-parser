@@ -108,6 +108,7 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             modules,
             methods,
         };
+        // tracing::info!("{:#?}", ctx);
         ctx
     }
 }

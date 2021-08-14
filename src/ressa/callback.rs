@@ -75,6 +75,7 @@ impl Executor {
         EXEC.get_or_init(|| {
             Executor::new()
                 .map_err(|err| {
+                    tracing::warn!("Failed to initialize callback executor: {:#?}", err);
                     err
                 })
                 .unwrap()
@@ -84,7 +85,7 @@ impl Executor {
 
 #[cfg(test)]
 mod tests {
-    use crate::msd::NodeType;
+    use crate::ressa::NodeType;
 
     use super::*;
 

@@ -137,7 +137,12 @@ fn transform_namespace_to_module(ast: AST, path: &str) -> Option<ModuleComponent
                     ContainerType::Interface => {
                         module.interfaces.push(component);
                     }
-                    r#type => {}
+                    r#type => {
+                        tracing::info!(
+                            "got other label when it should have been class/ifc: {:#?}",
+                            r#type
+                        );
+                    }
                 }
             }
             ComponentType::MethodComponent(method) => {
@@ -507,11 +512,17 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
                 // Not a method if this is reached
                 let mut field_type = match variable_type(field) {
                     Some(field_type) => field_type,
-                    None => return vec![],
+                    None => {
+                        tracing::warn!("Field declaration had no type {:#?}", field);
+                        return vec![];
+                    }
                 };
                 let field_name = match variable_ident(field, &mut field_type) {
                     Some(field_name) => field_name,
-                    None => return vec![],
+                    None => {
+                        tracing::warn!("Field declaration had no identifier");
+                        return vec![];
+                    }
                 };
                 let field = FieldComponent {
                     component: ComponentInfo {
@@ -528,7 +539,7 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
                     is_final: false,
                     default_value: "".to_string(),
                     r#type: field_type,
-                    expression: None
+                    expression: None,
                 };
 
                 fields.push(ComponentType::FieldComponent(field));

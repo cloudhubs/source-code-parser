@@ -26,6 +26,7 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
         let base = match var {
             Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. })) | Node::Expr(expr) => expr,
             _ => {
+                tracing::warn!("Unable to interpret as variable: {:#?}", var);
                 continue;
             }
         };
@@ -38,14 +39,16 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
                         .push(VarDecl::new(Some(r#type.clone()), lhs.clone()));
                     decl.expressions.push(Some(expr.rhs.as_ref().clone()));
                 }
-                unknown => {}
+                unknown => tracing::warn!("Expected Ident got {:#?}", unknown),
             },
             Expr::Ident(id) => {
                 decl.variables
                     .push(VarDecl::new(Some(r#type.clone()), id.clone()));
                 decl.expressions.push(None);
             }
-            unknown => {}
+            unknown => {
+                tracing::warn!("Expected BinaryExpr or Ident, got {:#?}", unknown);
+            }
         }
     }
 
@@ -353,6 +356,7 @@ pub(crate) fn parse_do_while(ast: &AST, component: &ComponentInfo) -> Option<Nod
     }
 
     // Uh... oops?
+    tracing::warn!("Failure to find all parts of a do/while loop! Cannot assemble");
     None
 }
 

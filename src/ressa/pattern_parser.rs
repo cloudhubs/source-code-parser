@@ -1,7 +1,7 @@
 use super::NodeType;
-use super::{CompiledPattern, MsdNodeExplorer, NodePattern, ParserContext};
+use super::{CompiledPattern, NodePattern, ParserContext, RessaNodeExplorer};
 use crate::{ast::*, explore_all};
-use crate::{msd::choose_exit, prophet::*};
+use crate::{prophet::*, ressa::choose_exit};
 use itertools::Itertools;
 
 /// Defines how to parse an individual node that has been confirmed to be of interest
@@ -28,7 +28,7 @@ fn write_to_context(
     }
 }
 
-fn match_subsequence<T: MsdNodeExplorer>(
+fn match_subsequence<T: RessaNodeExplorer>(
     params: &mut Vec<&mut NodePattern>,
     explorable: &mut Vec<T>,
     ctx: &mut ParserContext,
@@ -95,7 +95,7 @@ macro_rules! quit {
 #[macro_export]
 macro_rules! explore_all_subpatterns {
     ( $subpatterns:expr, $ctx:expr, $( $explorable:expr ),+ ) => {
-        use crate::msd::explorer::choose_exit;
+        use crate::ressa::explorer::choose_exit;
 
         for subpattern in $subpatterns.iter_mut() {
             let mut explore_all_found_essential = false;
@@ -153,7 +153,7 @@ impl NodePatternParser for MethodComponent {
             .subpatterns
             .iter_mut()
             .filter(|child| match child.identifier {
-                crate::msd::NodeType::MethodParam => true,
+                crate::ressa::NodeType::MethodParam => true,
                 _ => false,
             })
             .collect::<Vec<&mut NodePattern>>();
@@ -172,7 +172,7 @@ impl NodePatternParser for MethodComponent {
             .subpatterns
             .iter_mut()
             .filter(|child| match child.identifier {
-                crate::msd::NodeType::MethodParam => false,
+                crate::ressa::NodeType::MethodParam => false,
                 _ => true,
             })
         {
@@ -399,7 +399,13 @@ impl NodePatternParser for CallExpr {
                     match expr.as_mut() {
                         Expr::Ident(Ident { ref name, .. }) => Some(name),
                         Expr::Literal(Literal { ref value, .. }) => Some(value),
-                        ref unknown => None,
+                        ref unknown => {
+                            // tracing::warn!(
+                            //     "Currently unhandled CallExpression auxiliary match {:?}",
+                            //     unknown
+                            // );
+                            return None;
+                        }
                     }
                 } else {
                     // If no auxiliary pattern is provided, it is assumed we must visit the lefthand side
@@ -409,12 +415,18 @@ impl NodePatternParser for CallExpr {
                 match selected.as_ref() {
                     Expr::Ident(Ident { ref name, .. }) => (name, aux_name),
                     Expr::Literal(Literal { ref value, .. }) => (value, aux_name),
-                    ref unknown => return None,
+                    ref unknown => {
+                        // tracing::warn!("Currently unhandled CallExpression name {:?}", unknown);
+                        return None;
+                    }
                 }
             }
             Expr::Ident(Ident { ref name, .. }) => (name, None),
             Expr::Literal(Literal { ref value, .. }) => (value, None),
-            ref unknown => return None,
+            ref unknown => {
+                // tracing::warn!("Currently unhandled CallExpression name {:?}", unknown);
+                return None;
+            }
         };
 
         // Verify matches on the function's name and its lefthand side, if the latter was found

@@ -13,6 +13,14 @@ pub(crate) fn parse_block(ast: &AST, component: &ComponentInfo) -> Block {
     Block::new(parse_child_nodes(ast, component))
 }
 
+/// Logs an unknown tag was encountered. You better not think too much about that.
+/// It does not, however, log well-known "filler tags", to keep from cluttering output.
+pub(crate) fn log_unknown_tag(tag: &str, parent: &str) {
+    if !is_common_junk_tag(tag) {
+        tracing::warn!("Unknown tag {} encountered while parsing {}!", tag, parent);
+    }
+}
+
 /// Catch all for standard-issue junk tags from treesitter, to allow easy blanket-silencing of
 /// false alarms, to focus on the tags that are actually important
 pub(crate) fn is_common_junk_tag(tag: &str) -> bool {

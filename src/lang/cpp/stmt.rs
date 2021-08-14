@@ -102,6 +102,7 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
                         _ => (vec![], vec![]),
                     },
                     None => {
+                        tracing::warn!("Malformed array_declarator {:#?}", init_declarator);
                         (vec![], vec![])
                     }
                 };
@@ -123,6 +124,7 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
 fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -> DeclStmt {
     let name = variable_ident(init_declarator, &mut variable_type).map_or_else(
         || {
+            tracing::warn!("No identifier for init declarator {:#?}", init_declarator);
             "".into()
         },
         |name| name,
@@ -262,6 +264,7 @@ fn switch_case(case_statement: &AST) -> Option<CaseExpr> {
         "default" | _ => None,
     };
     if case_statement.children.len() < 4 {
+        tracing::info!("Malformed case statement {:#?}", case_statement);
         return None;
     }
     let nodes = block_nodes_iter(&case_statement.children[3..]);
