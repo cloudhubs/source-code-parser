@@ -8,7 +8,7 @@ use test_constants::*;
 
 extern crate source_code_parser;
 use source_code_parser::{
-    msd::{run_msd_parse, Executor, NodePattern, ParserContext},
+    ressa::{run_ressa_parse, Executor, NodePattern, ParserContext},
     *,
 };
 
@@ -45,7 +45,7 @@ fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
     let ressa = serde_json::from_str::<Vec<NodePattern>>(ressa_json).unwrap();
     c.bench_function(name, |b| {
         b.iter(|| {
-            let _ctx = black_box(run_msd_parse(&mut ctx.modules.clone(), ressa.clone()));
+            let _ctx = black_box(run_ressa_parse(&mut ctx.modules.clone(), ressa.clone()));
         })
     });
 }
@@ -86,50 +86,6 @@ fn laast_benchmark_tt(c: &mut Criterion) {
     laast_benchmark(c, "laast_trainticket", &*directory_json_tt())
 }
 
-// fn rune_benchmark(c: &mut Criterion) {
-//     let epoch = jemalloc_ctl::epoch::mib().unwrap();
-//     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
-
-//     let ressa = serde_json::from_str::<Vec<NodePattern>>(ressa_json_endpoint_simple).unwrap();
-//     let msd = ressa
-//         .get(0)
-//         .unwrap()
-//         .clone()
-//         .subpatterns
-//         .get(0)
-//         .unwrap()
-//         .clone();
-//     let ex = Executor::new().unwrap();
-//     let mut mem = vec![];
-//     c.bench_function("Rune", |b| {
-//         b.iter(|| {
-//             epoch.advance().unwrap();
-//             let before = allocated.read().unwrap();
-
-//             let _ctx = black_box(ex.execute(&msd, ParserContext::default()));
-//             epoch.advance().unwrap();
-//             let after = allocated.read().unwrap();
-//             println!("{} - {}", after, before);
-//             mem.push((after - before) as f64);
-//         })
-//     });
-//     let mean = mean(&mem);
-//     println!(
-//         "{} +/- {} ({})",
-//         mean,
-//         standard_deviation(&mem, Some(mean)),
-//         median(&mem)
-//     );
-// }
-
-// criterion_group!(
-//     benches,
-//     // laast_benchmark,
-//     // ressa_benchmark_endpoint_simple,
-//     // ressa_benchmark_endpoint,
-//     // ressa_benchmark_entity
-//     rune_benchmark
-// );
 criterion_group!(
     benches,
     laast_benchmark_dsb,

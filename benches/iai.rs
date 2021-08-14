@@ -7,7 +7,7 @@ use test_constants::*;
 
 extern crate source_code_parser;
 use source_code_parser::{
-    msd::{run_msd_parse, Executor, NodePattern, ParserContext},
+    ressa::{run_ressa_parse, Executor, NodePattern, ParserContext},
     *,
 };
 
@@ -20,7 +20,7 @@ fn ressa_benchmark(ressa_json: &str) {
     let dir = serde_json::from_str::<Directory>(&*directory_json_dsb()).unwrap();
     let ctx = parse_project_context(&dir).unwrap();
     let ressa = serde_json::from_str::<Vec<NodePattern>>(ressa_json).unwrap();
-    let _ctx = black_box(run_msd_parse(&mut ctx.modules.clone(), ressa.clone()));
+    let _ctx = black_box(run_ressa_parse(&mut ctx.modules.clone(), ressa.clone()));
 }
 
 fn ressa_endpoint_deathstarbench_simple() {
