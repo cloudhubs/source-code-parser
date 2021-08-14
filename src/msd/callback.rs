@@ -75,7 +75,7 @@ impl Executor {
         EXEC.get_or_init(|| {
             Executor::new()
                 .map_err(|err| {
-                    eprintln!("Failed to initialize callback executor: {:#?}", err);
+                    tracing::warn!("Failed to initialize callback executor: {:#?}", err);
                     err
                 })
                 .unwrap()

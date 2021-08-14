@@ -74,7 +74,7 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     match compiled_result {
         Ok(compiled_result) => Some(compiled_result),
         Err(error) => {
-            eprintln!("{:#?}", error);
+            tracing::warn!("{:#?}", error);
             None
         }
     }
@@ -120,9 +120,10 @@ pub fn msd_node_parse<N: NodePatternParser + MsdNodeExplorer>(
                     true
                 }
                 Err(err) => {
-                    eprintln!(
+                    tracing::warn!(
                         "Failed to execute callback ({:#?}) for: {:?}",
-                        err, pattern.callback
+                        err,
+                        pattern.callback
                     );
                     false
                 }
@@ -264,7 +265,11 @@ impl CompiledPattern {
                         )
                         .is_none()
                     {
-                        println!("Failed to find {}={:?}", reference, matches.name(reference));
+                        tracing::info!(
+                            "Failed to find {}={:?}",
+                            reference,
+                            matches.name(reference)
+                        );
                         return false;
                     }
                 }

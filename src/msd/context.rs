@@ -49,7 +49,7 @@ impl ParserContext {
     fn do_make_attribute(&mut self, obj_name: &str, attr_name: &str, attr_type: Option<String>) {
         // If a reference to a non-existant object, create it
         if !self.variables.contains_key(obj_name) {
-            eprintln!(
+            tracing::warn!(
                 "Defining attribute on a non-existant object. Defining {}...",
                 obj_name
             );
@@ -58,18 +58,7 @@ impl ParserContext {
 
         // Insert
         let vars = self.variables.get_mut(obj_name).unwrap();
-        match vars.insert(attr_name.into(), attr_type.clone()) {
-            Some(Some(overwritten)) =>
-                ()
-            //     eprintln!(
-            //     "Warning: overwrote {} on {}.{}!",
-            //     overwritten, obj_name, attr_name
-            // )
-            ,
-            _ => {
-                // println!("Made: {}.{}={:?}", obj_name, attr_name, attr_type);
-            }
-        }
+        vars.insert(attr_name.into(), attr_type.clone());
     }
 }
 
@@ -77,7 +66,7 @@ impl ContextObjectActions for ParserContext {
     fn make_object(&mut self, name: &str) {
         let obj_name: String = name.into();
         if !self.variables.contains_key(&obj_name) {
-            // println!("Making: {}", obj_name);
+            // tracing::info!("Making: {}", obj_name);
             (&mut self.variables).insert(obj_name, HashMap::new());
         }
     }
@@ -87,22 +76,22 @@ impl ContextObjectActions for ParserContext {
     }
 
     fn make_tag(&mut self, name: &str, resolves_to: &str) {
-        // println!("Made: ?{} => {}", name, resolves_to);
+        // tracing::info!("Made: ?{} => {}", name, resolves_to);
         self.do_make_attribute(name, RESOLVES_TO, Some(resolves_to.into()));
     }
 
     fn make_transient(&mut self, name: &str) {
-        // println!("Making transient {}", name);
+        // tracing::info!("Making transient {}", name);
         self.make_object(name);
         self.make_attribute(name, TRANSIENT, None);
     }
 
     fn get_object(&self, name: &str) -> Option<HashMap<String, Option<String>>> {
-        // println!("Looking for {}...", name);
+        // tracing::info!("Looking for {}...", name);
         let name = self.resolve_tag(name);
 
         if let Some(obj) = self.variables.get(&name) {
-            // println!("Retrieved {} Found {:?}", name, obj);
+            // tracing::info!("Retrieved {} Found {:?}", name, obj);
             Some(obj.clone())
         } else {
             None
@@ -136,9 +125,9 @@ impl ContextObjectActions for ParserContext {
 
 impl ContextLocalVariableActions for ParserContext {
     fn make_variable(&mut self, name: &str, val: &str) {
-        // println!("Made: ({:?}, {:?})", name, val);
+        // tracing::info!("Made: ({:?}, {:?})", name, val);
         if let Some(overwritten) = self.local_variables.insert(name.into(), val.into()) {
-            // eprintln!(
+            // tracing::warn!(
             //     "Warning: overwrote {} with {} for name {}",
             //     overwritten, val, name
             // );
@@ -150,7 +139,7 @@ impl ContextLocalVariableActions for ParserContext {
             Some(value) => Some(value.clone()),
             None => None,
         };
-        // println!("Found: {:?}", var);
+        // tracing::info!("Found: {:?}", var);
         var
     }
 

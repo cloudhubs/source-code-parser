@@ -402,7 +402,7 @@ impl NodePatternParser for CallExpr {
                         Expr::Ident(Ident { ref name, .. }) => Some(name),
                         Expr::Literal(Literal { ref value, .. }) => Some(value),
                         ref unknown => {
-                            // eprintln!(
+                            // tracing::warn!(
                             //     "Currently unhandled CallExpression auxiliary match {:?}",
                             //     unknown
                             // );
@@ -418,7 +418,7 @@ impl NodePatternParser for CallExpr {
                     Expr::Ident(Ident { ref name, .. }) => (name, aux_name),
                     Expr::Literal(Literal { ref value, .. }) => (value, aux_name),
                     ref unknown => {
-                        // eprintln!("Currently unhandled CallExpression name {:?}", unknown);
+                        // tracing::warn!("Currently unhandled CallExpression name {:?}", unknown);
                         return None;
                     }
                 }
@@ -426,7 +426,7 @@ impl NodePatternParser for CallExpr {
             Expr::Ident(Ident { ref name, .. }) => (name, None),
             Expr::Literal(Literal { ref value, .. }) => (value, None),
             ref unknown => {
-                // eprintln!("Currently unhandled CallExpression name {:?}", unknown);
+                // tracing::warn!("Currently unhandled CallExpression name {:?}", unknown);
                 return None;
             }
         };
@@ -543,7 +543,12 @@ impl NodePatternParser for Ident {
 
 impl NodePatternParser for Literal {
     fn parse(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
-        verify_match!(&self.value, &pattern.compiled_pattern, ctx, pattern.essential);
+        verify_match!(
+            &self.value,
+            &pattern.compiled_pattern,
+            ctx,
+            pattern.essential
+        );
         write_to_context(
             &self.value,
             pattern.essential,

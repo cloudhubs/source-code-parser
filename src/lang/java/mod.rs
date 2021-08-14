@@ -19,13 +19,13 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
     // Merge same-name modules
     for module in modules.into_iter() {
         let name = module.module_name.clone();
-        println!("Mod. Name: {}", name);
+        tracing::info!("Mod. Name: {}", name);
         if packages.contains_key(&name) {
-            // println!("Merging...");
+            // tracing::info!("Merging...");
             let orig_module = packages.get_mut(&name).expect("Contains key lied to me!");
             orig_module.merge_into(module);
         } else {
-            // println!("New! {}", module.module_name);
+            // tracing::info!("New! {}", module.module_name);
             packages.insert(name, module);
         }
     }
@@ -52,11 +52,11 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         .iter()
     {
         match &*node.r#type {
-            "import_declaration" => println!("{}", parse_import(&node)),
+            "import_declaration" => tracing::info!("{}", parse_import(&node)),
             "package_declaration" => {
                 package = parse_package(&node)
                     .expect(&*format!("Malformed package declaration {:#?}!", node));
-                // println!("{}", package);
+                // tracing::info!("{}", package);
             }
             "class_declaration"
             | "interface_declaration"

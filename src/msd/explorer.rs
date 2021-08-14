@@ -442,7 +442,7 @@ mod tests {
             None,
             false,
         );
-        eprintln!("hello?");
+        tracing::warn!("hello?");
         c.explore(&mut np, &mut ParserContext::default());
     }
 }
