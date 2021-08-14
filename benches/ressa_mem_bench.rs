@@ -22,10 +22,10 @@ use source_code_parser::{
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 fn prune_callbacks(np: &mut NodePattern) {
-    np.callback = None;
-    np.subpatterns
-        .iter_mut()
-        .for_each(|sub| prune_callbacks(sub));
+    // np.callback = None;
+    // np.subpatterns
+    //     .iter_mut()
+    //     .for_each(|sub| prune_callbacks(sub));
 }
 
 fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
@@ -38,8 +38,34 @@ fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
     msds.iter_mut().for_each(|msd| prune_callbacks(msd));
 
     let mut mem = vec![];
-    let guard = pprof::ProfilerGuard::new(100).unwrap();
+
     c.bench_function(name, |b| {
+        let guard = pprof::ProfilerGuard::new(100).unwrap();
+
+        black_box(run_msd_parse(&mut ctx.modules.clone(), msds.clone()));
+
+        match guard.report().build() {
+            Ok(report) => {
+                let p = format!(
+                    "/home/jacob/dev/rust/source-code-parser/target/criterion/{}/flamegraph.svg",
+                    name
+                );
+                let file = match OpenOptions::new()
+                    .truncate(true)
+                    .create(true)
+                    .write(true)
+                    .open(&*p)
+                {
+                    Ok(file) => file,
+                    Err(err) => panic!("{:?} - {}", err, p),
+                };
+                report.flamegraph(file).unwrap();
+            }
+            Err(err) => {
+                panic!("flamegraph - {:?}", err);
+            }
+        };
+
         b.iter(|| {
             epoch.advance().unwrap();
             let before = allocated.read().unwrap();
@@ -47,31 +73,30 @@ fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
             black_box(ctx);
             epoch.advance().unwrap();
             let after = allocated.read().unwrap();
-            println!("{} - {}", after, before);
-            mem.push((after - before) as f64);
+            mem.push(abs_diff(after, before) as f64);
         })
     });
-    match guard.report().build() {
-        Ok(report) => {
-            let p = format!(
-                "/home/jacob/dev/rust/source-code-parser/target/criterion/{}/flamegraph.svg",
-                name
-            );
-            let file = match OpenOptions::new()
-                .truncate(true)
-                .create(true)
-                .write(true)
-                .open(&*p)
-            {
-                Ok(file) => file,
-                Err(err) => panic!("{:?} - {}", err, p),
-            };
-            report.flamegraph(file).unwrap();
-        }
-        Err(err) => {
-            panic!("flamegraph - {:?}", err);
-        }
-    };
+    // match guard.report().build() {
+    //     Ok(report) => {
+    //         let p = format!(
+    //             "/home/jacob/dev/rust/source-code-parser/target/criterion/{}/flamegraph.svg",
+    //             name
+    //         );
+    //         let file = match OpenOptions::new()
+    //             .truncate(true)
+    //             .create(true)
+    //             .write(true)
+    //             .open(&*p)
+    //         {
+    //             Ok(file) => file,
+    //             Err(err) => panic!("{:?} - {}", err, p),
+    //         };
+    //         report.flamegraph(file).unwrap();
+    //     }
+    //     Err(err) => {
+    //         panic!("flamegraph - {:?}", err);
+    //     }
+    // };
     let mean = mean(&mem);
     println!(
         "{} +/- {} ({})",

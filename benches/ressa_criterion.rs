@@ -27,7 +27,7 @@ fn laast_benchmark(c: &mut Criterion, name: &str, dir: &str) {
             let before = allocated.read().unwrap();
             let _ctx = black_box(parse_project_context(&dir)).unwrap();
             epoch.advance().unwrap();
-            mem.push((allocated.read().unwrap() - before) as f64);
+            mem.push(abs_diff(allocated.read().unwrap(), before) as f64);
         })
     });
     let mean = mean(&mem);

@@ -1,6 +1,16 @@
 pub const deathstarbench_root: &'static str = "/home/jacob/dev/DeathStarBench/mediaMicroservices";
 pub const trainticket_root: &'static str = "/home/jacob/dev/train-ticket";
 
+pub fn abs_diff(x: usize, y: usize) -> usize {
+    if y < x {
+        // println!("{} - {} = {}", x, y, x - y);
+        x - y
+    } else {
+        // println!("{} - {} = {}", y, x, y - x);
+        y - x
+    }
+}
+
 pub fn directory_json_dsb() -> String {
     format!(
         r#"
