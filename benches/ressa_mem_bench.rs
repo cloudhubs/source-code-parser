@@ -21,11 +21,11 @@ use source_code_parser::{
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str) {
+fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str, dir: &str) {
     let epoch = jemalloc_ctl::epoch::mib().unwrap();
     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
 
-    let dir = serde_json::from_str::<Directory>(&*directory_json_dsb()).unwrap();
+    let dir = serde_json::from_str::<Directory>(dir).unwrap();
     let ctx = parse_project_context(&dir).unwrap();
     let ressas = serde_json::from_str::<Vec<NodePattern>>(ressa_json).unwrap();
 
@@ -82,6 +82,7 @@ fn ressa_benchmark_endpoint_simple_dsb(c: &mut Criterion) {
         c,
         "ressa_endpoint_deathstarbench_simple",
         ressa_json_endpoint_simple_dsb,
+        &*directory_json_dsb(),
     )
 }
 
@@ -90,19 +91,35 @@ fn ressa_benchmark_endpoint_dsb(c: &mut Criterion) {
         c,
         "ressa_endpoint_deathstarbench_call_graph",
         ressa_json_endpoint_dsb,
+        &*directory_json_dsb(),
     )
 }
 
 fn ressa_benchmark_entity_dsb(c: &mut Criterion) {
-    ressa_benchmark(c, "ressa_entity_deathstarbench", ressa_json_entity_dsb)
+    ressa_benchmark(
+        c,
+        "ressa_entity_deathstarbench",
+        ressa_json_entity_dsb,
+        &*directory_json_dsb(),
+    )
 }
 
 fn ressa_benchmark_endpoint_tt(c: &mut Criterion) {
-    ressa_benchmark(c, "ressa_endpoint_trainticket", ressa_json_endpoint_tt)
+    ressa_benchmark(
+        c,
+        "ressa_endpoint_trainticket",
+        ressa_json_endpoint_tt,
+        &*directory_json_tt(),
+    )
 }
 
 fn ressa_benchmark_entity_tt(c: &mut Criterion) {
-    ressa_benchmark(c, "ressa_entity_trainticket", ressa_json_entity_tt)
+    ressa_benchmark(
+        c,
+        "ressa_entity_trainticket",
+        ressa_json_entity_tt,
+        &*directory_json_tt(),
+    )
 }
 
 criterion_group!(
