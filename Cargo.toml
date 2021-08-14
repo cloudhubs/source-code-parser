@@ -15,10 +15,30 @@ derive-new = "0.5.8"
 itertools = "0.10.0"
 enum_dispatch = "0.3.5"
 regex = "1.5.3"
-rune = "0.9.0"
-runestick = "0.9.0"
+rune = "0.9.1"
+runestick = "0.9.1"
 once_cell = "1.7.2"
 tracing = "0.1.26"
 
+[dev-dependencies]
+iai = "0.1.1"
+criterion = { version = "0.3.4", features = ["real_blackbox"] }
+jemallocator = "0.3.2"
+jemalloc-ctl = "0.3.3"
+statistical = "1.0.0"
+pprof = { version = "0.5.0", features = ["flamegraph", "criterion"] }
+
 [workspace]
 members = ["source-code-parser-web"]
+
+[[bench]]
+name = "iai"
+harness = false
+
+[[bench]]
+name = "criterion"
+harness = false
+
+[[bench]]
+name = "ressa_mem_bench"
+harness = false

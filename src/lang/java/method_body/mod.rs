@@ -17,7 +17,7 @@ pub(crate) fn parse_block(ast: &AST, component: &ComponentInfo) -> Block {
 /// It does not, however, log well-known "filler tags", to keep from cluttering output.
 pub(crate) fn log_unknown_tag(tag: &str, parent: &str) {
     if !is_common_junk_tag(tag) {
-        // tracing::warn!("Unknown tag {} encountered while parsing {}!", tag, parent);
+        tracing::warn!("Unknown tag {} encountered while parsing {}!", tag, parent);
     }
 }
 

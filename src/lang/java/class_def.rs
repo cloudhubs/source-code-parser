@@ -1,6 +1,5 @@
-use crate::java::method_body::parse_assignment_pub;
 use crate::ast::Expr;
-use crate::java::method_body::log_unknown_tag;
+use crate::java::method_body::parse_assignment_pub;
 use crate::java::method_def::parse_method;
 use crate::java::modifier::{find_modifier, parse_modifiers, Modifier};
 use crate::java::util::vartype::find_type;
@@ -76,7 +75,7 @@ pub(crate) fn parse_class(
                     &mut fields,
                 );
             }
-            unknown_type => log_unknown_tag(unknown_type, "class"),
+            unknown_type => {}
         };
     }
 
@@ -118,7 +117,7 @@ fn parse_class_body(
             | "enum_declaration"
             | "annotation_declaration" => { /* None, since these were extracted + handled elsewhere */
             }
-            unknown => log_unknown_tag(unknown, "class body"),
+            unknown => {}
         }
     }
 }
@@ -146,7 +145,11 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
         .iter()
         .filter(|var_decl| var_decl.find_child_by_type(&["identifier"]).is_some())
         .map(|var_decl| {
-            let field_name = var_decl.find_child_by_type(&["identifier"]).unwrap().value.clone();
+            let field_name = var_decl
+                .find_child_by_type(&["identifier"])
+                .unwrap()
+                .value
+                .clone();
             let expr: Option<Expr> = parse_assignment_pub(var_decl, &component);
             FieldComponent {
                 component: ComponentInfo {
@@ -163,12 +166,11 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
                 is_final: modifier.is_final.clone(),
                 default_value: String::new(),
                 r#type: r#type.clone(),
-                expression: expr
+                expression: expr,
             }
         })
         .collect();
     return fields;
-    
 
     // TODO: How to handle field_name, default_value?
     // variables
@@ -203,5 +205,3 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
 //         }
 //     }
 // }
-
-

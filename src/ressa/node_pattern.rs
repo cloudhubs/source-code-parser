@@ -74,7 +74,7 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     match compiled_result {
         Ok(compiled_result) => Some(compiled_result),
         Err(error) => {
-            tracing::warn!("{:#?}", error);
+            tracing::warn!("Error compiling pattern: {:#?}", error);
             None
         }
     }

@@ -2,8 +2,8 @@ use crate::ast::*;
 use crate::java::method_body::parse_block;
 use crate::java::method_body::parse_child_nodes;
 use crate::java::modifier::find_modifier;
+use crate::java::modifier::parse_modifiers;
 use crate::java::util::vartype::find_type;
-use crate::java::{method_body::log_unknown_tag, modifier::parse_modifiers};
 use crate::ComponentInfo;
 use crate::AST;
 
@@ -153,7 +153,7 @@ pub(crate) fn parse_try_catch(ast: &AST, component: &ComponentInfo) -> Option<No
                 ));
             }
             "finally_clause" => finally_clause = Some(parse_block(ast, component)),
-            unknown => log_unknown_tag(unknown, "try/catch"),
+            unknown => {}
         }
     }
 
@@ -191,7 +191,7 @@ fn parse_resource(ast: &AST, component: &ComponentInfo) -> Option<DeclStmt> {
                     match parse_expr(child, component) {
                         Some(Expr::Ident(expr)) => name = Some(expr),
                         Some(expr) => result = Some(expr),
-                        None => log_unknown_tag(&*child.r#type, "resource"),
+                        None => {}
                     }
                 }
             }
