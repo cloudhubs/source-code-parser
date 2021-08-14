@@ -130,7 +130,7 @@ pub(crate) fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<E
             } else if rhs.is_none() {
                 rhs = result;
             } else {
-                eprintln!(
+                tracing::warn!(
                     "Extra parsable tag {} encountered while parsing assignment",
                     unknown
                 );
@@ -149,7 +149,7 @@ pub(crate) fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<E
             Some(lhs.into())
         }
     } else {
-        eprintln!("Assignment with no lefthand side!");
+        tracing::warn!("Assignment with no lefthand side!");
         None
     }
 }
@@ -397,7 +397,7 @@ fn parse_binary(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
             }
         }
     }
-    eprintln!("Malformed binary expression detected!");
+    tracing::warn!("Malformed binary expression detected!");
     None
 }
 
@@ -450,7 +450,7 @@ fn parse_cast(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     if let Some(ident) = ident {
         Some(CallExpr::new(Box::new(cast.into()), vec![ident.into()]).into())
     } else {
-        eprintln!("Cannot find cast target!");
+        tracing::warn!("Cannot find cast target!");
         None
     }
 }

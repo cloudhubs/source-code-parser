@@ -1,5 +1,5 @@
 /// WARNING: HERE THERE BE MACROS
-use super::{msd_node_parse, NodePattern, ParserContext};
+use super::{ressa_node_parse, NodePattern, ParserContext};
 use crate::ast::*;
 use crate::prophet::*;
 use enum_dispatch::enum_dispatch;
@@ -19,16 +19,16 @@ pub enum ProphetNode {
 #[enum_dispatch(Expr)]
 #[enum_dispatch(Stmt)]
 #[enum_dispatch(ProphetNode)]
-pub trait MsdNodeExplorer {
+pub trait RessaNodeExplorer {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()>;
 }
 
 /// Create a no-operation implementation of exploring a node
 #[macro_export]
-macro_rules! msd_dispatch_default_impl {
+macro_rules! ressa_dispatch_default_impl {
     ( $( $struct_name:ty ),+ ) => {
         $(
-            impl MsdNodeExplorer for $struct_name {
+            impl RessaNodeExplorer for $struct_name {
                 fn explore(&mut self, pattern: &mut NodePattern, _ctx: &mut ParserContext) -> Option<()> {
                     if pattern.essential {
                         None
@@ -43,12 +43,12 @@ macro_rules! msd_dispatch_default_impl {
 
 /// Create an implementation of exploring a node that visits a set of fields in the node directly
 #[macro_export]
-macro_rules! msd_dispatch_single_dispatch_impl {
+macro_rules! ressa_dispatch_single_dispatch_impl {
     ( $( $struct_name:ty: { $( $to_explore:ident ),+ } ),+ ) => {
         $(
-            impl MsdNodeExplorer for $struct_name {
+            impl RessaNodeExplorer for $struct_name {
                 fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
-                    use crate::msd::explorer::choose_exit;
+                    use crate::ressa::explorer::choose_exit;
 
                     let mut found_essential = false;
                     $(
@@ -65,12 +65,12 @@ macro_rules! msd_dispatch_single_dispatch_impl {
 
 /// Create an implementation of exploring a node that visits all elements in a a set of collections in the node
 #[macro_export]
-macro_rules! msd_dispatch_collection_impl {
+macro_rules! ressa_dispatch_collection_impl {
     ( $( $struct_name:ty: { $( $to_explore:ident ),+ } ),+ ) => {
         $(
-            impl MsdNodeExplorer for $struct_name {
+            impl RessaNodeExplorer for $struct_name {
                 fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
-                    use crate::msd::explorer::choose_exit;
+                    use crate::ressa::explorer::choose_exit;
 
                     let mut found_essential = false;
                     $(
@@ -89,7 +89,7 @@ macro_rules! msd_dispatch_collection_impl {
 #[macro_export]
 macro_rules! explore_all {
     ( $pattern:expr, $ctx:expr, $( $explorable:expr ),+ ) => {{
-        use crate::msd::explorer::choose_exit;
+        use crate::ressa::explorer::choose_exit;
 
         let mut explore_all_found_essential = false;
         $(
@@ -123,7 +123,7 @@ pub(crate) fn choose_exit(essential: bool, found: bool) -> Option<()> {
     }
 }
 
-msd_dispatch_default_impl!(
+ressa_dispatch_default_impl!(
     IncDecExpr,
     LogExpr,
     IndexExpr,
@@ -135,7 +135,7 @@ msd_dispatch_default_impl!(
     LabelStmt
 );
 
-msd_dispatch_single_dispatch_impl!(
+ressa_dispatch_single_dispatch_impl!(
     LambdaExpr: { body },
     CaseExpr: { body },
     ExprStmt: { expr },
@@ -149,7 +149,7 @@ msd_dispatch_single_dispatch_impl!(
     DotExpr: { expr, selected }
 );
 
-msd_dispatch_collection_impl!(
+ressa_dispatch_collection_impl!(
     ModuleComponent: { classes, interfaces },
     AssignExpr: { rhs, lhs },
     InitListExpr: { exprs },
@@ -158,11 +158,11 @@ msd_dispatch_collection_impl!(
 );
 
 // Information-Bearing Node Exploration
-impl MsdNodeExplorer for Ident {
+impl RessaNodeExplorer for Ident {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             if pattern.matches(self) {
-                msd_node_parse(pattern, self, ctx).is_some()
+                ressa_node_parse(pattern, self, ctx).is_some()
             } else {
                 false
             };
@@ -170,11 +170,11 @@ impl MsdNodeExplorer for Ident {
     }
 }
 
-impl MsdNodeExplorer for Literal {
+impl RessaNodeExplorer for Literal {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             if pattern.matches(self) {
-                msd_node_parse(pattern, self, ctx).is_some()
+                ressa_node_parse(pattern, self, ctx).is_some()
             } else {
                 false
             };
@@ -182,12 +182,12 @@ impl MsdNodeExplorer for Literal {
     }
 }
 
-impl MsdNodeExplorer for ClassOrInterfaceComponent {
+impl RessaNodeExplorer for ClassOrInterfaceComponent {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
-                msd_node_parse(pattern, self, ctx).is_some()
+                ressa_node_parse(pattern, self, ctx).is_some()
             } else {
                 false
             };
@@ -204,12 +204,12 @@ impl MsdNodeExplorer for ClassOrInterfaceComponent {
     }
 }
 
-impl MsdNodeExplorer for MethodComponent {
+impl RessaNodeExplorer for MethodComponent {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
-                msd_node_parse(pattern, self, ctx).is_some()
+                ressa_node_parse(pattern, self, ctx).is_some()
             } else {
                 false
             };
@@ -232,12 +232,12 @@ impl MsdNodeExplorer for MethodComponent {
     }
 }
 
-impl MsdNodeExplorer for MethodParamComponent {
+impl RessaNodeExplorer for MethodParamComponent {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
-                msd_node_parse(pattern, self, ctx).is_some()
+                ressa_node_parse(pattern, self, ctx).is_some()
             } else {
                 false
             };
@@ -252,12 +252,12 @@ impl MsdNodeExplorer for MethodParamComponent {
     }
 }
 
-impl MsdNodeExplorer for FieldComponent {
+impl RessaNodeExplorer for FieldComponent {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
-                msd_node_parse(pattern, self, ctx).is_some()
+                ressa_node_parse(pattern, self, ctx).is_some()
             } else {
                 false
             };
@@ -268,12 +268,12 @@ impl MsdNodeExplorer for FieldComponent {
     }
 }
 
-impl MsdNodeExplorer for DeclStmt {
+impl RessaNodeExplorer for DeclStmt {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
-                msd_node_parse(pattern, self, ctx).is_some()
+                ressa_node_parse(pattern, self, ctx).is_some()
             } else {
                 false
             };
@@ -292,12 +292,12 @@ impl MsdNodeExplorer for DeclStmt {
     }
 }
 
-impl MsdNodeExplorer for VarDecl {
+impl RessaNodeExplorer for VarDecl {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
-                msd_node_parse(pattern, self, ctx).is_some()
+                ressa_node_parse(pattern, self, ctx).is_some()
             } else {
                 false
             };
@@ -308,12 +308,12 @@ impl MsdNodeExplorer for VarDecl {
     }
 }
 
-impl MsdNodeExplorer for CallExpr {
+impl RessaNodeExplorer for CallExpr {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
-                msd_node_parse(pattern, self, ctx).is_some()
+                ressa_node_parse(pattern, self, ctx).is_some()
             } else {
                 false
             };
@@ -325,12 +325,12 @@ impl MsdNodeExplorer for CallExpr {
     }
 }
 
-impl MsdNodeExplorer for AnnotationComponent {
+impl RessaNodeExplorer for AnnotationComponent {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
-                msd_node_parse(pattern, self, ctx).is_some()
+                ressa_node_parse(pattern, self, ctx).is_some()
             } else {
                 false
             };
@@ -341,11 +341,11 @@ impl MsdNodeExplorer for AnnotationComponent {
     }
 }
 
-impl MsdNodeExplorer for AnnotationValuePair {
+impl RessaNodeExplorer for AnnotationValuePair {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             if pattern.matches(self) {
-                msd_node_parse(pattern, self, ctx).is_some()
+                ressa_node_parse(pattern, self, ctx).is_some()
             } else {
                 false
             };
@@ -355,7 +355,7 @@ impl MsdNodeExplorer for AnnotationValuePair {
 
 // Nodes requiring custom visting because a general macro didn't cover their edge cases
 
-impl MsdNodeExplorer for IfStmt {
+impl RessaNodeExplorer for IfStmt {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             self.cond.explore(pattern, ctx).is_some();
@@ -369,7 +369,7 @@ impl MsdNodeExplorer for IfStmt {
     }
 }
 
-impl MsdNodeExplorer for ForStmt {
+impl RessaNodeExplorer for ForStmt {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             explore_all!(pattern, ctx, self.init, self.post).is_some();
@@ -382,7 +382,7 @@ impl MsdNodeExplorer for ForStmt {
         })
     }
 }
-impl MsdNodeExplorer for ForRangeStmt {
+impl RessaNodeExplorer for ForRangeStmt {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             self.init.as_mut().explore(pattern, ctx).is_some();
@@ -396,7 +396,7 @@ impl MsdNodeExplorer for ForRangeStmt {
     }
 }
 
-impl MsdNodeExplorer for TryCatchStmt {
+impl RessaNodeExplorer for TryCatchStmt {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             self.try_body.explore(pattern, ctx).is_some();
@@ -410,7 +410,7 @@ impl MsdNodeExplorer for TryCatchStmt {
     }
 }
 
-impl MsdNodeExplorer for ReturnStmt {
+impl RessaNodeExplorer for ReturnStmt {
     fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             if let Some(expr) = &mut self.expr {
@@ -424,7 +424,7 @@ impl MsdNodeExplorer for ReturnStmt {
 
 #[cfg(test)]
 mod tests {
-    use crate::msd::NodeType;
+    use crate::ressa::NodeType;
 
     use super::*;
 
@@ -442,7 +442,7 @@ mod tests {
             None,
             false,
         );
-        eprintln!("hello?");
+        tracing::warn!("hello?");
         c.explore(&mut np, &mut ParserContext::default());
     }
 }

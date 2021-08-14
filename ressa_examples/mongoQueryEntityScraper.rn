@@ -1,4 +1,4 @@
-// Expanded form of the Mongo query parsing script found in https://github.com/cloudhubs/source-code-parser/blob/main/msd_examples/deathstarbench_msd_entity.json
+// Expanded form of the Mongo query parsing script found in https://github.com/cloudhubs/source-code-parser/blob/main/ressa_examples/deathstarbench_ressa_entity.json
 
 fn done(ndx, tokens) {
   match tokens.get(`${ndx}`).iter().next() {

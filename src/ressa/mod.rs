@@ -17,13 +17,13 @@ pub use callback::*;
 use crate::ModuleComponent;
 
 /// Run the user-defined parsers, in the order they were defined, on our AST
-pub fn run_msd_parse(ast: &mut Vec<ModuleComponent>, msds: Vec<NodePattern>) -> ContextData {
+pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>) -> ContextData {
     let mut ctx = ParserContext::default();
 
     // Explore
-    for mut msd in msds.into_iter() {
+    for mut ressa in ressas.into_iter() {
         for module in ast.iter_mut() {
-            module.explore(&mut msd, &mut ctx);
+            module.explore(&mut ressa, &mut ctx);
         }
     }
 

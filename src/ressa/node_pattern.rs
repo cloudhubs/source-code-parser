@@ -1,9 +1,9 @@
-use super::MsdNodeExplorer;
-// use super::MsdDispatch;
+use super::RessaNodeExplorer;
+// use super::ressaDispatch;
 use super::{pattern_parser::NodePatternParser, Executor};
 use crate::ast::*;
-use crate::msd::explorer::choose_exit;
 use crate::prophet::*;
+use crate::ressa::explorer::choose_exit;
 use derive_new::new;
 use regex::Regex;
 use serde::Deserialize;
@@ -50,8 +50,8 @@ pub struct NodePattern {
 }
 
 impl NodePattern {
-    pub fn matches(&self, node: &impl IntoMsdNode) -> bool {
-        self.identifier == node.into_msd_node() || self.transparent
+    pub fn matches(&self, node: &impl IntoRessaNode) -> bool {
+        self.identifier == node.into_ressa_node() || self.transparent
     }
 
     /// Lazy-compile the regexes on this NodePattern
@@ -74,13 +74,13 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     match compiled_result {
         Ok(compiled_result) => Some(compiled_result),
         Err(error) => {
-            eprintln!("{:#?}", error);
+            tracing::warn!("{:#?}", error);
             None
         }
     }
 }
 
-fn parse<N: NodePatternParser + MsdNodeExplorer>(
+fn parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
     node: &mut N,
     ctx: &mut ParserContext,
@@ -99,7 +99,7 @@ fn parse<N: NodePatternParser + MsdNodeExplorer>(
 }
 
 /// Parse an individual node with this NodePattern, lazily-initializing its CompiledPattern as needed
-pub fn msd_node_parse<N: NodePatternParser + MsdNodeExplorer>(
+pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
     node: &mut N,
     ctx: &mut ParserContext,
@@ -120,9 +120,10 @@ pub fn msd_node_parse<N: NodePatternParser + MsdNodeExplorer>(
                     true
                 }
                 Err(err) => {
-                    eprintln!(
+                    tracing::warn!(
                         "Failed to execute callback ({:#?}) for: {:?}",
-                        err, pattern.callback
+                        err,
+                        pattern.callback
                     );
                     false
                 }
@@ -167,16 +168,16 @@ pub enum NodeType {
     Literal,
 }
 
-pub trait IntoMsdNode {
-    fn into_msd_node(&self) -> NodeType;
+pub trait IntoRessaNode {
+    fn into_ressa_node(&self) -> NodeType;
 }
 
 #[macro_export]
-macro_rules! into_msd_node {
+macro_rules! into_ressa_node {
     ( $( $struct_name:ty: $name:ident ),+ ) => {
         $(
-            impl IntoMsdNode for $struct_name {
-                fn into_msd_node(&self) -> NodeType {
+            impl IntoRessaNode for $struct_name {
+                fn into_ressa_node(&self) -> NodeType {
                     NodeType::$name
                 }
             }
@@ -184,7 +185,7 @@ macro_rules! into_msd_node {
     };
 }
 
-into_msd_node!(
+into_ressa_node!(
     // Prophet types
     ClassOrInterfaceComponent: ClassOrInterface,
     MethodComponent: Method,
@@ -208,7 +209,7 @@ pub struct CompiledPattern {
 }
 
 impl CompiledPattern {
-    /// Create a compiled pattern from an MSD pattern and the context.
+    /// Create a compiled pattern from a ReSSA pattern and the context.
     pub fn from_pattern(pattern: &str) -> Result<CompiledPattern, regex::Error> {
         let tag_regex = Regex::new(r#"#(&)?\{([a-zA-Z_-]+)\}(\((.+)\))?"#)?;
 
@@ -264,7 +265,11 @@ impl CompiledPattern {
                         )
                         .is_none()
                     {
-                        println!("Failed to find {}={:?}", reference, matches.name(reference));
+                        tracing::info!(
+                            "Failed to find {}={:?}",
+                            reference,
+                            matches.name(reference)
+                        );
                         return false;
                     }
                 }
