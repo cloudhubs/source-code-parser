@@ -15,17 +15,20 @@ use source_code_parser::{
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-fn laast_benchmark(c: &mut Criterion, name: &str, dir: &str) {
+fn ast_benchmark<'a, T, F>(c: &mut Criterion, name: &str, dir: &'a Directory, f: F)
+where
+    T: 'a,
+    F: Fn(&'a Directory) -> T,
+{
     let epoch = jemalloc_ctl::epoch::mib().unwrap();
     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
 
-    let dir = serde_json::from_str::<Directory>(dir).unwrap();
     let mut mem = vec![];
     c.bench_function(name, |b| {
         b.iter(|| {
             epoch.advance().unwrap();
             let before = allocated.read().unwrap();
-            let _ctx = black_box(parse_project_context(&dir)).unwrap();
+            let _ctx = black_box(f(dir));
             epoch.advance().unwrap();
             mem.push(abs_diff(allocated.read().unwrap(), before) as f64);
         })
@@ -96,17 +99,31 @@ fn ressa_benchmark_entity_tt(c: &mut Criterion) {
 }
 
 fn laast_benchmark_dsb(c: &mut Criterion) {
-    laast_benchmark(c, "laast_deathstarbench", &*directory_json_dsb())
+    let dir = serde_json::from_str::<Directory>(directory_json_dsb().as_str()).unwrap();
+    ast_benchmark(c, "laast_deathstarbench", &dir, parse_project_context)
 }
 
 fn laast_benchmark_tt(c: &mut Criterion) {
-    laast_benchmark(c, "laast_trainticket", &*directory_json_tt())
+    let dir = serde_json::from_str::<Directory>(directory_json_tt().as_str()).unwrap();
+    ast_benchmark(c, "laast_trainticket", &dir, parse_project_context)
+}
+
+fn treesitter_ast_benchmark_dsb(c: &mut Criterion) {
+    let dir = serde_json::from_str::<Directory>(directory_json_dsb().as_str()).unwrap();
+    ast_benchmark(c, "treesitter_ast_deathstarbench", &dir, parse_directory_ts)
+}
+
+fn treesitter_ast_benchmark_tt(c: &mut Criterion) {
+    let dir = serde_json::from_str::<Directory>(directory_json_tt().as_str()).unwrap();
+    ast_benchmark(c, "treesitter_ast_trainticket", &dir, parse_directory_ts)
 }
 
 criterion_group!(
     benches,
     laast_benchmark_dsb,
+    treesitter_ast_benchmark_dsb,
     laast_benchmark_tt,
+    treesitter_ast_benchmark_tt,
     ressa_benchmark_endpoint_simple,
     ressa_benchmark_endpoint,
     ressa_benchmark_entity,
