@@ -1,3 +1,4 @@
+use derive_new::new;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -8,11 +9,11 @@ use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span, LANG,
 };
 
-use crate::{ast::*, communication::*, lang::*, *};
+use crate::{communication::*, lang::*, *};
 
 /// Information on an `AST` node.
 /// Taken directly from the `rust_code_analysis` crate with additional serde macros for deserialization.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all(deserialize = "PascalCase"))]
 pub struct AST {
     /// The type of node
@@ -111,7 +112,7 @@ pub fn parse_project_context_compat(directory: &Directory) -> std::io::Result<co
 }
 
 pub fn parse_project_context(directory: &Directory) -> std::io::Result<JSSAContext> {
-    let modules = parse_directory(directory)?;
+    let modules = parse_directory_into_laast(directory)?;
     let ctx = JSSAContext {
         component: ComponentInfo {
             path: "".into(),
@@ -137,8 +138,20 @@ fn flatten_dirs(dir: &Directory) -> Vec<Directory> {
     dirs
 }
 
-pub fn parse_directory_ts(dir: &Directory) -> std::io::Result<Vec<AST>> {
-    let mut modules = vec![];
+#[derive(Debug, new)]
+pub struct ParsedTree {
+    ast: AST,
+    lang: LANG,
+    module_name: String,
+    path: PathBuf,
+}
+
+pub fn parse_directory_into_laast(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>> {
+    convert_trees_to_laast(parse_directory_trees(dir)?)
+}
+
+pub fn parse_directory_trees(dir: &Directory) -> std::io::Result<Vec<ParsedTree>> {
+    let mut parsed_trees = vec![];
 
     let dirs = flatten_dirs(dir);
 
@@ -148,6 +161,17 @@ pub fn parse_directory_ts(dir: &Directory) -> std::io::Result<Vec<AST>> {
         if path == "" {
             continue;
         }
+
+        // Generate module identifier
+        let p = dir.path.clone();
+        let mod_path;
+        if p.is_file() {
+            let p: PathBuf = p.into_iter().dropping_back(1).collect();
+            mod_path = p.into_os_string().into_string().unwrap()
+        } else {
+            mod_path = path.clone();
+        }
+        let module_name = mod_path.clone();
 
         // Get directory
         tracing::info!("trying to read {:?}", dir.path);
@@ -186,7 +210,7 @@ pub fn parse_directory_ts(dir: &Directory) -> std::io::Result<Vec<AST>> {
                     span: true,
                 });
 
-                let (ast, _lang) = match result {
+                let (ast, lang) = match result {
                     Some((ast, lang)) => (ast, lang),
                     None => {
                         tracing::warn!("Could not parse AST {:?}", entry.path());
@@ -194,108 +218,72 @@ pub fn parse_directory_ts(dir: &Directory) -> std::io::Result<Vec<AST>> {
                     }
                 };
 
-                modules.push(ast);
+                parsed_trees.push(ParsedTree::new(
+                    ast,
+                    lang,
+                    module_name.clone(),
+                    path.clone().into(),
+                ));
             }
         }
     }
 
     tracing::info!("Finished parsing files!");
-    Ok(modules)
+    Ok(parsed_trees)
 }
 
-pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>> {
-    let mut modules = vec![];
+pub fn convert_trees_to_laast(
+    parsed_trees: Vec<ParsedTree>,
+) -> std::io::Result<Vec<ModuleComponent>> {
+    let get_path_string = |path_buf: &PathBuf| path_buf.as_path().to_str().unwrap_or("").to_owned();
+    let mut modules: Vec<ModuleComponent> = vec![];
     let mut language = Language::Unknown;
 
-    let dirs = flatten_dirs(dir);
+    for parsed_tree in parsed_trees {
+        let path = get_path_string(&parsed_tree.path);
+        let mut module = ModuleComponent::new(parsed_tree.module_name.clone(), path.clone());
 
-    for dir in dirs {
-        // Generate module constants
-        let path = dir.path.as_path().to_str().unwrap_or("").to_owned();
-        if path == "" {
-            continue;
+        let (components, lang) = parsed_tree.ast.transform(
+            parsed_tree.lang,
+            parsed_tree.path.to_str().unwrap_or_default(),
+        );
+
+        match lang {
+            Language::Unknown => {}
+            lang => language = lang,
         }
 
-        // Generate module identifier
-        let p = dir.path.clone();
-        let mod_path;
-        if p.is_file() {
-            let p: PathBuf = p.into_iter().dropping_back(1).collect();
-            mod_path = p.into_os_string().into_string().unwrap()
-        } else {
-            mod_path = path.clone();
-        }
-        let module_name = mod_path.clone();
-
-        // Get directory
-        tracing::info!("trying to read {:?}", dir.path);
-        let read_dir = match std::fs::read_dir(dir.path) {
-            Ok(dir) => dir,
-            Err(err) => {
-                tracing::warn!("Could not read directory: {:?}", err);
-                continue;
-            }
-        };
-        let mut module = ModuleComponent::new(module_name.to_string(), path);
-
-        for entry in read_dir {
-            let entry = entry?;
-            if !entry.path().is_dir() {
-                if dir
-                    .files
-                    .iter()
-                    .find(|path_buf| path_buf == &&entry.path())
-                    .is_none()
-                {
-                    continue;
-                }
-                let mut file = File::open(entry.path())?;
-                let (components, lang) = match parse_file(&mut file, &entry.path()) {
-                    Ok(res) => res,
-                    Err(err) => {
-                        tracing::warn!("Could not read file {:?}: {:#?}", entry.path(), err);
-                        continue;
-                    }
-                };
-                match lang {
-                    Language::Unknown => {}
-                    lang => language = lang,
-                }
-
-                for component in components.into_iter() {
-                    match component {
-                        ComponentType::ClassOrInterfaceComponent(component) => {
-                            match component.declaration_type {
-                                ContainerType::Class => {
-                                    module.classes.push(component);
-                                }
-                                ContainerType::Interface => {
-                                    module.interfaces.push(component);
-                                }
-                                r#type => {
-                                    tracing::info!(
-                                        "got other label when it should have been class/ifc: {:#?}",
-                                        r#type
-                                    );
-                                }
-                            }
+        for component in components.into_iter() {
+            match component {
+                ComponentType::ClassOrInterfaceComponent(component) => {
+                    match component.declaration_type {
+                        ContainerType::Class => {
+                            module.classes.push(component);
                         }
-                        ComponentType::MethodComponent(method) => {
-                            module.component.methods.push(method);
+                        ContainerType::Interface => {
+                            module.interfaces.push(component);
                         }
-                        ComponentType::ModuleComponent(module) => {
-                            modules.push(module);
+                        r#type => {
+                            tracing::info!(
+                                "got other label when it should have been class/ifc: {:#?}",
+                                r#type
+                            );
                         }
-                        _ => {}
                     }
                 }
+                ComponentType::MethodComponent(method) => {
+                    module.component.methods.push(method);
+                }
+                ComponentType::ModuleComponent(module) => {
+                    modules.push(module);
+                }
+                _ => {}
             }
         }
 
         modules.push(module);
     }
 
-    tracing::info!("Finished parsing file!");
     Ok(merge_modules(modules, language))
 }
 
