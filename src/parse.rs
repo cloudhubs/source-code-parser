@@ -137,6 +137,72 @@ fn flatten_dirs(dir: &Directory) -> Vec<Directory> {
     dirs
 }
 
+pub fn parse_directory_ts(dir: &Directory) -> std::io::Result<Vec<AST>> {
+    let mut modules = vec![];
+
+    let dirs = flatten_dirs(dir);
+
+    for dir in dirs {
+        // Generate module constants
+        let path = dir.path.as_path().to_str().unwrap_or("").to_owned();
+        if path == "" {
+            continue;
+        }
+
+        // Get directory
+        tracing::info!("trying to read {:?}", dir.path);
+        let read_dir = match std::fs::read_dir(dir.path) {
+            Ok(dir) => dir,
+            Err(err) => {
+                tracing::warn!("Could not read directory: {:?}", err);
+                continue;
+            }
+        };
+
+        for entry in read_dir {
+            let entry = entry?;
+            if !entry.path().is_dir() {
+                if dir
+                    .files
+                    .iter()
+                    .find(|path_buf| path_buf == &&entry.path())
+                    .is_none()
+                {
+                    continue;
+                }
+                let mut file = File::open(entry.path())?;
+                let mut code = String::new();
+                file.read_to_string(&mut code)?;
+
+                tracing::info!(
+                    "Parsing file: {:?}",
+                    entry.path().to_str().unwrap_or_default()
+                );
+                let result = parse_ast(AstPayload {
+                    id: "".to_owned(),
+                    file_name: entry.path().to_str().unwrap_or("").to_owned(),
+                    code,
+                    comment: false,
+                    span: true,
+                });
+
+                let (ast, _lang) = match result {
+                    Some((ast, lang)) => (ast, lang),
+                    None => {
+                        tracing::warn!("Could not parse AST {:?}", entry.path());
+                        continue;
+                    }
+                };
+
+                modules.push(ast);
+            }
+        }
+    }
+
+    tracing::info!("Finished parsing files!");
+    Ok(modules)
+}
+
 pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>> {
     let mut modules = vec![];
     let mut language = Language::Unknown;

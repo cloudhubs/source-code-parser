@@ -4,10 +4,13 @@
 A library for getting the analysis context and AST of source code. Languages supported are those supported by v0.0.18 of the `rust-code-analysis` crate.
 
 ### Run Tests
-1. Run `cargo test --lib`
+1. Have the nightly toolchain installed: `rustup toolchain install nightly-x86_64-unknown-linux-gnu`
+2. Run `cargo +nightly test --lib`
 
 ### Run Benchmarks
-1. Run `cargo bench`.
+1. Install the `perf` Linux utility program
+2. Have the nightly toolchain installed: `rustup toolchain install nightly-x86_64-unknown-linux-gnu`
+3. Run `cargo +nightly bench`.
 
 Criterion and Iai will generate output to stdout and additionally files in `target/criterion/**` for the various benchmarks, and each benchmark also has a `flamegraph.svg` in its output directory.
 
