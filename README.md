@@ -10,7 +10,8 @@ A library for getting the analysis context and AST of source code. Languages sup
 ### Run Benchmarks
 1. Install the `perf` Linux utility program
 2. Have the nightly toolchain installed: `rustup toolchain install nightly-x86_64-unknown-linux-gnu`
-3. Run `cargo +nightly bench`.
+3. Initialize the target folder so flamegraphs can get created appropriately by running `benches/init.sh`
+4. Run `cargo +nightly bench`.
 
 Criterion and Iai will generate output to stdout and additionally files in `target/criterion/**` for the various benchmarks, and each benchmark also has a `flamegraph.svg` in its output directory.
 

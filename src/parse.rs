@@ -13,7 +13,7 @@ use crate::{communication::*, lang::*, *};
 
 /// Information on an `AST` node.
 /// Taken directly from the `rust_code_analysis` crate with additional serde macros for deserialization.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all(deserialize = "PascalCase"))]
 pub struct AST {
     /// The type of node
@@ -138,7 +138,7 @@ fn flatten_dirs(dir: &Directory) -> Vec<Directory> {
     dirs
 }
 
-#[derive(Debug, new)]
+#[derive(Debug, Clone, new)]
 pub struct ParsedTree {
     ast: AST,
     lang: LANG,

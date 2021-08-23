@@ -1,14 +1,11 @@
-use std::collections::HashMap;
-
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use statistical::*;
 
 mod test_constants;
 use test_constants::*;
 
 extern crate source_code_parser;
 use source_code_parser::{
-    ressa::{run_ressa_parse, Executor, NodePattern, ParserContext},
+    ressa::{run_ressa_parse, NodePattern},
     *,
 };
 
@@ -16,28 +13,12 @@ use source_code_parser::{
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 fn laast_benchmark(c: &mut Criterion, name: &str, dir: &Directory) {
-    let epoch = jemalloc_ctl::epoch::mib().unwrap();
-    let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
-
     let parsed_trees = parse_directory_trees(dir).unwrap();
-
-    let mut mem = vec![];
     c.bench_function(name, |b| {
         b.iter(|| {
-            epoch.advance().unwrap();
-            let before = allocated.read().unwrap();
-            let _modules = black_box(convert_trees_to_laast(parsed_trees));
-            epoch.advance().unwrap();
-            mem.push(abs_diff(allocated.read().unwrap(), before) as f64);
+            let _modules = black_box(convert_trees_to_laast(parsed_trees.clone()));
         })
     });
-    let mean = mean(&mem);
-    println!(
-        "{} +/- {} ({})",
-        mean,
-        standard_deviation(&mem, Some(mean)),
-        median(&mem)
-    );
 }
 
 fn ast_benchmark<'a, T, F>(c: &mut Criterion, name: &str, dir: &'a Directory, f: F)
@@ -45,26 +26,11 @@ where
     T: 'a,
     F: Fn(&'a Directory) -> T,
 {
-    let epoch = jemalloc_ctl::epoch::mib().unwrap();
-    let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
-
-    let mut mem = vec![];
     c.bench_function(name, |b| {
         b.iter(|| {
-            epoch.advance().unwrap();
-            let before = allocated.read().unwrap();
             let _ctx = black_box(f(dir));
-            epoch.advance().unwrap();
-            mem.push(abs_diff(allocated.read().unwrap(), before) as f64);
         })
     });
-    let mean = mean(&mem);
-    println!(
-        "{} +/- {} ({})",
-        mean,
-        standard_deviation(&mem, Some(mean)),
-        median(&mem)
-    );
 }
 
 fn ressa_benchmark(c: &mut Criterion, name: &str, ressa_json: &str, dir: &str) {

@@ -1,18 +1,16 @@
-use std::collections::HashMap;
-
-use iai::{black_box, main};
+use iai::black_box;
 
 mod test_constants;
 use test_constants::*;
 
 extern crate source_code_parser;
 use source_code_parser::{
-    ressa::{run_ressa_parse, Executor, NodePattern, ParserContext},
+    ressa::{run_ressa_parse, NodePattern},
     *,
 };
 
 fn laast_benchmark(dir: &str) {
-    let dir = serde_json::from_str::<Directory>(&*directory_json_dsb()).unwrap();
+    let dir = serde_json::from_str::<Directory>(&*dir).unwrap();
     let _ctx = black_box(parse_project_context(&dir)).unwrap();
 }
 
