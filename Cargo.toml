@@ -40,5 +40,5 @@ name = "criterion"
 harness = false
 
 [[bench]]
-name = "ressa_mem_bench"
+name = "mem_bench"
 harness = false
