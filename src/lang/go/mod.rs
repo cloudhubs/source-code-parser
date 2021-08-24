@@ -6,11 +6,13 @@ use crate::prophet::*;
 mod class_def;
 mod function_def;
 mod util;
+mod function_body;
 
 use class_def::*;
 use function_def::*;
 use crate::go::util::identifier::parse_identifier;
 use std::borrow::Borrow;
+use crate::lang::go::function_body::parse_block;
 
 pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
     find_components_internal(ast, String::new(), path)

@@ -3,6 +3,7 @@ use crate::prophet::*;
 use crate::go::util::vartype::find_type;
 use crate::go::util::identifier::parse_identifier;
 use crate::msd::NodeType::MethodParam;
+use crate::go::function_body::parse_block;
 
 pub(crate) fn parse_function(
     ast: &AST,
@@ -21,6 +22,7 @@ pub(crate) fn parse_function(
         instance_type: InstanceType::MethodComponent,
     };
 
+    let mut body = None;
     let span = ast.span.expect("No span for a method! AST malformed!");
     let line_begin = span.0 as i32;
     let line_end = span.2 as i32;
@@ -39,6 +41,15 @@ pub(crate) fn parse_function(
         },
         None => {}
     };
+
+    for member in ast.children.iter() {
+        match &*member.r#type {
+            "block" => {
+                body = Some(parse_block(member, &component));
+            }
+            _ => {}
+        }
+    }
 
     let func = MethodComponent {
         component: ComponentInfo {
@@ -59,7 +70,7 @@ pub(crate) fn parse_function(
         line_count: line_end - line_begin + 1,
         line_begin,
         line_end,
-        body: None
+        body
     };
     Some(func)
 }
@@ -76,6 +87,8 @@ pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str)
         instance_type: InstanceType::MethodComponent,
     };
 
+    //Define fields
+    let mut body = None;
     let span = ast.span.expect("No span for a method! AST malformed!");
     let line_begin = span.0 as i32;
     let line_end = span.2 as i32;
@@ -110,6 +123,15 @@ pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str)
         }
     };
 
+   for member in ast.children.iter() {
+       match &*member.r#type {
+           "block" => {
+               body = Some(parse_block(member, &component));
+           }
+           _ => {}
+       }
+   }
+
     let func = MethodComponent {
         component: ComponentInfo {
             path: path.into(),
@@ -129,7 +151,7 @@ pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str)
         line_count: line_end - line_begin + 1,
         line_begin,
         line_end,
-        body: None
+        body
     };
     (parent_struct_type_name, func)
 }
