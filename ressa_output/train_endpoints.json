@@ -1,1 +1,497 @@
-{"API - AdminBasicInfoController":{"addConfig":"POST /api/v1/adminbasicservice/adminbasic/configs HttpEntity","addContacts":"POST /api/v1/adminbasicservice/adminbasic/contacts HttpEntity","addPrice":"POST /api/v1/adminbasicservice/adminbasic/prices HttpEntity","addStation":"POST /api/v1/adminbasicservice/adminbasic/stations HttpEntity","addTrain":"POST /api/v1/adminbasicservice/adminbasic/trains HttpEntity","deleteConfig":"DELETE /api/v1/adminbasicservice/adminbasic/configs/{name} HttpEntity","deleteContacts":"DELETE /api/v1/adminbasicservice/adminbasic/contacts/{contactsId} HttpEntity","deletePrice":"DELETE /api/v1/adminbasicservice/adminbasic/prices HttpEntity","deleteStation":"DELETE /api/v1/adminbasicservice/adminbasic/stations HttpEntity","deleteTrain":"DELETE /api/v1/adminbasicservice/adminbasic/trains/{id} HttpEntity","getAllConfigs":"GET /api/v1/adminbasicservice/adminbasic/configs HttpEntity","getAllContacts":"GET /api/v1/adminbasicservice/adminbasic/contacts HttpEntity","getAllPrices":"GET /api/v1/adminbasicservice/adminbasic/prices HttpEntity","getAllStations":"GET /api/v1/adminbasicservice/adminbasic/stations HttpEntity","getAllTrains":"GET /api/v1/adminbasicservice/adminbasic/trains HttpEntity","home":"GET /api/v1/adminbasicservice/welcome String","modifyConfig":"PUT /api/v1/adminbasicservice/adminbasic/configs HttpEntity","modifyContacts":"PUT /api/v1/adminbasicservice/adminbasic/contacts HttpEntity","modifyPrice":"PUT /api/v1/adminbasicservice/adminbasic/prices HttpEntity","modifyStation":"PUT /api/v1/adminbasicservice/adminbasic/stations HttpEntity","modifyTrain":"PUT /api/v1/adminbasicservice/adminbasic/trains HttpEntity"},"API - AdminOrderController":{"addOrder":"POST /api/v1/adminorderservice/adminorder HttpEntity","deleteOrder":"DELETE /api/v1/adminorderservice/adminorder/{orderId}/{trainNumber} HttpEntity","getAllOrders":"GET /api/v1/adminorderservice/adminorder HttpEntity","home":"GET /api/v1/adminorderservice/welcome String","updateOrder":"PUT /api/v1/adminorderservice/adminorder HttpEntity"},"API - AdminRouteController":{"addRoute":"POST /api/v1/adminrouteservice/adminroute HttpEntity","deleteRoute":"DELETE /api/v1/adminrouteservice/adminroute/{routeId} HttpEntity","getAllRoutes":"GET /api/v1/adminrouteservice/adminroute HttpEntity","home":"GET /api/v1/adminrouteservice/welcome String"},"API - AdminTravelController":{"addTravel":"POST /api/v1/admintravelservice/admintravel HttpEntity","deleteTravel":"DELETE /api/v1/admintravelservice/admintravel/{tripId} HttpEntity","getAllTravels":"GET /api/v1/admintravelservice/admintravel HttpEntity","home":"GET /api/v1/admintravelservice/welcome String","updateTravel":"PUT /api/v1/admintravelservice/admintravel HttpEntity"},"API - AdminUserController":{"addUser":"POST /api/v1/adminuserservice/users/welcome HttpEntity","deleteUser":"DELETE /api/v1/adminuserservice/users/{userId} HttpEntity","getAllUsers":"GET /api/v1/adminuserservice/users/welcome HttpEntity","home":"GET /api/v1/adminuserservice/users/welcome String","updateUser":"PUT /api/v1/adminuserservice/users/welcome HttpEntity"},"API - AssuranceController":{"createNewAssurance":"GET /api/v1/assuranceservice/assurances/{typeIndex}/{orderId} HttpEntity","deleteAssurance":"DELETE /api/v1/assuranceservice/assurances/assuranceid/{assuranceId} HttpEntity","deleteAssuranceByOrderId":"DELETE /api/v1/assuranceservice/assurances/orderid/{orderId} HttpEntity","findAssuranceByOrderId":"GET /api/v1/assuranceservice/assurance/orderid/{orderId} HttpEntity","getAllAssuranceType":"GET /api/v1/assuranceservice/assurances/types HttpEntity","getAllAssurances":"GET /api/v1/assuranceservice/assurances HttpEntity","getAssuranceById":"GET /api/v1/assuranceservice/assurances/assuranceid/{assuranceId} HttpEntity","home":"GET /api/v1/assuranceservice/welcome String","modifyAssurance":"PATCH /api/v1/assuranceservice/assurances/{assuranceId}/{orderId}/{typeIndex} HttpEntity"},"API - AuthController":{"createDefaultUser":"POST /api/v1/auth HttpEntity<Response>","getHello":"GET /api/v1/auth/hello String"},"API - BasicController":{"home":"GET /api/v1/basicservice/welcome String","queryForStationId":"GET /api/v1/basicservice/basic/{stationName} HttpEntity","queryForTravel":"POST /api/v1/basicservice/basic/travel HttpEntity"},"API - CancelController":{"calculate":"GET /api/v1/cancelservice/cancel/refound/{orderId} HttpEntity","cancelTicket":"GET /api/v1/cancelservice/cancel/{orderId}/{loginId} HttpEntity","home":"GET /api/v1/cancelservice/welcome String"},"API - ConfigController":{"createConfig":"POST /api/v1/configservice/configs HttpEntity<N/A>","deleteConfig":"DELETE /api/v1/configservice/configs/{configName} HttpEntity","home":"GET /api/v1/configservice/welcome String","queryAll":"GET /api/v1/configservice/configs HttpEntity","retrieve":"GET /api/v1/configservice/configs/{configName} HttpEntity","updateConfig":"PUT /api/v1/configservice/configs HttpEntity"},"API - ConsignController":{"findByAccountId":"GET /api/v1/consignservice/consigns/account/{id} HttpEntity","findByConsignee":"GET /api/v1/consignservice/consigns/{consignee} HttpEntity","findByOrderId":"GET /api/v1/consignservice/consigns/order/{id} HttpEntity","home":"GET /api/v1/consignservice/welcome String","insertConsign":"POST /api/v1/consignservice/consigns HttpEntity","updateConsign":"PUT /api/v1/consignservice/consigns HttpEntity"},"API - ConsignPriceController":{"getPriceByWeightAndRegion":"GET /api/v1/consignpriceservice/consignprice/{weight}/{isWithinRegion} HttpEntity","getPriceConfig":"GET /api/v1/consignpriceservice/consignprice/config HttpEntity","getPriceInfo":"GET /api/v1/consignpriceservice/consignprice/price HttpEntity","home":"GET /api/v1/consignpriceservice/welcome String","modifyPriceConfig":"POST /api/v1/consignpriceservice/consignprice HttpEntity"},"API - ContactsController":{"createNewContacts":"POST /api/v1/contactservice/contacts ResponseEntity<Response>","createNewContactsAdmin":"POST /api/v1/contactservice/contacts/admin HttpEntity<N/A>","deleteContacts":"DELETE /api/v1/contactservice/contacts/{contactsId} HttpEntity","findContactsByAccountId":"GET /api/v1/contactservice/contacts/account/{accountId} HttpEntity","getAllContacts":"GET /api/v1/contactservice/contacts HttpEntity","getContactsByContactsId":"GET /api/v1/contactservice/contacts/{id} HttpEntity","home":"GET /api/v1/contactservice/contacts/welcome String","modifyContacts":"PUT /api/v1/contactservice/contacts HttpEntity"},"API - ExecuteController":{"collectTicket":"GET /api/v1/executeservice/execute/collected/{orderId} HttpEntity","executeTicket":"GET /api/v1/executeservice/execute/execute/{orderId} HttpEntity","home":"GET /api/v1/executeservice/welcome String"},"API - FoodController":{"createFoodOrder":"POST /api/v1/foodservice/orders HttpEntity","deleteFoodOrder":"DELETE /api/v1/foodservice/orders/{orderId} HttpEntity","findAllFoodOrder":"GET /api/v1/foodservice/orders HttpEntity","findFoodOrderByOrderId":"GET /api/v1/foodservice/orders/{orderId} HttpEntity","getAllFood":"GET /api/v1/foodservice/foods/{date}/{startStation}/{endStation}/{tripId} HttpEntity","home":"GET /api/v1/foodservice/welcome String","updateFoodOrder":"PUT /api/v1/foodservice/orders HttpEntity"},"API - FoodStoreController":{"getAllFoodStores":"GET /api/v1/foodmapservice/foodstores HttpEntity","getFoodStoresByStationIds":"POST /api/v1/foodmapservice/foodstores HttpEntity","getFoodStoresOfStation":"GET /api/v1/foodmapservice/foodstores/{stationId} HttpEntity","home":"GET /api/v1/foodmapservice/foodstores/welcome String"},"API - InsidePaymentController":{"addMoney":"GET /api/v1/inside_pay_service/inside_payment/{userId}/{money} HttpEntity","createAccount":"POST /api/v1/inside_pay_service/inside_payment/account HttpEntity","drawBack":"GET /api/v1/inside_pay_service/inside_payment/drawback/{userId}/{money} HttpEntity","home":"GET /api/v1/inside_pay_service/welcome String","pay":"POST /api/v1/inside_pay_service/inside_payment HttpEntity","payDifference":"POST /api/v1/inside_pay_service/inside_payment/difference HttpEntity","queryAccount":"GET /api/v1/inside_pay_service/inside_payment/account HttpEntity","queryAddMoney":"GET /api/v1/inside_pay_service/inside_payment/money HttpEntity","queryPayment":"GET /api/v1/inside_pay_service/inside_payment/payment HttpEntity"},"API - NotificationController":{"home":"GET /api/v1/notifyservice/welcome String","order_cancel_success":"POST /api/v1/notifyservice/notification/order_cancel_success boolean","order_changed_success":"POST /api/v1/notifyservice/notification/order_changed_success boolean","order_create_success":"POST /api/v1/notifyservice/notification/order_create_success boolean","preserve_success":"POST /api/v1/notifyservice/notification/preserve_success boolean"},"API - OrderController":{"addcreateNewOrder":"POST /api/v1/orderservice/order/admin HttpEntity","calculateSoldTicket":"GET /api/v1/orderservice/order/{travelDate}/{trainNumber} HttpEntity","createNewOrder":"POST /api/v1/orderservice/order HttpEntity","deleteOrder":"DELETE /api/v1/orderservice/order/{orderId} HttpEntity","findAllOrder":"GET /api/v1/orderservice/order HttpEntity","getOrderById":"GET /api/v1/orderservice/order/{orderId} HttpEntity","getOrderPrice":"GET /api/v1/orderservice/order/price/{orderId} HttpEntity","getTicketListByDateAndTripId":"POST /api/v1/orderservice/order/tickets HttpEntity","home":"GET /api/v1/orderservice/welcome String","modifyOrder":"GET /api/v1/orderservice/order/status/{orderId}/{status} HttpEntity","payOrder":"GET /api/v1/orderservice/order/orderPay/{orderId} HttpEntity","queryOrders":"POST /api/v1/orderservice/order/query HttpEntity","queryOrdersForRefresh":"POST /api/v1/orderservice/order/refresh HttpEntity","saveOrderInfo":"PUT /api/v1/orderservice/order HttpEntity","securityInfoCheck":"GET /api/v1/orderservice/order/security/{checkDate}/{accountId} HttpEntity","updateOrder":"PUT /api/v1/orderservice/order/admin HttpEntity"},"API - OrderOtherController":{"addcreateNewOrder":"POST /api/v1/orderOtherService/orderOther/admin HttpEntity","calculateSoldTicket":"GET /api/v1/orderOtherService/orderOther/{travelDate}/{trainNumber} HttpEntity","createNewOrder":"POST /api/v1/orderOtherService/orderOther HttpEntity","deleteOrder":"DELETE /api/v1/orderOtherService/orderOther/{orderId} HttpEntity","findAllOrder":"GET /api/v1/orderOtherService/orderOther HttpEntity","getOrderById":"GET /api/v1/orderOtherService/orderOther/{orderId} HttpEntity","getOrderPrice":"GET /api/v1/orderOtherService/orderOther/price/{orderId} HttpEntity","getTicketListByDateAndTripId":"POST /api/v1/orderOtherService/orderOther/tickets HttpEntity","home":"GET /api/v1/orderOtherService/welcome String","modifyOrder":"GET /api/v1/orderOtherService/orderOther/status/{orderId}/{status} HttpEntity","payOrder":"GET /api/v1/orderOtherService/orderOther/orderPay/{orderId} HttpEntity","queryOrders":"POST /api/v1/orderOtherService/orderOther/query HttpEntity","queryOrdersForRefresh":"POST /api/v1/orderOtherService/orderOther/refresh HttpEntity","saveOrderInfo":"PUT /api/v1/orderOtherService/orderOther HttpEntity","securityInfoCheck":"GET /api/v1/orderOtherService/orderOther/security/{checkDate}/{accountId} HttpEntity","updateOrder":"PUT /api/v1/orderOtherService/orderOther/admin HttpEntity"},"API - PaymentController":{"addMoney":"POST /api/v1/paymentservice/payment/money HttpEntity","home":"GET /api/v1/paymentservice/welcome String","pay":"POST /api/v1/paymentservice/payment HttpEntity","query":"GET /api/v1/paymentservice/payment HttpEntity"},"API - PreserveController":{"home":"GET /api/v1/preserveservice/welcome String","preserve":"POST /api/v1/preserveservice/preserve HttpEntity"},"API - PreserveOtherController":{"home":"GET /api/v1/preserveotherservice/welcome String","preserve":"POST /api/v1/preserveotherservice/preserveOther HttpEntity"},"API - PriceController":{"create":"POST /api/v1/priceservice/prices HttpEntity<N/A>","delete":"DELETE /api/v1/priceservice/prices HttpEntity","home":"GET /api/v1/priceservice/prices/welcome String","query":"GET /api/v1/priceservice/prices/{routeId}/{trainType} HttpEntity","queryAll":"GET /api/v1/priceservice/prices HttpEntity","update":"PUT /api/v1/priceservice/prices HttpEntity"},"API - RebookController":{"home":"GET /api/v1/rebookservice/welcome String","payDifference":"POST /api/v1/rebookservice/rebook/difference HttpEntity","rebook":"POST /api/v1/rebookservice/rebook HttpEntity"},"API - RouteController":{"createAndModifyRoute":"POST /api/v1/routeservice/routes ResponseEntity<Response>","deleteRoute":"DELETE /api/v1/routeservice/routes/{routeId} HttpEntity","home":"GET /api/v1/routeservice/welcome String","queryAll":"GET /api/v1/routeservice/routes HttpEntity","queryById":"GET /api/v1/routeservice/routes/{routeId} HttpEntity","queryByStartAndTerminal":"GET /api/v1/routeservice/routes/{startId}/{terminalId} HttpEntity"},"API - RoutePlanController":{"getCheapestRoutes":"POST /api/v1/routeplanservice/routePlan/cheapestRoute HttpEntity","getMinStopStations":"POST /api/v1/routeplanservice/routePlan/minStopStations HttpEntity","getQuickestRoutes":"POST /api/v1/routeplanservice/routePlan/quickestRoute HttpEntity","home":"GET /api/v1/routeplanservice/welcome String"},"API - SeatController":{"create":"POST /api/v1/seatservice/seats HttpEntity","getLeftTicketOfInterval":"POST /api/v1/seatservice/seats/left_tickets HttpEntity","home":"GET /api/v1/seatservice/welcome String"},"API - SecurityController":{"check":"GET /api/v1/securityservice/securityConfigs/{accountId} HttpEntity","create":"POST /api/v1/securityservice/securityConfigs HttpEntity","delete":"DELETE /api/v1/securityservice/securityConfigs/{id} HttpEntity","findAllSecurityConfig":"GET /api/v1/securityservice/securityConfigs HttpEntity","home":"GET /api/v1/securityservice/welcome String","update":"PUT /api/v1/securityservice/securityConfigs HttpEntity"},"API - StationController":{"create":"POST /api/v1/stationservice/stations ResponseEntity<Response>","delete":"DELETE /api/v1/stationservice/stations ResponseEntity<Response>","home":"GET /api/v1/stationservice/welcome String","query":"GET /api/v1/stationservice/stations HttpEntity","queryById":"GET /api/v1/stationservice/stations/name/{stationIdForName} HttpEntity","queryForIdBatch":"POST /api/v1/stationservice/stations/idlist HttpEntity","queryForNameBatch":"POST /api/v1/stationservice/stations/namelist HttpEntity","queryForStationId":"GET /api/v1/stationservice/stations/id/{stationNameForId} HttpEntity","update":"PUT /api/v1/stationservice/stations HttpEntity"},"API - TicketInfoController":{"home":"GET /api/v1/ticketinfoservice/welcome String","queryForStationId":"GET /api/v1/ticketinfoservice/ticketinfo/{name} HttpEntity","queryForTravel":"POST /api/v1/ticketinfoservice/ticketinfo HttpEntity"},"API - TrainController":{"create":"POST /api/v1/trainservice/trains HttpEntity","delete":"DELETE /api/v1/trainservice/trains/{id} HttpEntity","home":"GET /api/v1/trainservice/trains/welcome String","query":"GET /api/v1/trainservice/trains HttpEntity","retrieve":"GET /api/v1/trainservice/trains/{id} HttpEntity","update":"PUT /api/v1/trainservice/trains HttpEntity"},"API - TrainFoodController":{"getAllTrainFood":"GET /api/v1/foodmapservice/trainfoods HttpEntity","getTrainFoodOfTrip":"GET /api/v1/foodmapservice/trainfoods/{tripId} HttpEntity","home":"GET /api/v1/foodmapservice/trainfoods/welcome String"},"API - Travel2Controller":{"adminQueryAll":"GET /api/v1/travel2service/admin_trip HttpEntity","createTrip":"POST /api/v1/travel2service/trips HttpEntity<N/A>","deleteTrip":"DELETE /api/v1/travel2service/trips/{tripId} HttpEntity","getRouteByTripId":"GET /api/v1/travel2service/routes/{tripId} HttpEntity","getTrainTypeByTripId":"GET /api/v1/travel2service/train_types/{tripId} HttpEntity","getTripAllDetailInfo":"POST /api/v1/travel2service/trip_detail HttpEntity","getTripsByRouteId":"POST /api/v1/travel2service/trips/routes HttpEntity","home":"GET /api/v1/travel2service/welcome String","queryAll":"GET /api/v1/travel2service/trips HttpEntity","queryInfo":"POST /api/v1/travel2service/trips/left HttpEntity","retrieve":"GET /api/v1/travel2service/trips/{tripId} HttpEntity","updateTrip":"PUT /api/v1/travel2service/trips HttpEntity"},"API - TravelController":{"adminQueryAll":"GET /api/v1/travelservice/admin_trip HttpEntity","createTrip":"POST /api/v1/travelservice/trips HttpEntity<N/A>","deleteTrip":"DELETE /api/v1/travelservice/trips/{tripId} HttpEntity","getRouteByTripId":"GET /api/v1/travelservice/routes/{tripId} HttpEntity","getTrainTypeByTripId":"GET /api/v1/travelservice/train_types/{tripId} HttpEntity","getTripAllDetailInfo":"POST /api/v1/travelservice/trip_detail HttpEntity","getTripsByRouteId":"POST /api/v1/travelservice/trips/routes HttpEntity","home":"GET /api/v1/travelservice/welcome String","queryAll":"GET /api/v1/travelservice/trips HttpEntity","queryInfo":"POST /api/v1/travelservice/trips/left HttpEntity","retrieve":"GET /api/v1/travelservice/trips/{tripId} HttpEntity","updateTrip":"PUT /api/v1/travelservice/trips HttpEntity"},"API - TravelPlanController":{"getByCheapest":"POST /api/v1/travelplanservice/travelPlan/cheapest HttpEntity","getByMinStation":"POST /api/v1/travelplanservice/travelPlan/minStation HttpEntity","getByQuickest":"POST /api/v1/travelplanservice/travelPlan/quickest HttpEntity","getTransferResult":"POST /api/v1/travelplanservice/travelPlan/transferResult HttpEntity","home":"GET /api/v1/travelplanservice/welcome String"},"API - UserController":{"deleteUserById":"DELETE /api/v1/userservice/users/{userId} ResponseEntity<Response>","getAllUser":"GET /api/v1/userservice/users ResponseEntity<Response>","getHello":"GET /api/v1/users/hello Object","getToken":"POST /api/v1/users/login ResponseEntity<Response>","getUserByUserId":"GET /api/v1/userservice/users/id/{userId} ResponseEntity<Response>","getUserByUserName":"GET /api/v1/userservice/users/{userName} ResponseEntity<Response>","registerUser":"POST /api/v1/userservice/users/register ResponseEntity<Response>","testHello":"GET /api/v1/userservice/users/hello String","updateUser":"PUT /api/v1/userservice/users ResponseEntity<Response>"},"API - VerifyCodeController":{"imageCode":"GET /api/v1/verifycode/generate void","verifyCode":"GET /api/v1/verifycode/verify/{verifyCode} boolean"},"Calls - AdminBasicInfoService":{"DELETE /api/v1/configservice/configs/{}":"ConfigController.deleteConfig","DELETE /api/v1/contactservice/contacts/{}":"ContactsController.deleteContacts","DELETE /api/v1/priceservice/prices":"PriceController.delete","DELETE /api/v1/stationservice/stations":"StationController.delete","DELETE /api/v1/trainservice/trains/{}":"TrainController.delete","GET /api/v1/configservice/configs":"ConfigController.queryAll","GET /api/v1/contactservice/contacts":"ContactsController.getAllContacts","GET /api/v1/priceservice/prices":"PriceController.queryAll","GET /api/v1/stationservice/stations":"StationController.query","GET /api/v1/trainservice/trains":"TrainController.query","POST /api/v1/configservice/configs":"ConfigController.createConfig","POST /api/v1/contactservice/contacts/admin":"ContactsController.createNewContactsAdmin","POST /api/v1/priceservice/prices":"PriceController.create","POST /api/v1/stationservice/stations":"StationController.create","POST /api/v1/trainservice/trains":"TrainController.create","PUT /api/v1/configservice/configs":"ConfigController.updateConfig","PUT /api/v1/contactservice/contacts":"ContactsController.modifyContacts","PUT /api/v1/priceservice/prices":"PriceController.update","PUT /api/v1/stationservice/stations":"StationController.update","PUT /api/v1/trainservice/trains":"TrainController.update"},"Calls - AdminOrderService":{"DELETE /api/v1/orderOtherService/orderOther/{}":"OrderOtherController.deleteOrder","DELETE /api/v1/orderservice/order/{}":"OrderController.deleteOrder","GET /api/v1/orderOtherService/orderOther":"OrderOtherController.findAllOrder","GET /api/v1/orderservice/order":"OrderController.findAllOrder","POST /api/v1/orderOtherService/orderOther/admin":"OrderOtherController.addcreateNewOrder","POST /api/v1/orderservice/order/admin":"OrderController.addcreateNewOrder","PUT /api/v1/orderOtherService/orderOther/admin":"OrderOtherController.updateOrder","PUT /api/v1/orderservice/order/admin":"OrderController.updateOrder"},"Calls - AdminRouteService":{"DELETE /api/v1/routeservice/routes/{}":"RouteController.deleteRoute","GET /api/v1/routeservice/routes":"RouteController.queryAll","POST /api/v1/routeservice/routes":"RouteController.createAndModifyRoute"},"Calls - AdminTravelService":{"GET /api/v1/travel2service/admin_trip":"Travel2Controller.adminQueryAll","GET /api/v1/travelservice/admin_trip":"TravelController.adminQueryAll"},"Calls - AdminUserService":{"DELETE /api/v1/userservice/users/{}":"UserController.deleteUserById","GET /api/v1/userservice/users":"UserController.getAllUser","POST /api/v1/userservice/users/register":"UserController.registerUser","PUT /api/v1/userservice/users":"UserController.updateUser"},"Calls - BasicService":{"GET /api/v1/priceservice/prices/{}/{}":"PriceController.query","GET /api/v1/routeservice/routes/{}":"RouteController.queryById","GET /api/v1/stationservice/stations/id/{}":"StationController.queryForStationId","GET /api/v1/trainservice/trains/{}":"TrainController.retrieve"},"Calls - CancelService":{"GET /api/v1/inside_pay_service/inside_payment/drawback/{}/{}":"InsidePaymentController.drawBack","GET /api/v1/orderOtherService/orderOther/{}":"OrderOtherController.getOrderById","GET /api/v1/orderservice/order/{}":"OrderController.getOrderById","GET /api/v1/userservice/users/id/{}":"UserController.getUserByUserId","POST /api/v1/notifyservice/notification/order_cancel_success":"NotificationController.order_cancel_success","PUT /api/v1/orderOtherService/orderOther":"OrderOtherController.saveOrderInfo","PUT /api/v1/orderservice/order":"OrderController.saveOrderInfo"},"Calls - ConsignService":{"GET /api/v1/consignpriceservice/consignprice/{}/{}":"ConsignPriceController.getPriceByWeightAndRegion"},"Calls - ExecuteService":{"GET /api/v1/orderOtherService/orderOther/status/{}/{}":"OrderOtherController.modifyOrder","GET /api/v1/orderOtherService/orderOther/{}":"OrderOtherController.getOrderById","GET /api/v1/orderservice/order/status/{}/{}":"OrderController.modifyOrder","GET /api/v1/orderservice/order/{}":"OrderController.getOrderById"},"Calls - FoodService":{"GET /api/v1/foodmapservice/trainfoods/{}":"TrainFoodController.getTrainFoodOfTrip","GET /api/v1/travelservice/routes/{}":"TravelController.getRouteByTripId","POST /api/v1/foodmapservice/foodstores":"FoodStoreController.getFoodStoresByStationIds"},"Calls - InsidePaymentService":{"GET /api/v1/orderOtherService/orderOther/status/{}/{}":"OrderOtherController.modifyOrder","GET /api/v1/orderservice/order/status/{}/{}":"OrderController.modifyOrder","POST /api/v1/paymentservice/payment":"PaymentController.pay"},"Calls - OrderOtherService":{"POST /api/v1/stationservice/stations/namelist":"StationController.queryForNameBatch"},"Calls - OrderService":{"POST /api/v1/stationservice/stations/namelist":"StationController.queryForNameBatch"},"Calls - PreserveOtherService":{"GET /api/v1/assuranceservice/assurances/{}/{}":"AssuranceController.createNewAssurance","GET /api/v1/contactservice/contacts/{}":"ContactsController.getContactsByContactsId","GET /api/v1/securityservice/securityConfigs/{}":"SecurityController.check","GET /api/v1/stationservice/stations/id/{}":"StationController.queryForStationId","GET /api/v1/userservice/users/id/{}":"UserController.getUserByUserId","POST /api/v1/consignservice/consigns":"ConsignController.insertConsign","POST /api/v1/foodservice/orders":"FoodController.createFoodOrder","POST /api/v1/notifyservice/notification/preserve_success":"NotificationController.preserve_success","POST /api/v1/orderOtherService/orderOther":"OrderOtherController.createNewOrder","POST /api/v1/seatservice/seats":"SeatController.create","POST /api/v1/ticketinfoservice/ticketinfo":"TicketInfoController.queryForTravel","POST /api/v1/travel2service/trip_detail":"Travel2Controller.getTripAllDetailInfo"},"Calls - PreserveService":{"GET /api/v1/assuranceservice/assurances/{}/{}":"AssuranceController.createNewAssurance","GET /api/v1/contactservice/contacts/{}":"ContactsController.getContactsByContactsId","GET /api/v1/securityservice/securityConfigs/{}":"SecurityController.check","GET /api/v1/stationservice/stations/id/{}":"StationController.queryForStationId","GET /api/v1/userservice/users/id/{}":"UserController.getUserByUserId","POST /api/v1/consignservice/consigns":"ConsignController.insertConsign","POST /api/v1/foodservice/orders":"FoodController.createFoodOrder","POST /api/v1/notifyservice/notification/preserve_success":"NotificationController.preserve_success","POST /api/v1/orderservice/order":"OrderController.createNewOrder","POST /api/v1/seatservice/seats":"SeatController.create","POST /api/v1/ticketinfoservice/ticketinfo":"TicketInfoController.queryForTravel","POST /api/v1/travelservice/trip_detail":"TravelController.getTripAllDetailInfo"},"Calls - RebookService":{"GET /api/v1/inside_pay_service/inside_payment/drawback/{}/{}":"InsidePaymentController.drawBack","GET /api/v1/stationservice/stations/name/{}":"StationController.queryById","POST /api/v1/inside_pay_service/inside_payment/difference":"InsidePaymentController.payDifference","POST /api/v1/seatservice/seats":"SeatController.create"},"Calls - RoutePlanService":{"GET /api/v1/routeservice/routes/{}":"RouteController.queryById","GET /api/v1/routeservice/routes/{}/{}":"RouteController.queryByStartAndTerminal","GET /api/v1/stationservice/stations/id/{}":"StationController.queryForStationId","POST /api/v1/travel2service/trips/left":"Travel2Controller.queryInfo","POST /api/v1/travel2service/trips/routes":"Travel2Controller.getTripsByRouteId","POST /api/v1/travelservice/trips/left":"TravelController.queryInfo","POST /api/v1/travelservice/trips/routes":"TravelController.getTripsByRouteId"},"Calls - SeatService":{"GET /api/v1/configservice/configs/{}":"ConfigController.retrieve","GET /api/v1/travel2service/routes/{}":"Travel2Controller.getRouteByTripId","GET /api/v1/travel2service/train_types/{}":"Travel2Controller.getTrainTypeByTripId","GET /api/v1/travelservice/routes/{}":"TravelController.getRouteByTripId","GET /api/v1/travelservice/train_types/{}":"TravelController.getTrainTypeByTripId","POST /api/v1/orderOtherService/orderOther/tickets":"OrderOtherController.getTicketListByDateAndTripId","POST /api/v1/orderservice/order/tickets":"OrderController.getTicketListByDateAndTripId"},"Calls - SecurityService":{"GET /api/v1/orderOtherService/orderOther/security/{}/{}":"OrderOtherController.securityInfoCheck","GET /api/v1/orderservice/order/security/{}/{}":"OrderController.securityInfoCheck"},"Calls - TicketInfoService":{"GET /api/v1/basicservice/basic/{}":"BasicController.queryForStationId","POST /api/v1/basicservice/basic/travel":"BasicController.queryForTravel"},"Calls - TokenService":{"GET /api/v1/verifycode/verify/{}":"VerifyCodeController.verifyCode"},"Calls - Travel2Service":{"GET /api/v1/orderOtherService/orderOther/{}/{}":"OrderOtherController.calculateSoldTicket","GET /api/v1/routeservice/routes/{}":"RouteController.queryById","GET /api/v1/ticketinfoservice/ticketinfo/{}":"TicketInfoController.queryForStationId","GET /api/v1/trainservice/trains/{}":"TrainController.retrieve","POST /api/v1/seatservice/seats/left_tickets":"SeatController.getLeftTicketOfInterval","POST /api/v1/ticketinfoservice/ticketinfo":"TicketInfoController.queryForTravel"},"Calls - TravelPlanService":{"GET /api/v1/ticketinfoservice/ticketinfo/{}":"TicketInfoController.queryForStationId","POST /api/v1/routeplanservice/routePlan/cheapestRoute":"RoutePlanController.getCheapestRoutes","POST /api/v1/routeplanservice/routePlan/minStopStations":"RoutePlanController.getMinStopStations","POST /api/v1/routeplanservice/routePlan/quickestRoute":"RoutePlanController.getQuickestRoutes","POST /api/v1/seatservice/seats/left_tickets":"SeatController.getLeftTicketOfInterval","POST /api/v1/stationservice/stations/namelist":"StationController.queryForNameBatch","POST /api/v1/travel2service/trips/left":"Travel2Controller.queryInfo","POST /api/v1/travelservice/trips/left":"TravelController.queryInfo"},"Calls - TravelService":{"GET /api/v1/orderservice/order/{}/{}":"OrderController.calculateSoldTicket","GET /api/v1/routeservice/routes/{}":"RouteController.queryById","GET /api/v1/ticketinfoservice/ticketinfo/{}":"TicketInfoController.queryForStationId","GET /api/v1/trainservice/trains/{}":"TrainController.retrieve","POST /api/v1/seatservice/seats/left_tickets":"SeatController.getLeftTicketOfInterval","POST /api/v1/ticketinfoservice/ticketinfo":"TicketInfoController.queryForTravel"},"Calls - UserService":{"DELETE /api/v1/users/{}":"UserController.deleteUserById","POST /api/v1/auth":"AuthController.createDefaultUser"}}
+{
+  "API - AdminBasicInfoController": {
+    "addConfig": "POST /api/v1/adminbasicservice/adminbasic/configs HttpEntity",
+    "addContacts": "POST /api/v1/adminbasicservice/adminbasic/contacts HttpEntity",
+    "addPrice": "POST /api/v1/adminbasicservice/adminbasic/prices HttpEntity",
+    "addStation": "POST /api/v1/adminbasicservice/adminbasic/stations HttpEntity",
+    "addTrain": "POST /api/v1/adminbasicservice/adminbasic/trains HttpEntity",
+    "deleteConfig": "DELETE /api/v1/adminbasicservice/adminbasic/configs/{name} HttpEntity",
+    "deleteContacts": "DELETE /api/v1/adminbasicservice/adminbasic/contacts/{contactsId} HttpEntity",
+    "deletePrice": "DELETE /api/v1/adminbasicservice/adminbasic/prices HttpEntity",
+    "deleteStation": "DELETE /api/v1/adminbasicservice/adminbasic/stations HttpEntity",
+    "deleteTrain": "DELETE /api/v1/adminbasicservice/adminbasic/trains/{id} HttpEntity",
+    "getAllConfigs": "GET /api/v1/adminbasicservice/adminbasic/configs HttpEntity",
+    "getAllContacts": "GET /api/v1/adminbasicservice/adminbasic/contacts HttpEntity",
+    "getAllPrices": "GET /api/v1/adminbasicservice/adminbasic/prices HttpEntity",
+    "getAllStations": "GET /api/v1/adminbasicservice/adminbasic/stations HttpEntity",
+    "getAllTrains": "GET /api/v1/adminbasicservice/adminbasic/trains HttpEntity",
+    "home": "GET /api/v1/adminbasicservice/welcome String",
+    "modifyConfig": "PUT /api/v1/adminbasicservice/adminbasic/configs HttpEntity",
+    "modifyContacts": "PUT /api/v1/adminbasicservice/adminbasic/contacts HttpEntity",
+    "modifyPrice": "PUT /api/v1/adminbasicservice/adminbasic/prices HttpEntity",
+    "modifyStation": "PUT /api/v1/adminbasicservice/adminbasic/stations HttpEntity",
+    "modifyTrain": "PUT /api/v1/adminbasicservice/adminbasic/trains HttpEntity"
+  },
+  "API - AdminOrderController": {
+    "addOrder": "POST /api/v1/adminorderservice/adminorder HttpEntity",
+    "deleteOrder": "DELETE /api/v1/adminorderservice/adminorder/{orderId}/{trainNumber} HttpEntity",
+    "getAllOrders": "GET /api/v1/adminorderservice/adminorder HttpEntity",
+    "home": "GET /api/v1/adminorderservice/welcome String",
+    "updateOrder": "PUT /api/v1/adminorderservice/adminorder HttpEntity"
+  },
+  "API - AdminRouteController": {
+    "addRoute": "POST /api/v1/adminrouteservice/adminroute HttpEntity",
+    "deleteRoute": "DELETE /api/v1/adminrouteservice/adminroute/{routeId} HttpEntity",
+    "getAllRoutes": "GET /api/v1/adminrouteservice/adminroute HttpEntity",
+    "home": "GET /api/v1/adminrouteservice/welcome String"
+  },
+  "API - AdminTravelController": {
+    "addTravel": "POST /api/v1/admintravelservice/admintravel HttpEntity",
+    "deleteTravel": "DELETE /api/v1/admintravelservice/admintravel/{tripId} HttpEntity",
+    "getAllTravels": "GET /api/v1/admintravelservice/admintravel HttpEntity",
+    "home": "GET /api/v1/admintravelservice/welcome String",
+    "updateTravel": "PUT /api/v1/admintravelservice/admintravel HttpEntity"
+  },
+  "API - AdminUserController": {
+    "addUser": "POST /api/v1/adminuserservice/users/welcome HttpEntity",
+    "deleteUser": "DELETE /api/v1/adminuserservice/users/{userId} HttpEntity",
+    "getAllUsers": "GET /api/v1/adminuserservice/users/welcome HttpEntity",
+    "home": "GET /api/v1/adminuserservice/users/welcome String",
+    "updateUser": "PUT /api/v1/adminuserservice/users/welcome HttpEntity"
+  },
+  "API - AssuranceController": {
+    "createNewAssurance": "GET /api/v1/assuranceservice/assurances/{typeIndex}/{orderId} HttpEntity",
+    "deleteAssurance": "DELETE /api/v1/assuranceservice/assurances/assuranceid/{assuranceId} HttpEntity",
+    "deleteAssuranceByOrderId": "DELETE /api/v1/assuranceservice/assurances/orderid/{orderId} HttpEntity",
+    "findAssuranceByOrderId": "GET /api/v1/assuranceservice/assurance/orderid/{orderId} HttpEntity",
+    "getAllAssuranceType": "GET /api/v1/assuranceservice/assurances/types HttpEntity",
+    "getAllAssurances": "GET /api/v1/assuranceservice/assurances HttpEntity",
+    "getAssuranceById": "GET /api/v1/assuranceservice/assurances/assuranceid/{assuranceId} HttpEntity",
+    "home": "GET /api/v1/assuranceservice/welcome String",
+    "modifyAssurance": "PATCH /api/v1/assuranceservice/assurances/{assuranceId}/{orderId}/{typeIndex} HttpEntity"
+  },
+  "API - AuthController": {
+    "createDefaultUser": "POST /api/v1/auth HttpEntity<Response>",
+    "getHello": "GET /api/v1/auth/hello String"
+  },
+  "API - BasicController": {
+    "home": "GET /api/v1/basicservice/welcome String",
+    "queryForStationId": "GET /api/v1/basicservice/basic/{stationName} HttpEntity",
+    "queryForTravel": "POST /api/v1/basicservice/basic/travel HttpEntity"
+  },
+  "API - CancelController": {
+    "calculate": "GET /api/v1/cancelservice/cancel/refound/{orderId} HttpEntity",
+    "cancelTicket": "GET /api/v1/cancelservice/cancel/{orderId}/{loginId} HttpEntity",
+    "home": "GET /api/v1/cancelservice/welcome String"
+  },
+  "API - ConfigController": {
+    "createConfig": "POST /api/v1/configservice/configs HttpEntity<N/A>",
+    "deleteConfig": "DELETE /api/v1/configservice/configs/{configName} HttpEntity",
+    "home": "GET /api/v1/configservice/welcome String",
+    "queryAll": "GET /api/v1/configservice/configs HttpEntity",
+    "retrieve": "GET /api/v1/configservice/configs/{configName} HttpEntity",
+    "updateConfig": "PUT /api/v1/configservice/configs HttpEntity"
+  },
+  "API - ConsignController": {
+    "findByAccountId": "GET /api/v1/consignservice/consigns/account/{id} HttpEntity",
+    "findByConsignee": "GET /api/v1/consignservice/consigns/{consignee} HttpEntity",
+    "findByOrderId": "GET /api/v1/consignservice/consigns/order/{id} HttpEntity",
+    "home": "GET /api/v1/consignservice/welcome String",
+    "insertConsign": "POST /api/v1/consignservice/consigns HttpEntity",
+    "updateConsign": "PUT /api/v1/consignservice/consigns HttpEntity"
+  },
+  "API - ConsignPriceController": {
+    "getPriceByWeightAndRegion": "GET /api/v1/consignpriceservice/consignprice/{weight}/{isWithinRegion} HttpEntity",
+    "getPriceConfig": "GET /api/v1/consignpriceservice/consignprice/config HttpEntity",
+    "getPriceInfo": "GET /api/v1/consignpriceservice/consignprice/price HttpEntity",
+    "home": "GET /api/v1/consignpriceservice/welcome String",
+    "modifyPriceConfig": "POST /api/v1/consignpriceservice/consignprice HttpEntity"
+  },
+  "API - ContactsController": {
+    "createNewContacts": "POST /api/v1/contactservice/contacts ResponseEntity<Response>",
+    "createNewContactsAdmin": "POST /api/v1/contactservice/contacts/admin HttpEntity<N/A>",
+    "deleteContacts": "DELETE /api/v1/contactservice/contacts/{contactsId} HttpEntity",
+    "findContactsByAccountId": "GET /api/v1/contactservice/contacts/account/{accountId} HttpEntity",
+    "getAllContacts": "GET /api/v1/contactservice/contacts HttpEntity",
+    "getContactsByContactsId": "GET /api/v1/contactservice/contacts/{id} HttpEntity",
+    "home": "GET /api/v1/contactservice/contacts/welcome String",
+    "modifyContacts": "PUT /api/v1/contactservice/contacts HttpEntity"
+  },
+  "API - ExecuteController": {
+    "collectTicket": "GET /api/v1/executeservice/execute/collected/{orderId} HttpEntity",
+    "executeTicket": "GET /api/v1/executeservice/execute/execute/{orderId} HttpEntity",
+    "home": "GET /api/v1/executeservice/welcome String"
+  },
+  "API - FoodController": {
+    "createFoodOrder": "POST /api/v1/foodservice/orders HttpEntity",
+    "deleteFoodOrder": "DELETE /api/v1/foodservice/orders/{orderId} HttpEntity",
+    "findAllFoodOrder": "GET /api/v1/foodservice/orders HttpEntity",
+    "findFoodOrderByOrderId": "GET /api/v1/foodservice/orders/{orderId} HttpEntity",
+    "getAllFood": "GET /api/v1/foodservice/foods/{date}/{startStation}/{endStation}/{tripId} HttpEntity",
+    "home": "GET /api/v1/foodservice/welcome String",
+    "updateFoodOrder": "PUT /api/v1/foodservice/orders HttpEntity"
+  },
+  "API - FoodStoreController": {
+    "getAllFoodStores": "GET /api/v1/foodmapservice/foodstores HttpEntity",
+    "getFoodStoresByStationIds": "POST /api/v1/foodmapservice/foodstores HttpEntity",
+    "getFoodStoresOfStation": "GET /api/v1/foodmapservice/foodstores/{stationId} HttpEntity",
+    "home": "GET /api/v1/foodmapservice/foodstores/welcome String"
+  },
+  "API - InsidePaymentController": {
+    "addMoney": "GET /api/v1/inside_pay_service/inside_payment/{userId}/{money} HttpEntity",
+    "createAccount": "POST /api/v1/inside_pay_service/inside_payment/account HttpEntity",
+    "drawBack": "GET /api/v1/inside_pay_service/inside_payment/drawback/{userId}/{money} HttpEntity",
+    "home": "GET /api/v1/inside_pay_service/welcome String",
+    "pay": "POST /api/v1/inside_pay_service/inside_payment HttpEntity",
+    "payDifference": "POST /api/v1/inside_pay_service/inside_payment/difference HttpEntity",
+    "queryAccount": "GET /api/v1/inside_pay_service/inside_payment/account HttpEntity",
+    "queryAddMoney": "GET /api/v1/inside_pay_service/inside_payment/money HttpEntity",
+    "queryPayment": "GET /api/v1/inside_pay_service/inside_payment/payment HttpEntity"
+  },
+  "API - NotificationController": {
+    "home": "GET /api/v1/notifyservice/welcome String",
+    "order_cancel_success": "POST /api/v1/notifyservice/notification/order_cancel_success boolean",
+    "order_changed_success": "POST /api/v1/notifyservice/notification/order_changed_success boolean",
+    "order_create_success": "POST /api/v1/notifyservice/notification/order_create_success boolean",
+    "preserve_success": "POST /api/v1/notifyservice/notification/preserve_success boolean"
+  },
+  "API - OrderController": {
+    "addcreateNewOrder": "POST /api/v1/orderservice/order/admin HttpEntity",
+    "calculateSoldTicket": "GET /api/v1/orderservice/order/{travelDate}/{trainNumber} HttpEntity",
+    "createNewOrder": "POST /api/v1/orderservice/order HttpEntity",
+    "deleteOrder": "DELETE /api/v1/orderservice/order/{orderId} HttpEntity",
+    "findAllOrder": "GET /api/v1/orderservice/order HttpEntity",
+    "getOrderById": "GET /api/v1/orderservice/order/{orderId} HttpEntity",
+    "getOrderPrice": "GET /api/v1/orderservice/order/price/{orderId} HttpEntity",
+    "getTicketListByDateAndTripId": "POST /api/v1/orderservice/order/tickets HttpEntity",
+    "home": "GET /api/v1/orderservice/welcome String",
+    "modifyOrder": "GET /api/v1/orderservice/order/status/{orderId}/{status} HttpEntity",
+    "payOrder": "GET /api/v1/orderservice/order/orderPay/{orderId} HttpEntity",
+    "queryOrders": "POST /api/v1/orderservice/order/query HttpEntity",
+    "queryOrdersForRefresh": "POST /api/v1/orderservice/order/refresh HttpEntity",
+    "saveOrderInfo": "PUT /api/v1/orderservice/order HttpEntity",
+    "securityInfoCheck": "GET /api/v1/orderservice/order/security/{checkDate}/{accountId} HttpEntity",
+    "updateOrder": "PUT /api/v1/orderservice/order/admin HttpEntity"
+  },
+  "API - OrderOtherController": {
+    "addcreateNewOrder": "POST /api/v1/orderOtherService/orderOther/admin HttpEntity",
+    "calculateSoldTicket": "GET /api/v1/orderOtherService/orderOther/{travelDate}/{trainNumber} HttpEntity",
+    "createNewOrder": "POST /api/v1/orderOtherService/orderOther HttpEntity",
+    "deleteOrder": "DELETE /api/v1/orderOtherService/orderOther/{orderId} HttpEntity",
+    "findAllOrder": "GET /api/v1/orderOtherService/orderOther HttpEntity",
+    "getOrderById": "GET /api/v1/orderOtherService/orderOther/{orderId} HttpEntity",
+    "getOrderPrice": "GET /api/v1/orderOtherService/orderOther/price/{orderId} HttpEntity",
+    "getTicketListByDateAndTripId": "POST /api/v1/orderOtherService/orderOther/tickets HttpEntity",
+    "home": "GET /api/v1/orderOtherService/welcome String",
+    "modifyOrder": "GET /api/v1/orderOtherService/orderOther/status/{orderId}/{status} HttpEntity",
+    "payOrder": "GET /api/v1/orderOtherService/orderOther/orderPay/{orderId} HttpEntity",
+    "queryOrders": "POST /api/v1/orderOtherService/orderOther/query HttpEntity",
+    "queryOrdersForRefresh": "POST /api/v1/orderOtherService/orderOther/refresh HttpEntity",
+    "saveOrderInfo": "PUT /api/v1/orderOtherService/orderOther HttpEntity",
+    "securityInfoCheck": "GET /api/v1/orderOtherService/orderOther/security/{checkDate}/{accountId} HttpEntity",
+    "updateOrder": "PUT /api/v1/orderOtherService/orderOther/admin HttpEntity"
+  },
+  "API - PaymentController": {
+    "addMoney": "POST /api/v1/paymentservice/payment/money HttpEntity",
+    "home": "GET /api/v1/paymentservice/welcome String",
+    "pay": "POST /api/v1/paymentservice/payment HttpEntity",
+    "query": "GET /api/v1/paymentservice/payment HttpEntity"
+  },
+  "API - PreserveController": {
+    "home": "GET /api/v1/preserveservice/welcome String",
+    "preserve": "POST /api/v1/preserveservice/preserve HttpEntity"
+  },
+  "API - PreserveOtherController": {
+    "home": "GET /api/v1/preserveotherservice/welcome String",
+    "preserve": "POST /api/v1/preserveotherservice/preserveOther HttpEntity"
+  },
+  "API - PriceController": {
+    "create": "POST /api/v1/priceservice/prices HttpEntity<N/A>",
+    "delete": "DELETE /api/v1/priceservice/prices HttpEntity",
+    "home": "GET /api/v1/priceservice/prices/welcome String",
+    "query": "GET /api/v1/priceservice/prices/{routeId}/{trainType} HttpEntity",
+    "queryAll": "GET /api/v1/priceservice/prices HttpEntity",
+    "update": "PUT /api/v1/priceservice/prices HttpEntity"
+  },
+  "API - RebookController": {
+    "home": "GET /api/v1/rebookservice/welcome String",
+    "payDifference": "POST /api/v1/rebookservice/rebook/difference HttpEntity",
+    "rebook": "POST /api/v1/rebookservice/rebook HttpEntity"
+  },
+  "API - RouteController": {
+    "createAndModifyRoute": "POST /api/v1/routeservice/routes ResponseEntity<Response>",
+    "deleteRoute": "DELETE /api/v1/routeservice/routes/{routeId} HttpEntity",
+    "home": "GET /api/v1/routeservice/welcome String",
+    "queryAll": "GET /api/v1/routeservice/routes HttpEntity",
+    "queryById": "GET /api/v1/routeservice/routes/{routeId} HttpEntity",
+    "queryByStartAndTerminal": "GET /api/v1/routeservice/routes/{startId}/{terminalId} HttpEntity"
+  },
+  "API - RoutePlanController": {
+    "getCheapestRoutes": "POST /api/v1/routeplanservice/routePlan/cheapestRoute HttpEntity",
+    "getMinStopStations": "POST /api/v1/routeplanservice/routePlan/minStopStations HttpEntity",
+    "getQuickestRoutes": "POST /api/v1/routeplanservice/routePlan/quickestRoute HttpEntity",
+    "home": "GET /api/v1/routeplanservice/welcome String"
+  },
+  "API - SeatController": {
+    "create": "POST /api/v1/seatservice/seats HttpEntity",
+    "getLeftTicketOfInterval": "POST /api/v1/seatservice/seats/left_tickets HttpEntity",
+    "home": "GET /api/v1/seatservice/welcome String"
+  },
+  "API - SecurityController": {
+    "check": "GET /api/v1/securityservice/securityConfigs/{accountId} HttpEntity",
+    "create": "POST /api/v1/securityservice/securityConfigs HttpEntity",
+    "delete": "DELETE /api/v1/securityservice/securityConfigs/{id} HttpEntity",
+    "findAllSecurityConfig": "GET /api/v1/securityservice/securityConfigs HttpEntity",
+    "home": "GET /api/v1/securityservice/welcome String",
+    "update": "PUT /api/v1/securityservice/securityConfigs HttpEntity"
+  },
+  "API - StationController": {
+    "create": "POST /api/v1/stationservice/stations ResponseEntity<Response>",
+    "delete": "DELETE /api/v1/stationservice/stations ResponseEntity<Response>",
+    "home": "GET /api/v1/stationservice/welcome String",
+    "query": "GET /api/v1/stationservice/stations HttpEntity",
+    "queryById": "GET /api/v1/stationservice/stations/name/{stationIdForName} HttpEntity",
+    "queryForIdBatch": "POST /api/v1/stationservice/stations/idlist HttpEntity",
+    "queryForNameBatch": "POST /api/v1/stationservice/stations/namelist HttpEntity",
+    "queryForStationId": "GET /api/v1/stationservice/stations/id/{stationNameForId} HttpEntity",
+    "update": "PUT /api/v1/stationservice/stations HttpEntity"
+  },
+  "API - TicketInfoController": {
+    "home": "GET /api/v1/ticketinfoservice/welcome String",
+    "queryForStationId": "GET /api/v1/ticketinfoservice/ticketinfo/{name} HttpEntity",
+    "queryForTravel": "POST /api/v1/ticketinfoservice/ticketinfo HttpEntity"
+  },
+  "API - TrainController": {
+    "create": "POST /api/v1/trainservice/trains HttpEntity",
+    "delete": "DELETE /api/v1/trainservice/trains/{id} HttpEntity",
+    "home": "GET /api/v1/trainservice/trains/welcome String",
+    "query": "GET /api/v1/trainservice/trains HttpEntity",
+    "retrieve": "GET /api/v1/trainservice/trains/{id} HttpEntity",
+    "update": "PUT /api/v1/trainservice/trains HttpEntity"
+  },
+  "API - TrainFoodController": {
+    "getAllTrainFood": "GET /api/v1/foodmapservice/trainfoods HttpEntity",
+    "getTrainFoodOfTrip": "GET /api/v1/foodmapservice/trainfoods/{tripId} HttpEntity",
+    "home": "GET /api/v1/foodmapservice/trainfoods/welcome String"
+  },
+  "API - Travel2Controller": {
+    "adminQueryAll": "GET /api/v1/travel2service/admin_trip HttpEntity",
+    "createTrip": "POST /api/v1/travel2service/trips HttpEntity<N/A>",
+    "deleteTrip": "DELETE /api/v1/travel2service/trips/{tripId} HttpEntity",
+    "getRouteByTripId": "GET /api/v1/travel2service/routes/{tripId} HttpEntity",
+    "getTrainTypeByTripId": "GET /api/v1/travel2service/train_types/{tripId} HttpEntity",
+    "getTripAllDetailInfo": "POST /api/v1/travel2service/trip_detail HttpEntity",
+    "getTripsByRouteId": "POST /api/v1/travel2service/trips/routes HttpEntity",
+    "home": "GET /api/v1/travel2service/welcome String",
+    "queryAll": "GET /api/v1/travel2service/trips HttpEntity",
+    "queryInfo": "POST /api/v1/travel2service/trips/left HttpEntity",
+    "retrieve": "GET /api/v1/travel2service/trips/{tripId} HttpEntity",
+    "updateTrip": "PUT /api/v1/travel2service/trips HttpEntity"
+  },
+  "API - TravelController": {
+    "adminQueryAll": "GET /api/v1/travelservice/admin_trip HttpEntity",
+    "createTrip": "POST /api/v1/travelservice/trips HttpEntity<N/A>",
+    "deleteTrip": "DELETE /api/v1/travelservice/trips/{tripId} HttpEntity",
+    "getRouteByTripId": "GET /api/v1/travelservice/routes/{tripId} HttpEntity",
+    "getTrainTypeByTripId": "GET /api/v1/travelservice/train_types/{tripId} HttpEntity",
+    "getTripAllDetailInfo": "POST /api/v1/travelservice/trip_detail HttpEntity",
+    "getTripsByRouteId": "POST /api/v1/travelservice/trips/routes HttpEntity",
+    "home": "GET /api/v1/travelservice/welcome String",
+    "queryAll": "GET /api/v1/travelservice/trips HttpEntity",
+    "queryInfo": "POST /api/v1/travelservice/trips/left HttpEntity",
+    "retrieve": "GET /api/v1/travelservice/trips/{tripId} HttpEntity",
+    "updateTrip": "PUT /api/v1/travelservice/trips HttpEntity"
+  },
+  "API - TravelPlanController": {
+    "getByCheapest": "POST /api/v1/travelplanservice/travelPlan/cheapest HttpEntity",
+    "getByMinStation": "POST /api/v1/travelplanservice/travelPlan/minStation HttpEntity",
+    "getByQuickest": "POST /api/v1/travelplanservice/travelPlan/quickest HttpEntity",
+    "getTransferResult": "POST /api/v1/travelplanservice/travelPlan/transferResult HttpEntity",
+    "home": "GET /api/v1/travelplanservice/welcome String"
+  },
+  "API - UserController": {
+    "deleteUserById": "DELETE /api/v1/userservice/users/{userId} ResponseEntity<Response>",
+    "getAllUser": "GET /api/v1/userservice/users ResponseEntity<Response>",
+    "getHello": "GET /api/v1/users/hello Object",
+    "getToken": "POST /api/v1/users/login ResponseEntity<Response>",
+    "getUserByUserId": "GET /api/v1/userservice/users/id/{userId} ResponseEntity<Response>",
+    "getUserByUserName": "GET /api/v1/userservice/users/{userName} ResponseEntity<Response>",
+    "registerUser": "POST /api/v1/userservice/users/register ResponseEntity<Response>",
+    "testHello": "GET /api/v1/userservice/users/hello String",
+    "updateUser": "PUT /api/v1/userservice/users ResponseEntity<Response>"
+  },
+  "API - VerifyCodeController": {
+    "imageCode": "GET /api/v1/verifycode/generate void",
+    "verifyCode": "GET /api/v1/verifycode/verify/{verifyCode} boolean"
+  },
+  "Calls - AdminBasicInfoService": {
+    "DELETE /api/v1/configservice/configs/{}": "ConfigController.deleteConfig",
+    "DELETE /api/v1/contactservice/contacts/{}": "ContactsController.deleteContacts",
+    "DELETE /api/v1/priceservice/prices": "PriceController.delete",
+    "DELETE /api/v1/stationservice/stations": "StationController.delete",
+    "DELETE /api/v1/trainservice/trains/{}": "TrainController.delete",
+    "GET /api/v1/configservice/configs": "ConfigController.queryAll",
+    "GET /api/v1/contactservice/contacts": "ContactsController.getAllContacts",
+    "GET /api/v1/priceservice/prices": "PriceController.queryAll",
+    "GET /api/v1/stationservice/stations": "StationController.query",
+    "GET /api/v1/trainservice/trains": "TrainController.query",
+    "POST /api/v1/configservice/configs": "ConfigController.createConfig",
+    "POST /api/v1/contactservice/contacts/admin": "ContactsController.createNewContactsAdmin",
+    "POST /api/v1/priceservice/prices": "PriceController.create",
+    "POST /api/v1/stationservice/stations": "StationController.create",
+    "POST /api/v1/trainservice/trains": "TrainController.create",
+    "PUT /api/v1/configservice/configs": "ConfigController.updateConfig",
+    "PUT /api/v1/contactservice/contacts": "ContactsController.modifyContacts",
+    "PUT /api/v1/priceservice/prices": "PriceController.update",
+    "PUT /api/v1/stationservice/stations": "StationController.update",
+    "PUT /api/v1/trainservice/trains": "TrainController.update"
+  },
+  "Calls - AdminOrderService": {
+    "DELETE /api/v1/orderOtherService/orderOther/{}": "OrderOtherController.deleteOrder",
+    "DELETE /api/v1/orderservice/order/{}": "OrderController.deleteOrder",
+    "GET /api/v1/orderOtherService/orderOther": "OrderOtherController.findAllOrder",
+    "GET /api/v1/orderservice/order": "OrderController.findAllOrder",
+    "POST /api/v1/orderOtherService/orderOther/admin": "OrderOtherController.addcreateNewOrder",
+    "POST /api/v1/orderservice/order/admin": "OrderController.addcreateNewOrder",
+    "PUT /api/v1/orderOtherService/orderOther/admin": "OrderOtherController.updateOrder",
+    "PUT /api/v1/orderservice/order/admin": "OrderController.updateOrder"
+  },
+  "Calls - AdminRouteService": {
+    "DELETE /api/v1/routeservice/routes/{}": "RouteController.deleteRoute",
+    "GET /api/v1/routeservice/routes": "RouteController.queryAll",
+    "POST /api/v1/routeservice/routes": "RouteController.createAndModifyRoute"
+  },
+  "Calls - AdminTravelService": {
+    "GET /api/v1/travel2service/admin_trip": "Travel2Controller.adminQueryAll",
+    "GET /api/v1/travelservice/admin_trip": "TravelController.adminQueryAll"
+  },
+  "Calls - AdminUserService": {
+    "DELETE /api/v1/userservice/users/{}": "UserController.deleteUserById",
+    "GET /api/v1/userservice/users": "UserController.getAllUser",
+    "POST /api/v1/userservice/users/register": "UserController.registerUser",
+    "PUT /api/v1/userservice/users": "UserController.updateUser"
+  },
+  "Calls - BasicService": {
+    "GET /api/v1/priceservice/prices/{}/{}": "PriceController.query",
+    "GET /api/v1/routeservice/routes/{}": "RouteController.queryById",
+    "GET /api/v1/stationservice/stations/id/{}": "StationController.queryForStationId",
+    "GET /api/v1/trainservice/trains/{}": "TrainController.retrieve"
+  },
+  "Calls - CancelService": {
+    "GET /api/v1/inside_pay_service/inside_payment/drawback/{}/{}": "InsidePaymentController.drawBack",
+    "GET /api/v1/orderOtherService/orderOther/{}": "OrderOtherController.getOrderById",
+    "GET /api/v1/orderservice/order/{}": "OrderController.getOrderById",
+    "GET /api/v1/userservice/users/id/{}": "UserController.getUserByUserId",
+    "POST /api/v1/notifyservice/notification/order_cancel_success": "NotificationController.order_cancel_success",
+    "PUT /api/v1/orderOtherService/orderOther": "OrderOtherController.saveOrderInfo",
+    "PUT /api/v1/orderservice/order": "OrderController.saveOrderInfo"
+  },
+  "Calls - ConsignService": {
+    "GET /api/v1/consignpriceservice/consignprice/{}/{}": "ConsignPriceController.getPriceByWeightAndRegion"
+  },
+  "Calls - ExecuteService": {
+    "GET /api/v1/orderOtherService/orderOther/status/{}/{}": "OrderOtherController.modifyOrder",
+    "GET /api/v1/orderOtherService/orderOther/{}": "OrderOtherController.getOrderById",
+    "GET /api/v1/orderservice/order/status/{}/{}": "OrderController.modifyOrder",
+    "GET /api/v1/orderservice/order/{}": "OrderController.getOrderById"
+  },
+  "Calls - FoodService": {
+    "GET /api/v1/foodmapservice/trainfoods/{}": "TrainFoodController.getTrainFoodOfTrip",
+    "GET /api/v1/travelservice/routes/{}": "TravelController.getRouteByTripId",
+    "POST /api/v1/foodmapservice/foodstores": "FoodStoreController.getFoodStoresByStationIds"
+  },
+  "Calls - InsidePaymentService": {
+    "GET /api/v1/orderOtherService/orderOther/status/{}/{}": "OrderOtherController.modifyOrder",
+    "GET /api/v1/orderservice/order/status/{}/{}": "OrderController.modifyOrder",
+    "POST /api/v1/paymentservice/payment": "PaymentController.pay"
+  },
+  "Calls - OrderOtherService": {
+    "POST /api/v1/stationservice/stations/namelist": "StationController.queryForNameBatch"
+  },
+  "Calls - OrderService": {
+    "POST /api/v1/stationservice/stations/namelist": "StationController.queryForNameBatch"
+  },
+  "Calls - PreserveOtherService": {
+    "GET /api/v1/assuranceservice/assurances/{}/{}": "AssuranceController.createNewAssurance",
+    "GET /api/v1/contactservice/contacts/{}": "ContactsController.getContactsByContactsId",
+    "GET /api/v1/securityservice/securityConfigs/{}": "SecurityController.check",
+    "GET /api/v1/stationservice/stations/id/{}": "StationController.queryForStationId",
+    "GET /api/v1/userservice/users/id/{}": "UserController.getUserByUserId",
+    "POST /api/v1/consignservice/consigns": "ConsignController.insertConsign",
+    "POST /api/v1/foodservice/orders": "FoodController.createFoodOrder",
+    "POST /api/v1/notifyservice/notification/preserve_success": "NotificationController.preserve_success",
+    "POST /api/v1/orderOtherService/orderOther": "OrderOtherController.createNewOrder",
+    "POST /api/v1/seatservice/seats": "SeatController.create",
+    "POST /api/v1/ticketinfoservice/ticketinfo": "TicketInfoController.queryForTravel",
+    "POST /api/v1/travel2service/trip_detail": "Travel2Controller.getTripAllDetailInfo"
+  },
+  "Calls - PreserveService": {
+    "GET /api/v1/assuranceservice/assurances/{}/{}": "AssuranceController.createNewAssurance",
+    "GET /api/v1/contactservice/contacts/{}": "ContactsController.getContactsByContactsId",
+    "GET /api/v1/securityservice/securityConfigs/{}": "SecurityController.check",
+    "GET /api/v1/stationservice/stations/id/{}": "StationController.queryForStationId",
+    "GET /api/v1/userservice/users/id/{}": "UserController.getUserByUserId",
+    "POST /api/v1/consignservice/consigns": "ConsignController.insertConsign",
+    "POST /api/v1/foodservice/orders": "FoodController.createFoodOrder",
+    "POST /api/v1/notifyservice/notification/preserve_success": "NotificationController.preserve_success",
+    "POST /api/v1/orderservice/order": "OrderController.createNewOrder",
+    "POST /api/v1/seatservice/seats": "SeatController.create",
+    "POST /api/v1/ticketinfoservice/ticketinfo": "TicketInfoController.queryForTravel",
+    "POST /api/v1/travelservice/trip_detail": "TravelController.getTripAllDetailInfo"
+  },
+  "Calls - RebookService": {
+    "GET /api/v1/inside_pay_service/inside_payment/drawback/{}/{}": "InsidePaymentController.drawBack",
+    "GET /api/v1/stationservice/stations/name/{}": "StationController.queryById",
+    "POST /api/v1/inside_pay_service/inside_payment/difference": "InsidePaymentController.payDifference",
+    "POST /api/v1/seatservice/seats": "SeatController.create"
+  },
+  "Calls - RoutePlanService": {
+    "GET /api/v1/routeservice/routes/{}": "RouteController.queryById",
+    "GET /api/v1/routeservice/routes/{}/{}": "RouteController.queryByStartAndTerminal",
+    "GET /api/v1/stationservice/stations/id/{}": "StationController.queryForStationId",
+    "POST /api/v1/travel2service/trips/left": "Travel2Controller.queryInfo",
+    "POST /api/v1/travel2service/trips/routes": "Travel2Controller.getTripsByRouteId",
+    "POST /api/v1/travelservice/trips/left": "TravelController.queryInfo",
+    "POST /api/v1/travelservice/trips/routes": "TravelController.getTripsByRouteId"
+  },
+  "Calls - SeatService": {
+    "GET /api/v1/configservice/configs/{}": "ConfigController.retrieve",
+    "GET /api/v1/travel2service/routes/{}": "Travel2Controller.getRouteByTripId",
+    "GET /api/v1/travel2service/train_types/{}": "Travel2Controller.getTrainTypeByTripId",
+    "GET /api/v1/travelservice/routes/{}": "TravelController.getRouteByTripId",
+    "GET /api/v1/travelservice/train_types/{}": "TravelController.getTrainTypeByTripId",
+    "POST /api/v1/orderOtherService/orderOther/tickets": "OrderOtherController.getTicketListByDateAndTripId",
+    "POST /api/v1/orderservice/order/tickets": "OrderController.getTicketListByDateAndTripId"
+  },
+  "Calls - SecurityService": {
+    "GET /api/v1/orderOtherService/orderOther/security/{}/{}": "OrderOtherController.securityInfoCheck",
+    "GET /api/v1/orderservice/order/security/{}/{}": "OrderController.securityInfoCheck"
+  },
+  "Calls - TicketInfoService": {
+    "GET /api/v1/basicservice/basic/{}": "BasicController.queryForStationId",
+    "POST /api/v1/basicservice/basic/travel": "BasicController.queryForTravel"
+  },
+  "Calls - TokenService": {
+    "GET /api/v1/verifycode/verify/{}": "VerifyCodeController.verifyCode"
+  },
+  "Calls - Travel2Service": {
+    "GET /api/v1/orderOtherService/orderOther/{}/{}": "OrderOtherController.calculateSoldTicket",
+    "GET /api/v1/routeservice/routes/{}": "RouteController.queryById",
+    "GET /api/v1/ticketinfoservice/ticketinfo/{}": "TicketInfoController.queryForStationId",
+    "GET /api/v1/trainservice/trains/{}": "TrainController.retrieve",
+    "POST /api/v1/seatservice/seats/left_tickets": "SeatController.getLeftTicketOfInterval",
+    "POST /api/v1/ticketinfoservice/ticketinfo": "TicketInfoController.queryForTravel"
+  },
+  "Calls - TravelPlanService": {
+    "GET /api/v1/ticketinfoservice/ticketinfo/{}": "TicketInfoController.queryForStationId",
+    "POST /api/v1/routeplanservice/routePlan/cheapestRoute": "RoutePlanController.getCheapestRoutes",
+    "POST /api/v1/routeplanservice/routePlan/minStopStations": "RoutePlanController.getMinStopStations",
+    "POST /api/v1/routeplanservice/routePlan/quickestRoute": "RoutePlanController.getQuickestRoutes",
+    "POST /api/v1/seatservice/seats/left_tickets": "SeatController.getLeftTicketOfInterval",
+    "POST /api/v1/stationservice/stations/namelist": "StationController.queryForNameBatch",
+    "POST /api/v1/travel2service/trips/left": "Travel2Controller.queryInfo",
+    "POST /api/v1/travelservice/trips/left": "TravelController.queryInfo"
+  },
+  "Calls - TravelService": {
+    "GET /api/v1/orderservice/order/{}/{}": "OrderController.calculateSoldTicket",
+    "GET /api/v1/routeservice/routes/{}": "RouteController.queryById",
+    "GET /api/v1/ticketinfoservice/ticketinfo/{}": "TicketInfoController.queryForStationId",
+    "GET /api/v1/trainservice/trains/{}": "TrainController.retrieve",
+    "POST /api/v1/seatservice/seats/left_tickets": "SeatController.getLeftTicketOfInterval",
+    "POST /api/v1/ticketinfoservice/ticketinfo": "TicketInfoController.queryForTravel"
+  },
+  "Calls - UserService": {
+    "DELETE /api/v1/users/{}": "UserController.deleteUserById",
+    "POST /api/v1/auth": "AuthController.createDefaultUser"
+  }
+}

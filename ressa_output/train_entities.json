@@ -1,1 +1,422 @@
-{"Account":{"documentNum":"String","documentType":"int","email":"String","gender":"int","id":"UUID","name":"String","password":"String"},"AccountInfo":{"money":"String","userId":"String"},"AdminTrip":{"route":"Route","trainType":"TrainType","trip":"Trip"},"AllTripFood":{"foodStoreListMap":"Map<String,List<FoodStore>>","trainFoodList":"List<TrainFood>"},"Assurance":{"id":"UUID","orderId":"UUID","type":"AssuranceType"},"AssuranceTypeBean":{"index":"int","name":"String","price":"double"},"Balance":{"balance":"String","userId":"String"},"Config":{"description":"String","name":"String","value":"String"},"Consign":{"accountId":"UUID","consignee":"String","from":"String","handleDate":"String","id":"UUID","isWithin":"boolean","orderId":"UUID","phone":"String","targetDate":"String","to":"String","weight":"double"},"ConsignPrice":{"beyondPrice":"double","id":"UUID","index":"int","initialPrice":"double","initialWeight":"double","withinPrice":"double"},"ConsignRecord":{"accountId":"UUID","consignee":"String","from":"String","handleDate":"String","id":"UUID","orderId":"UUID","phone":"String","price":"double","targetDate":"String","to":"String","weight":"double"},"Contacts":{"accountId":"UUID","documentNumber":"String","documentType":"int","id":"UUID","name":"String","phoneNumber":"String"},"Food":{"foodName":"String","price":"double"},"FoodOrder":{"foodName":"String","foodType":"int","id":"UUID","orderId":"UUID","price":"double","stationName":"String","storeName":"String"},"FoodStore":{"businessTime":"String","deliveryFee":"double","foodList":"List<Food>","id":"UUID","stationId":"String","storeName":"String","telephone":"String"},"GetAccountByIdInfo":{"accountId":"String"},"GetAccountByIdResult":{"account":"Account","message":"String","status":"boolean"},"GetOrderByIdInfo":{"orderId":"String"},"GetPriceDomain":{"isWithinRegion":"boolean","weight":"double"},"InsertConsignRecordResult":{"message":"String","status":"boolean"},"LeftTicketInfo":{"soldTickets":"Set<Ticket>"},"Mail":{"attachments":"List<Object>","contentType":"String","mailBcc":"String","mailCc":"String","mailContent":"String","mailFrom":"String","mailSubject":"String","mailTo":"String","model":"Map<String,Object>"},"Money":{"id":"String","money":"String","type":"MoneyType","userId":"String"},"NotifyInfo":{"date":"String","email":"String","endPlace":"String","orderNumber":"String","price":"String","seatClass":"String","seatNumber":"String","startingPlace":"String","startingTime":"String","username":"String"},"Order":{"accountId":"UUID","boughtDate":"Date","coachNumber":"int","contactsDocumentNumber":"String","contactsName":"String","differenceMoney":"String","documentType":"int","from":"String","id":"UUID","price":"String","seatClass":"int","seatNumber":"String","status":"int","to":"String","trainNumber":"String","travelDate":"Date","travelTime":"Date"},"OrderAlterInfo":{"accountId":"UUID","loginToken":"String","newOrderInfo":"Order","previousOrderId":"UUID"},"OrderInfo":{"boughtDateEnd":"Date","boughtDateStart":"Date","enableBoughtDateQuery":"boolean","enableStateQuery":"boolean","enableTravelDateQuery":"boolean","loginId":"String","state":"int","travelDateEnd":"Date","travelDateStart":"Date"},"OrderSecurity":{"orderNumInLastOneHour":"int","orderNumOfValidOrder":"int"},"OrderTicketsInfo":{"accountId":"String","assurance":"int","consigneeName":"String","consigneePhone":"String","consigneeWeight":"double","contactsId":"String","date":"Date","foodName":"String","foodPrice":"double","foodType":"int","from":"String","handleDate":"String","isWithin":"boolean","loginToken":"String","seatType":"int","stationName":"String","storeName":"String","to":"String","tripId":"String"},"OrderTicketsResult":{"message":"String","order":"Order","status":"boolean"},"OutsidePaymentInfo":{"orderId":"String","price":"String","userId":"String"},"Payment":{"id":"String","orderId":"String","price":"String","type":"PaymentType","userId":"String"},"PaymentDifferenceInfo":{"orderId":"String","price":"String","tripId":"String","userId":"String"},"PaymentInfo":{"orderId":"String","price":"String","tripId":"String","userId":"String"},"PlainAssurance":{"id":"UUID","orderId":"UUID","typeIndex":"int","typeName":"String","typePrice":"double"},"PriceConfig":{"basicPriceRate":"double","firstClassPriceRate":"double","id":"UUID","routeId":"String","trainType":"String"},"PriceInfo":{"basicPriceRate":"double","firstClassPriceRate":"double","id":"String","routeId":"String","trainType":"String"},"QueryInfo":{"boughtDateEnd":"Date","boughtDateStart":"Date","enableBoughtDateQuery":"boolean","enableStateQuery":"boolean","enableTravelDateQuery":"boolean","loginId":"String","state":"int","travelDateEnd":"Date","travelDateStart":"Date"},"RebookInfo":{"date":"Date","loginId":"String","oldTripId":"String","orderId":"String","seatType":"int","tripId":"String"},"Route":{"distances":"List<Integer>","id":"String","startStationId":"String","stations":"List<String>","terminalStationId":"String"},"RouteInfo":{"distanceList":"String","endStation":"String","id":"String","loginId":"String","startStation":"String","stationList":"String"},"RoutePlanInfo":{"formStationName":"String","num":"int","toStationName":"String","travelDate":"Date"},"RoutePlanResultUnit":{"endTime":"Date","fromStationName":"String","priceForFirstClassSeat":"String","priceForSecondClassSeat":"String","startingTime":"Date","stopStations":"ArrayList<String>","toStationName":"String","trainTypeId":"String","tripId":"String"},"Seat":{"destStation":"String","seatType":"int","startStation":"String","trainNumber":"String","travelDate":"Date"},"SecurityConfig":{"description":"String","id":"UUID","name":"String","value":"String"},"SoldTicket":{"businessSeat":"int","firstClassSeat":"int","hardBed":"int","hardSeat":"int","highSoftBed":"int","noSeat":"int","secondClassSeat":"int","softBed":"int","softSeat":"int","trainNumber":"String","travelDate":"Date"},"Station":{"id":"String","name":"String","stayTime":"int"},"Ticket":{"destStation":"String","seatNo":"int","startStation":"String"},"TrainFood":{"foodList":"List<Food>","id":"UUID","tripId":"String"},"TrainType":{"averageSpeed":"int","confortClass":"int","economyClass":"int","id":"String"},"TransferTravelInfo":{"fromStationName":"String","toStationName":"String","trainType":"String","travelDate":"Date","viaStationName":"String"},"TransferTravelResult":{"firstSectionResult":"List<TripResponse>","secondSectionResult":"List<TripResponse>"},"Travel":{"departureTime":"Date","endPlace":"String","startingPlace":"String","trip":"Trip"},"TravelAdvanceResultUnit":{"endTime":"Date","fromStationName":"String","numberOfRestTicketFirstClass":"int","numberOfRestTicketSecondClass":"int","priceForFirstClassSeat":"String","priceForSecondClassSeat":"String","startingTime":"Date","stopStations":"List<String>","toStationName":"String","trainTypeId":"String","tripId":"String"},"TravelInfo":{"endTime":"Date","loginId":"String","routeId":"String","startingStationId":"String","startingTime":"Date","stationsId":"String","terminalStationId":"String","trainTypeId":"String","tripId":"String"},"TravelResult":{"message":"String","percent":"double","prices":"Map<String,String>","status":"boolean","trainType":"TrainType"},"Trip":{"endTime":"Date","routeId":"String","startingStationId":"String","startingTime":"Date","stationsId":"String","terminalStationId":"String","trainTypeId":"String","tripId":"TripId"},"TripAllDetail":{"message":"String","status":"boolean","trip":"Trip","tripResponse":"TripResponse"},"TripAllDetailInfo":{"from":"String","to":"String","travelDate":"Date","tripId":"String"},"TripId":{"number":"String","type":"Type"},"TripInfo":{"departureTime":"Date","endPlace":"String","startingPlace":"String"},"TripResponse":{"confortClass":"int","economyClass":"int","endTime":"Date","priceForConfortClass":"String","priceForEconomyClass":"String","startingStation":"String","startingTime":"Date","terminalStation":"String","trainTypeId":"String","tripId":"TripId"},"User":{"documentNum":"String","documentType":"int","email":"String","gender":"int","password":"String","roles":"Set<String>","userId":"UUID","userName":"String","username":"String"},"VerifyResult":{"message":"String","status":"boolean"}}
+{
+  "Account": {
+    "documentNum": "String",
+    "documentType": "int",
+    "email": "String",
+    "gender": "int",
+    "id": "UUID",
+    "name": "String",
+    "password": "String"
+  },
+  "AccountInfo": { "money": "String", "userId": "String" },
+  "AdminTrip": { "route": "Route", "trainType": "TrainType", "trip": "Trip" },
+  "AllTripFood": {
+    "foodStoreListMap": "Map<String,List<FoodStore>>",
+    "trainFoodList": "List<TrainFood>"
+  },
+  "Assurance": { "id": "UUID", "orderId": "UUID", "type": "AssuranceType" },
+  "AssuranceTypeBean": { "index": "int", "name": "String", "price": "double" },
+  "Balance": { "balance": "String", "userId": "String" },
+  "Config": { "description": "String", "name": "String", "value": "String" },
+  "Consign": {
+    "accountId": "UUID",
+    "consignee": "String",
+    "from": "String",
+    "handleDate": "String",
+    "id": "UUID",
+    "isWithin": "boolean",
+    "orderId": "UUID",
+    "phone": "String",
+    "targetDate": "String",
+    "to": "String",
+    "weight": "double"
+  },
+  "ConsignPrice": {
+    "beyondPrice": "double",
+    "id": "UUID",
+    "index": "int",
+    "initialPrice": "double",
+    "initialWeight": "double",
+    "withinPrice": "double"
+  },
+  "ConsignRecord": {
+    "accountId": "UUID",
+    "consignee": "String",
+    "from": "String",
+    "handleDate": "String",
+    "id": "UUID",
+    "orderId": "UUID",
+    "phone": "String",
+    "price": "double",
+    "targetDate": "String",
+    "to": "String",
+    "weight": "double"
+  },
+  "Contacts": {
+    "accountId": "UUID",
+    "documentNumber": "String",
+    "documentType": "int",
+    "id": "UUID",
+    "name": "String",
+    "phoneNumber": "String"
+  },
+  "Food": { "foodName": "String", "price": "double" },
+  "FoodOrder": {
+    "foodName": "String",
+    "foodType": "int",
+    "id": "UUID",
+    "orderId": "UUID",
+    "price": "double",
+    "stationName": "String",
+    "storeName": "String"
+  },
+  "FoodStore": {
+    "businessTime": "String",
+    "deliveryFee": "double",
+    "foodList": "List<Food>",
+    "id": "UUID",
+    "stationId": "String",
+    "storeName": "String",
+    "telephone": "String"
+  },
+  "GetAccountByIdInfo": { "accountId": "String" },
+  "GetAccountByIdResult": {
+    "account": "Account",
+    "message": "String",
+    "status": "boolean"
+  },
+  "GetOrderByIdInfo": { "orderId": "String" },
+  "GetPriceDomain": { "isWithinRegion": "boolean", "weight": "double" },
+  "InsertConsignRecordResult": { "message": "String", "status": "boolean" },
+  "LeftTicketInfo": { "soldTickets": "Set<Ticket>" },
+  "Mail": {
+    "attachments": "List<Object>",
+    "contentType": "String",
+    "mailBcc": "String",
+    "mailCc": "String",
+    "mailContent": "String",
+    "mailFrom": "String",
+    "mailSubject": "String",
+    "mailTo": "String",
+    "model": "Map<String,Object>"
+  },
+  "Money": {
+    "id": "String",
+    "money": "String",
+    "type": "MoneyType",
+    "userId": "String"
+  },
+  "NotifyInfo": {
+    "date": "String",
+    "email": "String",
+    "endPlace": "String",
+    "orderNumber": "String",
+    "price": "String",
+    "seatClass": "String",
+    "seatNumber": "String",
+    "startingPlace": "String",
+    "startingTime": "String",
+    "username": "String"
+  },
+  "Order": {
+    "accountId": "UUID",
+    "boughtDate": "Date",
+    "coachNumber": "int",
+    "contactsDocumentNumber": "String",
+    "contactsName": "String",
+    "differenceMoney": "String",
+    "documentType": "int",
+    "from": "String",
+    "id": "UUID",
+    "price": "String",
+    "seatClass": "int",
+    "seatNumber": "String",
+    "status": "int",
+    "to": "String",
+    "trainNumber": "String",
+    "travelDate": "Date",
+    "travelTime": "Date"
+  },
+  "OrderAlterInfo": {
+    "accountId": "UUID",
+    "loginToken": "String",
+    "newOrderInfo": "Order",
+    "previousOrderId": "UUID"
+  },
+  "OrderInfo": {
+    "boughtDateEnd": "Date",
+    "boughtDateStart": "Date",
+    "enableBoughtDateQuery": "boolean",
+    "enableStateQuery": "boolean",
+    "enableTravelDateQuery": "boolean",
+    "loginId": "String",
+    "state": "int",
+    "travelDateEnd": "Date",
+    "travelDateStart": "Date"
+  },
+  "OrderSecurity": {
+    "orderNumInLastOneHour": "int",
+    "orderNumOfValidOrder": "int"
+  },
+  "OrderTicketsInfo": {
+    "accountId": "String",
+    "assurance": "int",
+    "consigneeName": "String",
+    "consigneePhone": "String",
+    "consigneeWeight": "double",
+    "contactsId": "String",
+    "date": "Date",
+    "foodName": "String",
+    "foodPrice": "double",
+    "foodType": "int",
+    "from": "String",
+    "handleDate": "String",
+    "isWithin": "boolean",
+    "loginToken": "String",
+    "seatType": "int",
+    "stationName": "String",
+    "storeName": "String",
+    "to": "String",
+    "tripId": "String"
+  },
+  "OrderTicketsResult": {
+    "message": "String",
+    "order": "Order",
+    "status": "boolean"
+  },
+  "OutsidePaymentInfo": {
+    "orderId": "String",
+    "price": "String",
+    "userId": "String"
+  },
+  "Payment": {
+    "id": "String",
+    "orderId": "String",
+    "price": "String",
+    "type": "PaymentType",
+    "userId": "String"
+  },
+  "PaymentDifferenceInfo": {
+    "orderId": "String",
+    "price": "String",
+    "tripId": "String",
+    "userId": "String"
+  },
+  "PaymentInfo": {
+    "orderId": "String",
+    "price": "String",
+    "tripId": "String",
+    "userId": "String"
+  },
+  "PlainAssurance": {
+    "id": "UUID",
+    "orderId": "UUID",
+    "typeIndex": "int",
+    "typeName": "String",
+    "typePrice": "double"
+  },
+  "PriceConfig": {
+    "basicPriceRate": "double",
+    "firstClassPriceRate": "double",
+    "id": "UUID",
+    "routeId": "String",
+    "trainType": "String"
+  },
+  "PriceInfo": {
+    "basicPriceRate": "double",
+    "firstClassPriceRate": "double",
+    "id": "String",
+    "routeId": "String",
+    "trainType": "String"
+  },
+  "QueryInfo": {
+    "boughtDateEnd": "Date",
+    "boughtDateStart": "Date",
+    "enableBoughtDateQuery": "boolean",
+    "enableStateQuery": "boolean",
+    "enableTravelDateQuery": "boolean",
+    "loginId": "String",
+    "state": "int",
+    "travelDateEnd": "Date",
+    "travelDateStart": "Date"
+  },
+  "RebookInfo": {
+    "date": "Date",
+    "loginId": "String",
+    "oldTripId": "String",
+    "orderId": "String",
+    "seatType": "int",
+    "tripId": "String"
+  },
+  "Route": {
+    "distances": "List<Integer>",
+    "id": "String",
+    "startStationId": "String",
+    "stations": "List<String>",
+    "terminalStationId": "String"
+  },
+  "RouteInfo": {
+    "distanceList": "String",
+    "endStation": "String",
+    "id": "String",
+    "loginId": "String",
+    "startStation": "String",
+    "stationList": "String"
+  },
+  "RoutePlanInfo": {
+    "formStationName": "String",
+    "num": "int",
+    "toStationName": "String",
+    "travelDate": "Date"
+  },
+  "RoutePlanResultUnit": {
+    "endTime": "Date",
+    "fromStationName": "String",
+    "priceForFirstClassSeat": "String",
+    "priceForSecondClassSeat": "String",
+    "startingTime": "Date",
+    "stopStations": "ArrayList<String>",
+    "toStationName": "String",
+    "trainTypeId": "String",
+    "tripId": "String"
+  },
+  "Seat": {
+    "destStation": "String",
+    "seatType": "int",
+    "startStation": "String",
+    "trainNumber": "String",
+    "travelDate": "Date"
+  },
+  "SecurityConfig": {
+    "description": "String",
+    "id": "UUID",
+    "name": "String",
+    "value": "String"
+  },
+  "SoldTicket": {
+    "businessSeat": "int",
+    "firstClassSeat": "int",
+    "hardBed": "int",
+    "hardSeat": "int",
+    "highSoftBed": "int",
+    "noSeat": "int",
+    "secondClassSeat": "int",
+    "softBed": "int",
+    "softSeat": "int",
+    "trainNumber": "String",
+    "travelDate": "Date"
+  },
+  "Station": { "id": "String", "name": "String", "stayTime": "int" },
+  "Ticket": {
+    "destStation": "String",
+    "seatNo": "int",
+    "startStation": "String"
+  },
+  "TrainFood": { "foodList": "List<Food>", "id": "UUID", "tripId": "String" },
+  "TrainType": {
+    "averageSpeed": "int",
+    "confortClass": "int",
+    "economyClass": "int",
+    "id": "String"
+  },
+  "TransferTravelInfo": {
+    "fromStationName": "String",
+    "toStationName": "String",
+    "trainType": "String",
+    "travelDate": "Date",
+    "viaStationName": "String"
+  },
+  "TransferTravelResult": {
+    "firstSectionResult": "List<TripResponse>",
+    "secondSectionResult": "List<TripResponse>"
+  },
+  "Travel": {
+    "departureTime": "Date",
+    "endPlace": "String",
+    "startingPlace": "String",
+    "trip": "Trip"
+  },
+  "TravelAdvanceResultUnit": {
+    "endTime": "Date",
+    "fromStationName": "String",
+    "numberOfRestTicketFirstClass": "int",
+    "numberOfRestTicketSecondClass": "int",
+    "priceForFirstClassSeat": "String",
+    "priceForSecondClassSeat": "String",
+    "startingTime": "Date",
+    "stopStations": "List<String>",
+    "toStationName": "String",
+    "trainTypeId": "String",
+    "tripId": "String"
+  },
+  "TravelInfo": {
+    "endTime": "Date",
+    "loginId": "String",
+    "routeId": "String",
+    "startingStationId": "String",
+    "startingTime": "Date",
+    "stationsId": "String",
+    "terminalStationId": "String",
+    "trainTypeId": "String",
+    "tripId": "String"
+  },
+  "TravelResult": {
+    "message": "String",
+    "percent": "double",
+    "prices": "Map<String,String>",
+    "status": "boolean",
+    "trainType": "TrainType"
+  },
+  "Trip": {
+    "endTime": "Date",
+    "routeId": "String",
+    "startingStationId": "String",
+    "startingTime": "Date",
+    "stationsId": "String",
+    "terminalStationId": "String",
+    "trainTypeId": "String",
+    "tripId": "TripId"
+  },
+  "TripAllDetail": {
+    "message": "String",
+    "status": "boolean",
+    "trip": "Trip",
+    "tripResponse": "TripResponse"
+  },
+  "TripAllDetailInfo": {
+    "from": "String",
+    "to": "String",
+    "travelDate": "Date",
+    "tripId": "String"
+  },
+  "TripId": { "number": "String", "type": "Type" },
+  "TripInfo": {
+    "departureTime": "Date",
+    "endPlace": "String",
+    "startingPlace": "String"
+  },
+  "TripResponse": {
+    "confortClass": "int",
+    "economyClass": "int",
+    "endTime": "Date",
+    "priceForConfortClass": "String",
+    "priceForEconomyClass": "String",
+    "startingStation": "String",
+    "startingTime": "Date",
+    "terminalStation": "String",
+    "trainTypeId": "String",
+    "tripId": "TripId"
+  },
+  "User": {
+    "documentNum": "String",
+    "documentType": "int",
+    "email": "String",
+    "gender": "int",
+    "password": "String",
+    "roles": "Set<String>",
+    "userId": "UUID",
+    "userName": "String",
+    "username": "String"
+  },
+  "VerifyResult": { "message": "String", "status": "boolean" }
+}
