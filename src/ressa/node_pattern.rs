@@ -82,7 +82,7 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
 
 fn parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
-    node: &mut N,
+    node: &N,
     ctx: &mut ParserContext,
 ) -> bool {
     if !pattern.transparent {
@@ -101,7 +101,7 @@ fn parse<N: NodePatternParser + RessaNodeExplorer>(
 /// Parse an individual node with this NodePattern, lazily-initializing its CompiledPattern as needed
 pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
-    node: &mut N,
+    node: &N,
     ctx: &mut ParserContext,
 ) -> Option<()> {
     // Lazily compile patterns
