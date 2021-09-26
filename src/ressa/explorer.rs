@@ -20,7 +20,7 @@ pub enum ProphetNode {
 #[enum_dispatch(Stmt)]
 #[enum_dispatch(ProphetNode)]
 pub trait RessaNodeExplorer {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()>;
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()>;
 }
 
 /// Create a no-operation implementation of exploring a node
@@ -29,7 +29,7 @@ macro_rules! ressa_dispatch_default_impl {
     ( $( $struct_name:ty ),+ ) => {
         $(
             impl RessaNodeExplorer for $struct_name {
-                fn explore(&mut self, pattern: &mut NodePattern, _ctx: &mut ParserContext) -> Option<()> {
+                fn explore(&self, pattern: &mut NodePattern, _ctx: &mut ParserContext) -> Option<()> {
                     if pattern.essential {
                         None
                     } else {
@@ -47,7 +47,7 @@ macro_rules! ressa_dispatch_single_dispatch_impl {
     ( $( $struct_name:ty: { $( $to_explore:ident ),+ } ),+ ) => {
         $(
             impl RessaNodeExplorer for $struct_name {
-                fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+                fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
                     use crate::ressa::explorer::choose_exit;
 
                     let mut found_essential = false;
@@ -69,7 +69,7 @@ macro_rules! ressa_dispatch_collection_impl {
     ( $( $struct_name:ty: { $( $to_explore:ident ),+ } ),+ ) => {
         $(
             impl RessaNodeExplorer for $struct_name {
-                fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+                fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
                     use crate::ressa::explorer::choose_exit;
 
                     let mut found_essential = false;
@@ -93,7 +93,7 @@ macro_rules! explore_all {
 
         let mut explore_all_found_essential = false;
         $(
-            for x in $explorable.iter_mut() {
+            for x in $explorable.iter() {
                 if x.explore($pattern, $ctx).is_some() {
                     explore_all_found_essential = true;
                 }
@@ -159,7 +159,7 @@ ressa_dispatch_collection_impl!(
 
 // Information-Bearing Node Exploration
 impl RessaNodeExplorer for Ident {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             if pattern.matches(self) {
                 ressa_node_parse(pattern, self, ctx).is_some()
@@ -171,7 +171,7 @@ impl RessaNodeExplorer for Ident {
 }
 
 impl RessaNodeExplorer for Literal {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             if pattern.matches(self) {
                 ressa_node_parse(pattern, self, ctx).is_some()
@@ -183,7 +183,7 @@ impl RessaNodeExplorer for Literal {
 }
 
 impl RessaNodeExplorer for ClassOrInterfaceComponent {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
@@ -205,7 +205,7 @@ impl RessaNodeExplorer for ClassOrInterfaceComponent {
 }
 
 impl RessaNodeExplorer for MethodComponent {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
@@ -215,7 +215,7 @@ impl RessaNodeExplorer for MethodComponent {
             };
 
             // Visit other nodes
-            if let Some(block) = &mut self.body {
+            if let Some(block) = &self.body {
                 block.explore(pattern, ctx).is_some()
             } else {
                 false
@@ -233,7 +233,7 @@ impl RessaNodeExplorer for MethodComponent {
 }
 
 impl RessaNodeExplorer for MethodParamComponent {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
@@ -243,7 +243,7 @@ impl RessaNodeExplorer for MethodParamComponent {
             };
 
             // Visit other nodes
-            if let Some(annotations) = &mut self.annotation {
+            if let Some(annotations) = &self.annotation {
                 explore_all!(pattern, ctx, annotations).is_some()
             } else {
                 false
@@ -253,7 +253,7 @@ impl RessaNodeExplorer for MethodParamComponent {
 }
 
 impl RessaNodeExplorer for FieldComponent {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
@@ -269,7 +269,7 @@ impl RessaNodeExplorer for FieldComponent {
 }
 
 impl RessaNodeExplorer for DeclStmt {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
@@ -284,7 +284,7 @@ impl RessaNodeExplorer for DeclStmt {
                 ctx,
                 self.variables,
                 self.expressions
-                    .iter_mut()
+                    .iter()
                     .flat_map(|e| e)
                     .collect::<Vec<_>>()
             ).is_some();
@@ -293,7 +293,7 @@ impl RessaNodeExplorer for DeclStmt {
 }
 
 impl RessaNodeExplorer for VarDecl {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
@@ -309,7 +309,7 @@ impl RessaNodeExplorer for VarDecl {
 }
 
 impl RessaNodeExplorer for CallExpr {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
@@ -319,14 +319,14 @@ impl RessaNodeExplorer for CallExpr {
             };
 
             // Visit other nodes
-            self.name.as_mut().explore(pattern, ctx).is_some();
+            self.name.as_ref().explore(pattern, ctx).is_some();
             explore_all!(pattern, ctx, self.args).is_some();
         })
     }
 }
 
 impl RessaNodeExplorer for AnnotationComponent {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             // Check if this node needs parsed
             if pattern.matches(self) {
@@ -342,7 +342,7 @@ impl RessaNodeExplorer for AnnotationComponent {
 }
 
 impl RessaNodeExplorer for AnnotationValuePair {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             if pattern.matches(self) {
                 ressa_node_parse(pattern, self, ctx).is_some()
@@ -356,11 +356,11 @@ impl RessaNodeExplorer for AnnotationValuePair {
 // Nodes requiring custom visting because a general macro didn't cover their edge cases
 
 impl RessaNodeExplorer for IfStmt {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             self.cond.explore(pattern, ctx).is_some();
             self.body.explore(pattern, ctx).is_some();
-            if let Some(else_body) = &mut self.else_body {
+            if let Some(else_body) = &self.else_body {
                 else_body.explore(pattern, ctx).is_some()
             } else {
                 false
@@ -370,10 +370,10 @@ impl RessaNodeExplorer for IfStmt {
 }
 
 impl RessaNodeExplorer for ForStmt {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             explore_all!(pattern, ctx, self.init, self.post).is_some();
-            if let Some(condition) = &mut self.condition {
+            if let Some(condition) = &self.condition {
                 condition.explore(pattern, ctx).is_some()
             } else {
                 false
@@ -383,11 +383,11 @@ impl RessaNodeExplorer for ForStmt {
     }
 }
 impl RessaNodeExplorer for ForRangeStmt {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
-            self.init.as_mut().explore(pattern, ctx).is_some();
+            self.init.as_ref().explore(pattern, ctx).is_some();
             self.body.explore(pattern, ctx).is_some();
-            if let Some(iter) = &mut self.iterator {
+            if let Some(iter) = &self.iterator {
                 iter.explore(pattern, ctx).is_some()
             } else {
                 false
@@ -397,10 +397,10 @@ impl RessaNodeExplorer for ForRangeStmt {
 }
 
 impl RessaNodeExplorer for TryCatchStmt {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
             self.try_body.explore(pattern, ctx).is_some();
-            if let Some(finally_body) = &mut self.finally_body {
+            if let Some(finally_body) = &self.finally_body {
                 finally_body.explore(pattern, ctx).is_some()
             } else {
                 false
@@ -411,9 +411,9 @@ impl RessaNodeExplorer for TryCatchStmt {
 }
 
 impl RessaNodeExplorer for ReturnStmt {
-    fn explore(&mut self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
         run_then_exit!(pattern.essential => {
-            if let Some(expr) = &mut self.expr {
+            if let Some(expr) = &self.expr {
                 expr.explore(pattern, ctx).is_some()
             } else {
                 false
