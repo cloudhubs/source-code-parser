@@ -2,8 +2,8 @@ use crate::ast::*;
 use crate::java::method_body::parse_block;
 use crate::java::method_body::parse_child_nodes;
 use crate::java::modifier::find_modifier;
+use crate::java::modifier::parse_modifiers;
 use crate::java::util::vartype::find_type;
-use crate::java::{method_body::log_unknown_tag, modifier::parse_modifiers};
 use crate::ComponentInfo;
 use crate::AST;
 
@@ -26,7 +26,7 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
         let base = match var {
             Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. })) | Node::Expr(expr) => expr,
             _ => {
-                eprintln!("Unable to interpret as variable: {:#?}", var);
+                tracing::warn!("Unable to interpret as variable: {:#?}", var);
                 continue;
             }
         };
@@ -39,7 +39,7 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
                         .push(VarDecl::new(Some(r#type.clone()), lhs.clone()));
                     decl.expressions.push(Some(expr.rhs.as_ref().clone()));
                 }
-                unknown => eprintln!("Expected Ident got {:#?}", unknown),
+                unknown => tracing::warn!("Expected Ident got {:#?}", unknown),
             },
             Expr::Ident(id) => {
                 decl.variables
@@ -47,7 +47,7 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
                 decl.expressions.push(None);
             }
             unknown => {
-                eprintln!("Expected BinaryExpr or Ident, got {:#?}", unknown);
+                tracing::warn!("Expected BinaryExpr or Ident, got {:#?}", unknown);
             }
         }
     }
@@ -153,7 +153,7 @@ pub(crate) fn parse_try_catch(ast: &AST, component: &ComponentInfo) -> Option<No
                 ));
             }
             "finally_clause" => finally_clause = Some(parse_block(ast, component)),
-            unknown => log_unknown_tag(unknown, "try/catch"),
+            unknown => {}
         }
     }
 
@@ -191,7 +191,7 @@ fn parse_resource(ast: &AST, component: &ComponentInfo) -> Option<DeclStmt> {
                     match parse_expr(child, component) {
                         Some(Expr::Ident(expr)) => name = Some(expr),
                         Some(expr) => result = Some(expr),
-                        None => log_unknown_tag(&*child.r#type, "resource"),
+                        None => {}
                     }
                 }
             }
@@ -356,7 +356,7 @@ pub(crate) fn parse_do_while(ast: &AST, component: &ComponentInfo) -> Option<Nod
     }
 
     // Uh... oops?
-    eprintln!("Failure to find all parts of a do/while loop! Cannot assemble");
+    tracing::warn!("Failure to find all parts of a do/while loop! Cannot assemble");
     None
 }
 

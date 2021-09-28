@@ -108,16 +108,17 @@ fn parse_class_body(
         match &*member.r#type {
             "method_definition" => {
                 let mut b = true;
-                for m in member.children.iter(){
-                    if &*m.r#value == "constructor"{
+                for m in member.children.iter() {
+                    if &*m.r#value == "constructor" {
                         constructors.push(parse_method(member, component));
                         print!("pushed constructor");
                         b = false;
                     }
                 }
-                if b{
-                methods.push(parse_method(member, component))
-                }},
+                if b {
+                    methods.push(parse_method(member, component))
+                }
+            }
             "field_declaration" => fields.append(&mut parse_field(member, component)),
             "class_declaration"
             | "interface_declaration"
@@ -165,6 +166,7 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
             is_final: modifier.is_final.clone(),
             default_value: String::new(),
             r#type: r#type.clone(),
+            expression: None, // TODO add
         })
         .collect()
 }

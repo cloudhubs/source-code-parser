@@ -1,6 +1,6 @@
+use crate::java::modifier::parse_modifiers;
 use crate::java::modifier::Modifier;
 use crate::java::util::fold_vec;
-use crate::java::{method_body::log_unknown_tag, modifier::parse_modifiers};
 use crate::parse::AST;
 use crate::prophet::*;
 
@@ -39,13 +39,13 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
         match &*part_defn.r#type {
             "variable_declarator" => match part_defn.find_child_by_type(&["identifier"]) {
                 Some(ident) => name = ident.value.clone(),
-                None => eprintln!("Variable declarator with no variable name!"),
+                None => tracing::warn!("Variable declarator with no variable name!"),
             },
             "identifier" => name = part_defn.value.clone(),
             "modifiers" => {
                 modifier = parse_modifiers(part_defn, &*component.path, &*component.package_name)
             }
-            unknown => log_unknown_tag(unknown, "method parameter"),
+            unknown => {}
         }
     }
 
