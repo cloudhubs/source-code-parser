@@ -22,7 +22,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         | "decimal_floating_point_literal"
         | "string_literal"
         | "false"
-        | "true" => Some(Expr::Literal(ast.value.clone().into())),
+        | "true" => Some(Expr::Literal(Literal::new(ast.value.clone(), Java))),
         "object_creation_expression" => Some(parse_object_creation(ast, component)),
         "array_creation_expression" => Some(parse_array_creation(ast, component)),
         "array_initializer" => Some(parse_array_init(ast, component)),

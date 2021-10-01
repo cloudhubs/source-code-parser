@@ -149,7 +149,7 @@ fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -
                     .map(|arg| expression(arg))
                     .flat_map(|arg| arg)
                     .collect();
-                let new: Literal = "new".to_string().into();
+                let new = Literal::new("new".to_string(), Cpp);
                 let init = CallExpr::new(Box::new(new.into()), args, Cpp).into();
                 Some(init)
             }

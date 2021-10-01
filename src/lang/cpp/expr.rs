@@ -133,7 +133,7 @@ fn new_expression(new_expr: &AST) -> Option<CallExpr> {
     match expr {
         Expr::IndexExpr(mut ndx) => {
             ndx.expr = Box::new(r#type);
-            let new: Literal = "new".into();
+            let new = Literal::new("new".into(), Cpp);
             let init = CallExpr::new(Box::new(new.into()), vec![ndx.into()], Cpp);
             Some(init)
         }
@@ -150,7 +150,7 @@ fn delete_expression(delete_expr: &AST) -> Option<CallExpr> {
             _ => true,
         })?;
     let expr = expression(expr)?;
-    let delete: Literal = "delete".to_string().into();
+    let delete = Literal::new("delete".to_string(), Cpp);
     let del = CallExpr::new(Box::new(delete.into()), vec![expr], Cpp);
     Some(del)
 }
@@ -180,7 +180,7 @@ fn sizeof_expression(sizeof_expr: &AST) -> Option<CallExpr> {
             })
             .last()?,
     )?;
-    let sizeof: Literal = "sizeof".to_string().into();
+    let sizeof = Literal::new("sizeof".to_string(), Cpp);
     let sizeof_call = CallExpr::new(Box::new(sizeof.into()), vec![expr], Cpp);
     Some(sizeof_call)
 }

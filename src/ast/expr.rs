@@ -226,20 +226,6 @@ pub struct Literal {
     pub language: Language,
 }
 
-impl From<&str> for Literal {
-    fn from(string: &str) -> Literal {
-        // Unknown to appease compiler
-        Literal::new(string.into(), Language::Unknown)
-    }
-}
-
-impl From<String> for Literal {
-    fn from(string: String) -> Literal {
-        // Unknown to appease compiler
-        Literal::new(string, Language::Unknown)
-    }
-}
-
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct SwitchExpr {
     pub condition: Box<Expr>,
