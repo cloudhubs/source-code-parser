@@ -5,6 +5,7 @@ use crate::java::modifier::find_modifier;
 use crate::java::modifier::parse_modifiers;
 use crate::java::util::vartype::find_type;
 use crate::ComponentInfo;
+use crate::Language::Java;
 use crate::AST;
 
 use super::{expr::parse_expr, is_common_junk_tag, node::parse_node};
@@ -20,7 +21,7 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
     // Determine the value it was set to
     let rhs = parse_child_nodes(ast, component);
 
-    let mut decl = DeclStmt::new(vec![], vec![]);
+    let mut decl = DeclStmt::new(vec![], vec![], Java);
     for var in rhs.iter() {
         // Extract expression from the hierarchy
         let base = match var {
@@ -36,14 +37,14 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
             Expr::BinaryExpr(expr) => match expr.lhs.as_ref() {
                 Expr::Ident(lhs) => {
                     decl.variables
-                        .push(VarDecl::new(Some(r#type.clone()), lhs.clone()));
+                        .push(VarDecl::new(Some(r#type.clone()), lhs.clone(), Java));
                     decl.expressions.push(Some(expr.rhs.as_ref().clone()));
                 }
                 unknown => tracing::warn!("Expected Ident got {:#?}", unknown),
             },
             Expr::Ident(id) => {
                 decl.variables
-                    .push(VarDecl::new(Some(r#type.clone()), id.clone()));
+                    .push(VarDecl::new(Some(r#type.clone()), id.clone(), Java));
                 decl.expressions.push(None);
             }
             unknown => {
@@ -70,7 +71,7 @@ pub(crate) fn parse_if(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             "parenthesized_expression" => guard = parse_expr(child, component),
             _ => {
                 if let Some(stmt) = parse_node(child, component) {
-                    let stmt = to_block(stmt);
+                    let stmt = to_block(stmt, Java);
                     if if_stmt.is_none() {
                         if_stmt = Some(stmt);
                     } else {
@@ -81,7 +82,9 @@ pub(crate) fn parse_if(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             }
         }
     }
-    Some(Node::Stmt(IfStmt::new(guard?, if_stmt?, else_stmt).into()))
+    Some(Node::Stmt(
+        IfStmt::new(guard?, if_stmt?, else_stmt, Java).into(),
+    ))
 }
 
 /// Parse an AST fragment with a try/catch. May be try-with-resources, or standard try/catch, with any
@@ -131,7 +134,8 @@ pub(crate) fn parse_try_catch(ast: &AST, component: &ComponentInfo) -> Option<No
                     types
                         .into_iter()
                         .map(|t| {
-                            let mut decl = VarDecl::new(Some(t), Ident::new(name.clone()));
+                            let mut decl =
+                                VarDecl::new(Some(t), Ident::new(name.clone(), Java), Java);
                             decl.is_final = Some(modifiers.is_final);
                             decl.is_static = Some(modifiers.is_static);
                             decl.annotation = modifiers.annotations.clone();
@@ -148,8 +152,9 @@ pub(crate) fn parse_try_catch(ast: &AST, component: &ComponentInfo) -> Option<No
                 );
 
                 catch_clauses.push(CatchStmt::new(
-                    DeclStmt::new(caught_vars, vec![]),
+                    DeclStmt::new(caught_vars, vec![], Java),
                     catch_body,
+                    Java,
                 ));
             }
             "finally_clause" => finally_clause = Some(parse_block(ast, component)),
@@ -162,10 +167,12 @@ pub(crate) fn parse_try_catch(ast: &AST, component: &ComponentInfo) -> Option<No
         try_body.expect("Try/Catch with no body!"),
         catch_clauses,
         finally_clause,
+        Java,
     )
     .into();
     if let Some(resources) = resources {
-        try_catch = WithResourceStmt::new(resources, Block::new(vec![try_catch.into()])).into();
+        try_catch =
+            WithResourceStmt::new(resources, Block::new(vec![try_catch.into()], Java), Java).into();
     };
     Some(try_catch.into())
 }
@@ -199,7 +206,7 @@ fn parse_resource(ast: &AST, component: &ComponentInfo) -> Option<DeclStmt> {
     }
 
     // Unwrap
-    let mut decl = VarDecl::new(r#type, name?); //DeclStmt::new(vec![], vec![result?]);
+    let mut decl = VarDecl::new(r#type, name?, Java); //DeclStmt::new(vec![], vec![result?]);
 
     // Inject modifier information
     if let Some(mut modifier) = modifier {
@@ -209,7 +216,7 @@ fn parse_resource(ast: &AST, component: &ComponentInfo) -> Option<DeclStmt> {
     }
 
     // Assemble into declaration
-    Some(DeclStmt::new(vec![decl], vec![result]))
+    Some(DeclStmt::new(vec![decl], vec![result], Java))
 }
 
 pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
@@ -272,7 +279,7 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             .into_iter()
             .flat_map(|p| match p {
                 Node::Stmt(node) => Some(node),
-                Node::Expr(node) => Some(Stmt::ExprStmt(ExprStmt::new(node))),
+                Node::Expr(node) => Some(Stmt::ExprStmt(ExprStmt::new(node, Java))),
                 _ => panic!("Not supported: block in for loop init"),
             })
             .collect()
@@ -287,7 +294,16 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     let post = parts[2].clone().map_or(vec![], |post| to_expr(&post));
 
     // Assemble
-    Some(Stmt::ForStmt(ForStmt::new(init, guard, post, Block::new(body))).into())
+    Some(
+        Stmt::ForStmt(ForStmt::new(
+            init,
+            guard,
+            post,
+            Block::new(body, Java),
+            Java,
+        ))
+        .into(),
+    )
 }
 
 pub(crate) fn parse_enhanced_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
@@ -296,9 +312,11 @@ pub(crate) fn parse_enhanced_for(ast: &AST, component: &ComponentInfo) -> Option
     let iter_var = DeclStmt::new(
         vec![VarDecl::new(
             Some(iter_type),
-            Ident::new(ast.children[3].value.clone()),
+            Ident::new(ast.children[3].value.clone(), Java),
+            Java,
         )],
         vec![],
+        Java,
     );
     let iter = parse_expr(&ast.children[5], component);
 
@@ -307,49 +325,49 @@ pub(crate) fn parse_enhanced_for(ast: &AST, component: &ComponentInfo) -> Option
     if let Some(block) = ast.find_child_by_type(&["block"]) {
         body = parse_block(block, component);
     } else {
-        body = Block::new(vec![]);
+        body = Block::new(vec![], Java);
     }
 
     Some(Node::Stmt(
-        ForRangeStmt::new(Box::new(Stmt::DeclStmt(iter_var)), iter, body).into(),
+        ForRangeStmt::new(Box::new(Stmt::DeclStmt(iter_var)), iter, body, Java).into(),
     ))
 }
 
 pub(crate) fn parse_labeled(ast: &AST, component: &ComponentInfo) -> Option<Node> {
-    let label = LabelStmt::new(ast.children[0].value.clone());
+    let label = LabelStmt::new(ast.children[0].value.clone(), Java);
     let body = parse_node(&ast.children[2], component);
-    Some(Block::new(vec![Stmt::LabelStmt(label).into(), body?]).into())
+    Some(Block::new(vec![Stmt::LabelStmt(label).into(), body?], Java).into())
 }
 
 pub(crate) fn parse_while(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     let mut guard = None;
-    let mut stmt = Block::new(vec![]);
+    let mut stmt = Block::new(vec![], Java);
 
     for child in ast.children.iter() {
         match &*child.r#type {
             "parenthesized_expression" => guard = parse_expr(child, component),
             _ => {
                 if let Some(body_stmt) = parse_node(child, component) {
-                    stmt = to_block(body_stmt);
+                    stmt = to_block(body_stmt, Java);
                 }
             }
         }
     }
-    Some(Node::Stmt(WhileStmt::new(guard?, stmt).into()))
+    Some(Node::Stmt(WhileStmt::new(guard?, stmt, Java).into()))
 }
 
 pub(crate) fn parse_do_while(ast: &AST, component: &ComponentInfo) -> Option<Node> {
-    let mut stmt = Block::new(vec![]);
+    let mut stmt = Block::new(vec![], Java);
     for child in ast.children.iter() {
         match &*child.r#type {
             "parenthesized_expression" => {
                 return Some(Node::Stmt(
-                    DoWhileStmt::new(parse_expr(child, component)?, stmt).into(),
+                    DoWhileStmt::new(parse_expr(child, component)?, stmt, Java).into(),
                 ));
             }
             _ => {
                 if let Some(body_stmt) = parse_node(child, component) {
-                    stmt = to_block(body_stmt);
+                    stmt = to_block(body_stmt, Java);
                 }
             }
         }
@@ -362,12 +380,12 @@ pub(crate) fn parse_do_while(ast: &AST, component: &ComponentInfo) -> Option<Nod
 
 pub(crate) fn parse_return(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     Some(Node::Stmt(
-        ReturnStmt::new(parse_expr(&ast.children[1], component)).into(),
+        ReturnStmt::new(parse_expr(&ast.children[1], component), Java).into(),
     ))
 }
 
 pub(crate) fn parse_throw(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     Some(Node::Stmt(
-        ThrowStmt::new(parse_expr(&ast.children[1], component)).into(),
+        ThrowStmt::new(parse_expr(&ast.children[1], component), Java).into(),
     ))
 }

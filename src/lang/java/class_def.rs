@@ -5,6 +5,7 @@ use crate::java::modifier::{find_modifier, parse_modifiers, Modifier};
 use crate::java::util::vartype::find_type;
 use crate::parse::AST;
 use crate::prophet::*;
+use crate::Language::Java;
 
 /// Handles class definition portions of the Java language, like fields,
 /// orchestrating the class body, etc.
@@ -44,7 +45,8 @@ pub(crate) fn parse_class(
                 _ => "ClassComponent",
             }
         ),
-        instance_type: instance_type,
+        instance_type,
+        language: Java,
     };
 
     // Define default values
@@ -138,6 +140,7 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
         package_name: component.package_name.clone(),
         instance_name: component.instance_name.clone(),
         instance_type: InstanceType::FieldComponent,
+        language: Java,
     };
     let fields: Vec<FieldComponent> = ast
         .find_all_children_by_type(&["variable_declarator"])
@@ -157,6 +160,7 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
                     package_name: component.package_name.clone(),
                     instance_name: field_name.clone(),
                     instance_type: InstanceType::FieldComponent,
+                    language: Java,
                 },
                 annotations: modifier.annotations.clone(),
                 variables: vec![],

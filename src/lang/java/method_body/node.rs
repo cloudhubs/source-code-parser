@@ -2,6 +2,7 @@ use crate::ast::*;
 use crate::java::method_body::expr::parse_expr;
 use crate::java::method_body::stmt::{parse_decl, parse_enhanced_for, parse_for, parse_try_catch};
 use crate::ComponentInfo;
+use crate::Language::Java;
 use crate::AST;
 
 use super::{
@@ -44,7 +45,7 @@ pub(crate) fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
 }
 
 fn make_continue(ast: &AST) -> Option<Node> {
-    let mut cont = ContinueStmt::new();
+    let mut cont = ContinueStmt::new(Java);
     if let Some(label) = ast.find_child_by_type(&["identifier"]) {
         cont.label = Some(label.value.clone());
     }
@@ -53,7 +54,7 @@ fn make_continue(ast: &AST) -> Option<Node> {
 
 /// Ignore label breaks
 fn make_break(ast: &AST) -> Option<Node> {
-    let mut cont = BreakStmt::new();
+    let mut cont = BreakStmt::new(Java);
     if let Some(label) = ast.find_child_by_type(&["identifier"]) {
         cont.label = Some(label.value.clone());
     }

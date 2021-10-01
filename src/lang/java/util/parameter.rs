@@ -55,6 +55,7 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
             package_name: component.package_name.clone(),
             instance_name: component.instance_name.clone(),
             instance_type: InstanceType::MethodParamComponent,
+            language: Language::Java,
         },
         annotation: fold_vec(modifier.annotations),
         r#type: param_type.into(),

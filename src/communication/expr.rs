@@ -164,6 +164,7 @@ impl CommunicationReplacer for CallExpr {
                                 Some(class.component.container_name.clone()),
                                 method.method_name.clone(),
                                 self.clone(),
+                                method.component.language,
                             ));
                             break;
                         }

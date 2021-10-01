@@ -88,7 +88,7 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
 }
 
 fn create_module(package: &str, path: &str, components: &Vec<ComponentType>) -> ComponentType {
-    let mut module = ModuleComponent::new(package.to_string(), path.to_string());
+    let mut module = ModuleComponent::new(package.to_string(), path.to_string(), Language::Java);
     let classes = components.iter().filter_map(|comp| match comp {
         ComponentType::ClassOrInterfaceComponent(class_ix) => Some(class_ix),
         _ => None,

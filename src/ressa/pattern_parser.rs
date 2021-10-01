@@ -258,7 +258,7 @@ impl NodePatternParser for FieldComponent {
             expr_vec,
             self.variables
                 .iter()
-                .map(|var| Ident::new(var.clone()))
+                .map(|var| Ident::new(var.clone(), self.component.language))
                 .collect::<Vec<Ident>>()
         );
         Some(())

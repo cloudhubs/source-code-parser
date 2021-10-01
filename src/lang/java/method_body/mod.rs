@@ -1,5 +1,6 @@
 use crate::ast::Expr;
 use crate::java::method_body::expr::parse_assignment;
+use crate::Language::Java;
 use crate::{ast::Block, ComponentInfo, AST};
 
 use self::node::parse_child_nodes;
@@ -10,7 +11,7 @@ mod stmt;
 
 /// Parse the body of a method, static block, constructor, etc.
 pub(crate) fn parse_block(ast: &AST, component: &ComponentInfo) -> Block {
-    Block::new(parse_child_nodes(ast, component))
+    Block::new(parse_child_nodes(ast, component), Java)
 }
 
 /// Logs an unknown tag was encountered. You better not think too much about that.

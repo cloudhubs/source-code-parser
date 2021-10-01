@@ -1,6 +1,6 @@
-use crate::ast::Expr;
 use super::*;
 use crate::ast::Block;
+use crate::ast::Expr;
 use serde::Serialize;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -11,6 +11,7 @@ pub struct ComponentInfo {
     pub instance_name: String,
     #[serde(rename = "instanceType")]
     pub instance_type: InstanceType,
+    pub language: Language,
     // This does not seem to be used in Prophet.
     // sub_components: Vec<ComponentType<'a>>,
 }
@@ -99,12 +100,13 @@ pub struct ModuleComponent {
 }
 
 impl ModuleComponent {
-    pub fn new(name: String, path: String) -> Self {
+    pub fn new(name: String, path: String, language: Language) -> Self {
         let info = ComponentInfo {
             instance_name: format!("{}::ModuleComponent", path),
             path,
             package_name: name.clone(),
             instance_type: InstanceType::ModuleComponent,
+            language,
         };
         let container = ContainerComponent {
             component: info,
@@ -176,8 +178,7 @@ pub struct FieldComponent {
     #[serde(rename = "default_value_string")]
     pub default_value: String,
     pub r#type: String,
-    pub expression: Option<Expr>
-    // is_collection -- may make sense as a field due to language differences
+    pub expression: Option<Expr>, // is_collection -- may make sense as a field due to language differences
 }
 
 // For some reason prophet-utils relies on an actual javaparser AnnotationExpr instead of putting the info here. Needs fix.
@@ -204,6 +205,7 @@ impl AnnotationComponent {
         value: &str,
         path: &str,
         package_name: &str,
+        language: Language,
     ) -> AnnotationComponent {
         AnnotationComponent::new(
             name,
@@ -213,6 +215,7 @@ impl AnnotationComponent {
             package_name,
             "singleMemberAnnotationExprMetaModel",
             "SingleMemberAnnotationExpr",
+            language,
         )
     }
 
@@ -221,6 +224,7 @@ impl AnnotationComponent {
         key_value_pairs: Vec<AnnotationValuePair>,
         path: &str,
         package_name: &str,
+        language: Language,
     ) -> AnnotationComponent {
         AnnotationComponent::new(
             name,
@@ -230,10 +234,16 @@ impl AnnotationComponent {
             package_name,
             "normalAnnotationExprMetaModel",
             "NormalAnnotationExpr",
+            language,
         )
     }
 
-    pub fn create_marker(name: &str, path: &str, package_name: &str) -> AnnotationComponent {
+    pub fn create_marker(
+        name: &str,
+        path: &str,
+        package_name: &str,
+        language: Language,
+    ) -> AnnotationComponent {
         AnnotationComponent::new(
             name,
             vec![],
@@ -242,6 +252,7 @@ impl AnnotationComponent {
             package_name,
             "markerAnnotationExprMetaModel",
             "MarkerAnnotationExpr",
+            language,
         )
     }
 
@@ -253,6 +264,7 @@ impl AnnotationComponent {
         package_name: &str,
         meta_model_field_name: &str,
         annotation_meta_model: &str,
+        language: Language,
     ) -> AnnotationComponent {
         AnnotationComponent {
             component: ComponentInfo {
@@ -260,6 +272,7 @@ impl AnnotationComponent {
                 package_name: String::from(package_name),
                 instance_name: format!("{}::AnnotationComponent", meta_model_field_name),
                 instance_type: InstanceType::AnnotationComponent,
+                language,
             },
             name: String::from(name),
             annotation_meta_model: String::from(annotation_meta_model),
