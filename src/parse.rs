@@ -119,6 +119,7 @@ pub fn parse_project_context(directory: &Directory) -> std::io::Result<JSSAConte
             package_name: "".into(),
             instance_name: "context".into(),
             instance_type: InstanceType::AnalysisComponent,
+            language: Language::Unknown,
         },
         succeeded: true,
         root_path: "".into(),
@@ -241,7 +242,11 @@ pub fn convert_trees_to_laast(
 
     for parsed_tree in parsed_trees {
         let path = get_path_string(&parsed_tree.path);
-        let mut module = ModuleComponent::new(parsed_tree.module_name.clone(), path.clone());
+        let mut module = ModuleComponent::new(
+            parsed_tree.module_name.clone(),
+            path.clone(),
+            parsed_tree.lang.into(),
+        );
 
         let (components, lang) = parsed_tree.ast.transform(
             parsed_tree.lang,

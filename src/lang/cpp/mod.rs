@@ -1,5 +1,6 @@
 use crate::parse::AST;
 use crate::prophet::*;
+use crate::Language::Cpp;
 
 mod body;
 pub use body::*;
@@ -124,7 +125,7 @@ fn transform_namespace_to_module(ast: AST, path: &str) -> Option<ModuleComponent
         .value
         .clone();
 
-    let mut module = ModuleComponent::new(name.clone(), path.to_string());
+    let mut module = ModuleComponent::new(name.clone(), path.to_string(), Cpp);
     ast.children
         .into_iter()
         .flat_map(|child| find_components(child, &name, path))
@@ -219,6 +220,7 @@ fn transform_into_method(ast: &AST, module_name: &str, path: &str) -> Option<Met
             package_name: module_name.to_string(),
             instance_name: fn_ident.clone(),
             instance_type: InstanceType::MethodComponent,
+            language: Cpp,
         },
         accessor: AccessorType::Default,
         method_name: fn_ident,
@@ -423,6 +425,7 @@ fn func_parameter(param_decl: &AST, module_name: &str, path: &str) -> Option<Met
             package_name: module_name.to_string(),
             instance_name: ident.clone(),
             instance_type: InstanceType::MethodParamComponent,
+            language: Cpp,
         },
         annotation: None,
         parameter_name: ident,
@@ -472,6 +475,7 @@ fn transform_into_class(
                 package_name: module_name.into(),
                 instance_name: format!("{}::ClassComponent", class_name),
                 instance_type: InstanceType::ClassComponent,
+                language: Cpp,
             },
             accessor: AccessorType::Default,
             stereotype: ContainerStereotype::Fabricated,
@@ -530,6 +534,7 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
                         package_name: module_name.to_string(),
                         instance_name: field_name.clone(),
                         instance_type: InstanceType::FieldComponent,
+                        language: Cpp,
                     },
                     annotations: vec![],
                     variables: vec![],

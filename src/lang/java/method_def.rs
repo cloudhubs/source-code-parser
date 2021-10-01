@@ -5,6 +5,7 @@ use crate::java::util::parameter::parse_method_parameters;
 use crate::java::util::vartype::find_type;
 use crate::parse::AST;
 use crate::prophet::*;
+use crate::Language::Java;
 
 /// Parse the signature of a method. Parsing of the body is left to another file,
 /// since that's a large task in and of itself.
@@ -17,6 +18,7 @@ pub(crate) fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodCompon
         package_name: component.package_name.clone(),
         instance_name: component.instance_name.clone(),
         instance_type: InstanceType::MethodComponent,
+        language: Java,
     };
 
     // Define fields
@@ -52,6 +54,7 @@ pub(crate) fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodCompon
         package_name: component.package_name.clone(),
         instance_name: method_name.clone(),
         instance_type: InstanceType::MethodComponent,
+        language: Java,
     };
 
     // Return the method component

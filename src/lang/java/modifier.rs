@@ -1,5 +1,6 @@
 use crate::parse::AST;
 use crate::prophet::*;
+use crate::Language::Java;
 /// Handles parsing of modifiers in the Java AST. Modifiers contains the visibility,
 /// final, and static nature of the element the modifier is attached to.
 
@@ -126,6 +127,7 @@ pub(crate) fn parse_annotations(
                     key_value_pairs,
                     path,
                     package,
+                    Java,
                 ));
             } else {
                 // Annotation with 1 unnamed parameter -> SingleAnnotation
@@ -135,11 +137,14 @@ pub(crate) fn parse_annotations(
                     &*parse_annotation_value(val),
                     path,
                     package,
+                    Java,
                 ));
             }
         } else {
             // Annotation with no parameters -> MarkerAnnotation
-            annotations.push(AnnotationComponent::create_marker(name, path, package))
+            annotations.push(AnnotationComponent::create_marker(
+                name, path, package, Java,
+            ))
         }
     }
     Some(())

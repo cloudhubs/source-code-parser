@@ -64,7 +64,7 @@ pub enum AccessorType {
     Default,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, Copy)]
 pub enum Language {
     Java,
     Cpp,
