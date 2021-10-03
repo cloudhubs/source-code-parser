@@ -6,7 +6,6 @@ use crate::go::function_body::stmt::*;
 
 use super::parse_block;
 use crate::go::function_body::expr::parse_expr;
-use crate::go::function_body::expr::parse_expr_stmt;
 
 pub(crate) fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Node> {
     ast.children

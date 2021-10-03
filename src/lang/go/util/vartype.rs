@@ -1,4 +1,3 @@
-use crate::go::util::stringify_tree_children;
 use crate::AST;
 
 /// Indicates when no type is found

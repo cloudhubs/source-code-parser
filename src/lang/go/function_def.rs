@@ -1,7 +1,6 @@
 use crate::go::function_body::parse_block;
 use crate::go::util::identifier::parse_identifier;
 use crate::go::util::vartype::find_type;
-use crate::msd::NodeType::MethodParam;
 use crate::parse::AST;
 use crate::prophet::*;
 

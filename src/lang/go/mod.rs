@@ -9,10 +9,8 @@ mod function_def;
 mod util;
 
 use crate::go::util::identifier::parse_identifier;
-use crate::lang::go::function_body::parse_block;
 use class_def::*;
 use function_def::*;
-use std::borrow::Borrow;
 
 pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
     find_components_internal(ast, String::new(), path)
@@ -141,7 +139,7 @@ fn parse_import(ast: &AST) -> String {
 fn trim_import(import_str: String) -> String {
     let mut str = import_str.clone();
 
-    /// additional checks to see if the string actually begins and ends with quotation marks
+    //additional checks to see if the string actually begins and ends with quotation marks
     if str.starts_with('\"') {
         str.remove(0);
     }

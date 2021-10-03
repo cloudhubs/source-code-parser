@@ -1,6 +1,3 @@
-use crate::go::function_body::node::{parse_child_nodes, parse_node};
-use crate::go::function_body::parse_block;
-use crate::go::util::vartype::find_type;
 use crate::go::util::identifier::parse_identifier;
 
 use crate::ast::*;
