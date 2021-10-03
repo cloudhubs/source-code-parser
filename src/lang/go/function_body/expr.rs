@@ -1,21 +1,44 @@
 use crate::go::function_body::node::{parse_child_nodes, parse_node};
 use crate::go::function_body::parse_block;
 use crate::go::util::vartype::find_type;
+use crate::go::util::identifier::parse_identifier;
 
 use crate::ast::*;
 use crate::ComponentInfo;
 use crate::AST;
 
+use super::is_common_junk_tag;
+
 pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     match &*ast.r#type {
-        // Variables an initialization
-        "var_declaration" => parse_assignment(ast, component),
+        // Variables and initialization
         "identifier" => parse_ident(ast, component),
+        "int_literal" | 
+        "interpreted_string_literal" => Some(Expr::Literal(ast.value.clone().into())),
+        "assignment_statement" => parse_assignment(ast, component),
 
-        unknown => None
+        //language specific
+        "binary_expression" => parse_binary(ast, component),
+        "expression_list" => parse_expr_stmt(ast, component),
+        "inc_statement" | "dec_statement" => parse_inc_dec(ast, component),
+
+        //function and method calls
+        "call_expression" => parse_function(ast, component),
+
+        unknown => None,
     }
 }
 
+pub(crate) fn parse_expr_stmt(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let mut expr = None;
+    for comp in ast.children.iter() {
+        expr = parse_expr(comp, component);
+        if expr.is_some() {
+            break;
+        }
+    }
+    expr
+}
 
 fn parse_ident(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     let ident: Expr = Ident::new(ast.value.clone()).into();
@@ -30,12 +53,14 @@ pub(crate) fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<E
 
     // Find values
     for node in ast.children.iter() {
+
         let unknown = &*node.r#type;
         if unknown == "=" {
             continue;
         }
 
         let result = parse_expr(node, component);
+
         if result.is_some() {
             if lhs.is_none() {
                 lhs = result;
@@ -64,5 +89,108 @@ pub(crate) fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<E
         eprintln!("Assignment with no lefthand side!");
         None
     }
+}
+
+//parse increment or decrement statments
+fn parse_inc_dec(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let name = if ast.children[0].r#type == "identifier" {
+        0
+    } else {
+        1
+    };
+    let op = (name + 1) % 2;
+
+    Some(
+        IncDecExpr::new(
+            op < name,
+            ast.children[op].r#type == "++",
+            Box::new(parse_expr(&ast.children[name], component)?),
+        )
+        .into(),
+    )
+}
+
+fn parse_binary(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let mut lhs = None;
+    let mut op = None;
+    let mut rhs = None;
+    for child in ast.children.iter() {
+        if !is_common_junk_tag(&child.r#type) {
+            let res = Some(child);
+            if lhs.is_none() {
+                lhs = res;
+            } else if op.is_none() {
+                op = res;
+            } else if rhs.is_none() {
+                rhs = res;
+                break;
+            }
+        }
+    }
+
+    if let Some(lhs) = lhs {
+        if let Some(op) = op {
+            if let Some(rhs) = rhs {
+                return Some(
+                    BinaryExpr::new(
+                        Box::new(parse_expr(lhs, component)?),
+                        op.value.as_str().into(),
+                        Box::new(parse_expr(rhs, component)?),
+                    )
+                    .into(),
+                );
+            }
+        }
+    }
+    eprintln!("Malformed binary expression detected!");
+    None
+}
+
+fn parse_function(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+    let selector = match ast.find_child_by_type(&["selector_expression"]) {
+        Some(node) => node,
+        None => ast
+    };
+
+    let argument_list = match ast.find_child_by_type(&["argument_list"]) {
+        Some(node) => node,
+        None => ast
+    };
+
+    let args: Vec<Expr> = argument_list
+        .children
+        .iter()
+        .map(|arg| parse_expr(arg, component))
+        .flat_map(|arg| arg)
+        .collect();
+    
+
+    //determine the type of function call
+    if selector.find_child_by_type(&["."]).is_some() {
+        //member functions
+        let function_name = parse_dot_expr(selector)?;
+
+        Some(CallExpr::new(Box::new(function_name.into()), args).into())
+    } else {
+        //regular functions
+        let name = Ident::new(parse_identifier(&selector.children[0]));
+        Some(CallExpr::new(Box::new(name.into()), args).into())
+    }
+    
+
+    
+
+
+
+    
+}
+
+fn parse_dot_expr(node: &AST) -> Option<DotExpr>{
+    //get the name of what called the function
+    let lhs = Ident::new(parse_identifier(&node.children[0]));
+    let rhs = Ident::new(parse_identifier(&node.children[2]));
+
+    
+    Some(DotExpr::new(Box::new(lhs.into()), Box::new(rhs.into())))
 }
 

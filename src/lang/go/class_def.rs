@@ -1,12 +1,16 @@
+use crate::go::util::identifier::parse_identifier;
+use crate::go::util::vartype::find_type;
 use crate::parse::AST;
 use crate::prophet::*;
-use crate::go::util::vartype::find_type;
-use crate::go::util::identifier::parse_identifier;
 
-pub(crate) fn parse_type(ast: &AST, package: &str, path: &str) -> Option<ClassOrInterfaceComponent> {
+pub(crate) fn parse_type(
+    ast: &AST,
+    package: &str,
+    path: &str,
+) -> Option<ClassOrInterfaceComponent> {
     let node = match ast.find_child_by_type(&["type_spec"]) {
         Some(type_node) => type_node,
-        None => ast
+        None => ast,
     };
 
     parse_type_internal(node, &package, path)
@@ -15,7 +19,7 @@ pub(crate) fn parse_type(ast: &AST, package: &str, path: &str) -> Option<ClassOr
 pub(crate) fn parse_type_internal(
     ast: &AST,
     package: &str,
-    path: &str
+    path: &str,
 ) -> Option<ClassOrInterfaceComponent> {
     //determine the type of the instance
 
@@ -76,11 +80,10 @@ pub(crate) fn parse_type_internal(
         match &*child.r#type {
             "struct_type" => {
                 parse_struct_body(child, &component, &mut methods, &mut fields);
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
-
 
     Some(ClassOrInterfaceComponent {
         component: ContainerComponent {
@@ -107,12 +110,12 @@ fn parse_struct_body(
     for node in ast.children.iter() {
         match &*node.r#type {
             "field_declaration_list" => fields.append(&mut parse_fields(node, component)),
-            _ => {},
+            _ => {}
         }
     }
 }
 
-fn parse_fields(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent>  {
+fn parse_fields(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
     let mut fields = vec![];
     for node in ast.children.iter() {
         match &*node.r#type {
@@ -136,9 +139,8 @@ fn parse_fields(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent>  {
                     default_value: String::new(),
                     r#type: type_identifier,
                 })
-
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
     fields

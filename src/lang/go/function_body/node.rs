@@ -2,14 +2,11 @@ use crate::ast::*;
 use crate::ComponentInfo;
 use crate::AST;
 
-use crate::go::function_body::stmt::parse_decl;
+use crate::go::function_body::stmt::*;
 
-use super::{
-    parse_block,
-    //stmt::{parse_do_while, parse_if, parse_labeled, parse_return, parse_throw, parse_while},
-};
+use super::parse_block;
 use crate::go::function_body::expr::parse_expr;
-
+use crate::go::function_body::expr::parse_expr_stmt;
 
 pub(crate) fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Node> {
     ast.children
@@ -21,14 +18,19 @@ pub(crate) fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Nod
 
 pub(crate) fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     match &*ast.r#type {
-        "var_declaration" => {
-            let decl = Some(Node::Stmt(parse_decl(ast, component).into()));
+        "var_declaration" => Some(Node::Stmt(parse_decl(ast, component).into())),
+        "short_var_declaration" => Some(Node::Stmt(parse_short_decl(ast, component).into())),
+        "if_statement" => parse_if(ast, component),
+        "block" => Some(parse_block(ast, component).into()),
+        
+        "for_statement" => parse_for(ast, component),
 
-            decl
-        }
-        _ =>  {
+        _ => {
             let expr: Stmt = parse_expr(ast, component)?.into();
             Some(expr.into())
-        }
+        },
+        
     }
 }
+
+

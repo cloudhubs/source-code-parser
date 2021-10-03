@@ -1,15 +1,11 @@
+use crate::go::function_body::parse_block;
+use crate::go::util::identifier::parse_identifier;
+use crate::go::util::vartype::find_type;
+use crate::msd::NodeType::MethodParam;
 use crate::parse::AST;
 use crate::prophet::*;
-use crate::go::util::vartype::find_type;
-use crate::go::util::identifier::parse_identifier;
-use crate::msd::NodeType::MethodParam;
-use crate::go::function_body::parse_block;
 
-pub(crate) fn parse_function(
-    ast: &AST,
-    module_name: &str,
-    path: &str
-) -> Option<MethodComponent> {
+pub(crate) fn parse_function(ast: &AST, module_name: &str, path: &str) -> Option<MethodComponent> {
     //find the function name
     let fn_identifier = parse_identifier(ast);
     //get return type
@@ -35,10 +31,10 @@ pub(crate) fn parse_function(
             for node in list.children.iter() {
                 match &*node.r#type {
                     "parameter_declaration" => parameters.push(parse_parameter(node, &component)),
-                    _ => {},
+                    _ => {}
                 }
             }
-        },
+        }
         None => {}
     };
 
@@ -56,7 +52,7 @@ pub(crate) fn parse_function(
             path: path.into(),
             package_name: module_name.to_string(),
             instance_name: fn_identifier.clone(),
-            instance_type: InstanceType::MethodComponent
+            instance_type: InstanceType::MethodComponent,
         },
         accessor: AccessorType::Public,
         method_name: fn_identifier,
@@ -70,13 +66,12 @@ pub(crate) fn parse_function(
         line_count: line_end - line_begin + 1,
         line_begin,
         line_end,
-        body
+        body,
     };
     Some(func)
 }
 
-pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str)
-    -> (String, MethodComponent) {
+pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str) -> (String, MethodComponent) {
     let method_identifier = parse_identifier(ast);
     let return_type = find_type(ast);
 
@@ -99,45 +94,51 @@ pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str)
         Some(parameter_list) => {
             match parameter_list.find_child_by_type(&["parameter_declaration"]) {
                 Some(parameter_node) => {
-                    parent_struct_type_name = parse_parameter(parameter_node, &component).r#type.clone()
-                },
-                None => {},
+                    parent_struct_type_name =
+                        parse_parameter(parameter_node, &component).r#type.clone()
+                }
+                None => {}
             }
-        },
-        None => {},
+        }
+        None => {}
     };
 
     let mut i = 0;
     let mut parameters = vec![];
-    for node in ast.find_all_children_by_type(&["parameter_list"]).get_or_insert(vec![]).iter() {
+    for node in ast
+        .find_all_children_by_type(&["parameter_list"])
+        .get_or_insert(vec![])
+        .iter()
+    {
         if i == 0 {
             i = 1;
-        }
-        else {
+        } else {
             for param_node in node.children.iter() {
                 match &*param_node.r#type {
-                    "parameter_declaration" => parameters.push(parse_parameter(param_node, &component)),
-                    _ => {},
+                    "parameter_declaration" => {
+                        parameters.push(parse_parameter(param_node, &component))
+                    }
+                    _ => {}
                 }
             }
         }
-    };
+    }
 
-   for member in ast.children.iter() {
-       match &*member.r#type {
-           "block" => {
-               body = Some(parse_block(member, &component));
-           }
-           _ => {}
-       }
-   }
+    for member in ast.children.iter() {
+        match &*member.r#type {
+            "block" => {
+                body = Some(parse_block(member, &component));
+            }
+            _ => {}
+        }
+    }
 
     let func = MethodComponent {
         component: ComponentInfo {
             path: path.into(),
             package_name: module_name.to_string(),
             instance_name: method_identifier.clone(),
-            instance_type: InstanceType::MethodComponent
+            instance_type: InstanceType::MethodComponent,
         },
         accessor: AccessorType::Public,
         method_name: method_identifier,
@@ -151,14 +152,10 @@ pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str)
         line_count: line_end - line_begin + 1,
         line_begin,
         line_end,
-        body
+        body,
     };
     (parent_struct_type_name, func)
 }
-
-
-
-
 
 fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent {
     let mut name = parse_identifier(ast);
@@ -176,5 +173,4 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
         r#type: param_type.into(),
         parameter_name: name.into(),
     }
-
 }
