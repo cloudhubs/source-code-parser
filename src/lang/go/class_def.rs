@@ -21,8 +21,8 @@ pub(crate) fn parse_type_internal(
     package: &str,
     path: &str,
 ) -> Option<ClassOrInterfaceComponent> {
+    
     //determine the type of the instance
-
     let instance_type = match ast.find_child_by_type(&["struct_type", "interface_type"]) {
         Some(node) => match &*node.r#type {
             "interface_type" => InstanceType::InterfaceComponent,
@@ -30,12 +30,7 @@ pub(crate) fn parse_type_internal(
         },
         None => InstanceType::ClassComponent,
     };
-    /*
-    let instance_type = match ast.find_child_by_type(&["struct_type"]) {
-        Some(child) => InstanceType::ClassComponent,
-        None => InstanceType::InterfaceComponent,
-    };
-    */
+    
     //find the name of the type
     let instance_name = match ast.find_child_by_type(&["type_identifier"]) {
         Some(identifier) => identifier.value.clone(),

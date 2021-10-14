@@ -1,4 +1,4 @@
-use crate::ast::*;
+use crate::ast::{to_block, DeclStmt, Expr, ExprStmt, ForStmt, IfStmt, Node, Stmt, VarDecl};
 use crate::ComponentInfo;
 use crate::AST;
 
