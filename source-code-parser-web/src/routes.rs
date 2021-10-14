@@ -3,9 +3,9 @@ use rust_code_analysis::AstPayload;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use source_code_parser::{
-    self,
-    msd::{run_msd_parse, NodePattern},
-    parse_ast, parse_project_context, parse_project_context_compat, Directory,
+    self, parse_ast, parse_project_context, parse_project_context_compat,
+    ressa::{run_ressa_parse, NodePattern},
+    Directory,
 };
 use std::fmt::Debug;
 use std::fs::File;
@@ -26,15 +26,15 @@ pub fn ctx(payload: web::Json<Directory>) -> HttpResponse {
 }
 
 #[derive(Deserialize)]
-pub struct MsdInput {
+pub struct RessaInput {
     project_dir: Directory,
     patterns: Vec<NodePattern>,
 }
 
-#[post("/msd")]
-pub fn msd(payload: web::Json<MsdInput>) -> HttpResponse {
+#[post("/ressa")]
+pub fn ressa(payload: web::Json<RessaInput>) -> HttpResponse {
     match parse_project_context(&payload.project_dir) {
-        Ok(mut context) => ok(run_msd_parse(
+        Ok(mut context) => ok(run_ressa_parse(
             &mut context.modules,
             payload.patterns.clone(),
         )),

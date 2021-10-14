@@ -11,6 +11,8 @@ pub use expr::*;
 mod op;
 pub use op::*;
 
+use crate::Language;
+
 // enum_dispatch adds in our From implementations for us
 
 #[enum_dispatch]
@@ -27,12 +29,16 @@ pub struct Block {
     pub nodes: Vec<Node>,
     #[new(value = r#""block""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
-pub fn to_block(node: Node) -> Block {
+pub fn to_block(node: Node, language: Language) -> Block {
     match node {
         Node::Block(block) => block,
-        Node::Stmt(stmt) => Block::new(vec![stmt.into()]),
-        Node::Expr(expr) => Block::new(vec![Node::Stmt(ExprStmt::new(expr).into())]),
+        Node::Stmt(stmt) => Block::new(vec![stmt.into()], language),
+        Node::Expr(expr) => Block::new(
+            vec![Node::Stmt(ExprStmt::new(expr, language).into())],
+            language,
+        ),
     }
 }

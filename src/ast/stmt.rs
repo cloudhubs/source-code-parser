@@ -28,6 +28,30 @@ pub enum Stmt {
     LabelStmt(LabelStmt),
 }
 
+impl Stmt {
+    pub fn get_lang(&self) -> Language {
+        use Stmt::*;
+        match self {
+            DeclStmt(s) => s.language,
+            ExprStmt(s) => s.language,
+            IfStmt(s) => s.language,
+            ForStmt(s) => s.language,
+            ForRangeStmt(s) => s.language,
+            WhileStmt(s) => s.language,
+            DoWhileStmt(s) => s.language,
+            ReturnStmt(s) => s.language,
+            ImportStmt(s) => s.language,
+            BreakStmt(s) => s.language,
+            ContinueStmt(s) => s.language,
+            ThrowStmt(s) => s.language,
+            TryCatchStmt(s) => s.language,
+            CatchStmt(s) => s.language,
+            WithResourceStmt(s) => s.language,
+            LabelStmt(s) => s.language,
+        }
+    }
+}
+
 /// For variable declaration statements, we can represent various situations for
 /// initialization.
 ///
@@ -47,6 +71,7 @@ pub struct DeclStmt {
     pub expressions: Vec<Option<Expr>>,
     #[new(value = r#""decl_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 impl From<Vec<DeclStmt>> for DeclStmt {
@@ -57,7 +82,11 @@ impl From<Vec<DeclStmt>> for DeclStmt {
             .iter()
             .flat_map(|rss| rss.expressions.clone())
             .collect();
-        DeclStmt::new(vars, exprs)
+        let lang = decls
+            .get(0)
+            .map(|decl| decl.language)
+            .unwrap_or(Language::Unknown);
+        DeclStmt::new(vars, exprs, lang)
     }
 }
 
@@ -73,6 +102,7 @@ pub struct VarDecl {
     pub is_final: Option<bool>,
     #[new(value = r#"vec![]"#)]
     pub annotation: Vec<AnnotationComponent>,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, From, new)]
@@ -80,6 +110,7 @@ pub struct ExprStmt {
     pub expr: Expr,
     #[new(value = r#""expr_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -89,6 +120,7 @@ pub struct IfStmt {
     pub else_body: Option<Block>,
     #[new(value = r#""if_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -100,6 +132,7 @@ pub struct ForStmt {
     pub body: Block,
     #[new(value = r#""for_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -110,6 +143,7 @@ pub struct ForRangeStmt {
     pub body: Block,
     #[new(value = r#""for_range_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -118,6 +152,7 @@ pub struct WhileStmt {
     pub body: Block,
     #[new(value = r#""while_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -126,6 +161,7 @@ pub struct DoWhileStmt {
     pub body: Block,
     #[new(value = r#""do_while_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -133,6 +169,7 @@ pub struct ReturnStmt {
     pub expr: Option<Expr>,
     #[new(value = r#""return_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -144,6 +181,7 @@ pub struct ImportStmt {
     pub value: String,
     #[new(value = r#""import_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -154,6 +192,8 @@ pub struct BreakStmt {
 
     #[new(value = r#""break_stmt""#)]
     r#type: &'static str,
+
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -164,6 +204,8 @@ pub struct ContinueStmt {
 
     #[new(value = r#""continue_stmt""#)]
     r#type: &'static str,
+
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -171,6 +213,7 @@ pub struct ThrowStmt {
     pub expr: Option<Expr>,
     #[new(value = r#""throw_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -180,6 +223,7 @@ pub struct TryCatchStmt {
     pub finally_body: Option<Block>,
     #[new(value = r#""try_catch_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -188,6 +232,7 @@ pub struct CatchStmt {
     pub body: Block,
     #[new(value = r#""catch_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -196,10 +241,12 @@ pub struct WithResourceStmt {
     pub body: Block,
     #[new(value = r#""with_resources_stmt""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 /// Represents a label, as in goto or a labelled continue/break
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct LabelStmt {
     pub label: String,
+    pub language: Language,
 }

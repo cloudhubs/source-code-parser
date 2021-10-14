@@ -1,6 +1,7 @@
 use crate::ast::op::Op;
 use crate::ast::stmt::*;
 use crate::ast::Block;
+use crate::Language;
 use derive_new::new;
 use enum_dispatch::enum_dispatch;
 use serde::Serialize;
@@ -26,9 +27,33 @@ pub enum Expr {
     SwitchExpr(SwitchExpr),
 }
 
+impl Expr {
+    pub fn get_lang(&self) -> Language {
+        use Expr::*;
+        match self {
+            AssignExpr(e) => e.language,
+            BinaryExpr(e) => e.language,
+            UnaryExpr(e) => e.language,
+            CallExpr(e) => e.language,
+            EndpointCallExpr(e) => e.language,
+            IndexExpr(e) => e.language,
+            ParenExpr(e) => e.language,
+            DotExpr(e) => e.language,
+            IncDecExpr(e) => e.language,
+            InitListExpr(e) => e.language,
+            LogExpr(e) => e.language,
+            LambdaExpr(e) => e.language,
+            Ident(e) => e.language,
+            Literal(e) => e.language,
+            SwitchExpr(e) => e.language,
+        }
+    }
+}
+
 impl Into<Stmt> for Expr {
     fn into(self) -> Stmt {
-        Stmt::ExprStmt(ExprStmt::new(self))
+        let lang = self.get_lang();
+        Stmt::ExprStmt(ExprStmt::new(self, lang))
     }
 }
 
@@ -38,6 +63,7 @@ pub struct AssignExpr {
     pub rhs: Vec<Expr>,
     #[new(value = r#""assign_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -47,6 +73,7 @@ pub struct BinaryExpr {
     pub rhs: Box<Expr>,
     #[new(value = r#""binary_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -55,6 +82,7 @@ pub struct UnaryExpr {
     pub op: Op,
     #[new(value = r#""unary_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -64,6 +92,7 @@ pub struct CallExpr {
     pub args: Vec<Expr>,
     #[new(value = r#""call_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -74,6 +103,7 @@ pub struct EndpointCallExpr {
     pub call_expr: CallExpr,
     #[new(value = r#""endpoint_call_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -82,6 +112,7 @@ pub struct IndexExpr {
     pub index_expr: Box<Expr>,
     #[new(value = r#""index_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -89,6 +120,7 @@ pub struct ParenExpr {
     pub expr: Box<Expr>,
     #[new(value = r#""paren_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -97,6 +129,7 @@ pub struct DotExpr {
     pub selected: Box<Expr>,
     #[new(value = r#""dot_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -104,6 +137,7 @@ pub struct Ident {
     pub name: String,
     #[new(value = r#""ident_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -113,6 +147,7 @@ pub struct IncDecExpr {
     pub expr: Box<Expr>,
     #[new(value = r#""inc_dec_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -120,6 +155,7 @@ pub struct InitListExpr {
     pub exprs: Vec<Expr>,
     #[new(value = r#""init_list_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -128,6 +164,7 @@ pub struct LogExpr {
     pub args: Vec<Expr>,
     #[new(value = r#""log_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
@@ -178,6 +215,7 @@ pub struct LambdaExpr {
     pub body: Block,
     #[new(value = r#""lambda_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -185,18 +223,7 @@ pub struct Literal {
     pub value: String,
     #[new(value = r#""literal_expr""#)]
     r#type: &'static str,
-}
-
-impl From<&str> for Literal {
-    fn from(string: &str) -> Literal {
-        Literal::new(string.into())
-    }
-}
-
-impl From<String> for Literal {
-    fn from(string: String) -> Literal {
-        Literal::new(string)
-    }
+    pub language: Language,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
@@ -205,13 +232,16 @@ pub struct SwitchExpr {
     pub cases: Vec<CaseExpr>,
     #[new(value = r#""switch_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }
 
 impl From<SwitchExpr> for Stmt {
     /// Enable a SwitchExpr to be easily coerced to a Stmt. Since Switches (depending on the language)
     /// could be either a statement or an expression, giving it this special case makes sense.
     fn from(expr: SwitchExpr) -> Self {
-        Stmt::ExprStmt(ExprStmt::new(expr.into()))
+        let expr: Expr = expr.into();
+        let lang = expr.get_lang();
+        Stmt::ExprStmt(ExprStmt::new(expr, lang))
     }
 }
 
@@ -221,4 +251,5 @@ pub struct CaseExpr {
     pub body: Block,
     #[new(value = r#""case_expr""#)]
     r#type: &'static str,
+    pub language: Language,
 }

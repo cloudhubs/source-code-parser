@@ -1,3 +1,4 @@
+use derive_new::new;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -8,11 +9,11 @@ use rust_code_analysis::{
     action, guess_language, AstCallback, AstCfg, AstPayload, AstResponse, Span, LANG,
 };
 
-use crate::{ast::*, communication::*, lang::*, *};
+use crate::{communication::*, lang::*, *};
 
 /// Information on an `AST` node.
 /// Taken directly from the `rust_code_analysis` crate with additional serde macros for deserialization.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all(deserialize = "PascalCase"))]
 pub struct AST {
     /// The type of node
@@ -90,7 +91,7 @@ impl AST {
             LANG::Python => (vec![], Language::Python),
             LANG::Go => (go::find_components(self, path), lang.into()),
             lang => {
-                println!("unsupported lang: {:?}", lang);
+                tracing::info!("unsupported lang: {:?}", lang);
                 (vec![], Language::Unknown)
                 // todo!();
             }
@@ -111,13 +112,14 @@ pub fn parse_project_context_compat(directory: &Directory) -> std::io::Result<co
 }
 
 pub fn parse_project_context(directory: &Directory) -> std::io::Result<JSSAContext> {
-    let modules = parse_directory(directory)?;
+    let modules = parse_directory_into_laast(directory)?;
     let ctx = JSSAContext {
         component: ComponentInfo {
             path: "".into(),
             package_name: "".into(),
             instance_name: "context".into(),
             instance_type: InstanceType::AnalysisComponent,
+            language: Language::Unknown,
         },
         succeeded: true,
         root_path: "".into(),
@@ -137,9 +139,20 @@ fn flatten_dirs(dir: &Directory) -> Vec<Directory> {
     dirs
 }
 
-pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>> {
-    let mut modules = vec![];
-    let mut language = Language::Unknown;
+#[derive(Debug, Clone, new)]
+pub struct ParsedTree {
+    ast: AST,
+    lang: LANG,
+    module_name: String,
+    path: PathBuf,
+}
+
+pub fn parse_directory_into_laast(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>> {
+    convert_trees_to_laast(parse_directory_trees(dir)?)
+}
+
+pub fn parse_directory_trees(dir: &Directory) -> std::io::Result<Vec<ParsedTree>> {
+    let mut parsed_trees = vec![];
 
     let dirs = flatten_dirs(dir);
 
@@ -162,15 +175,14 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
         let module_name = mod_path.clone();
 
         // Get directory
-        println!("trying to read {:?}", dir.path);
+        tracing::info!("trying to read {:?}", dir.path);
         let read_dir = match std::fs::read_dir(dir.path) {
             Ok(dir) => dir,
             Err(err) => {
-                eprintln!("Could not read directory: {:?}", err);
+                tracing::warn!("Could not read directory: {:?}", err);
                 continue;
             }
         };
-        let mut module = ModuleComponent::new(module_name.to_string(), path);
 
         for entry in read_dir {
             let entry = entry?;
@@ -184,52 +196,99 @@ pub fn parse_directory(dir: &Directory) -> std::io::Result<Vec<ModuleComponent>>
                     continue;
                 }
                 let mut file = File::open(entry.path())?;
-                let (components, lang) = match parse_file(&mut file, &entry.path()) {
-                    Ok(res) => res,
-                    Err(err) => {
-                        eprintln!("Could not read file {:?}: {:#?}", entry.path(), err);
+                let mut code = String::new();
+                file.read_to_string(&mut code)?;
+
+                tracing::info!(
+                    "Parsing file: {:?}",
+                    entry.path().to_str().unwrap_or_default()
+                );
+                let result = parse_ast(AstPayload {
+                    id: "".to_owned(),
+                    file_name: entry.path().to_str().unwrap_or("").to_owned(),
+                    code,
+                    comment: false,
+                    span: true,
+                });
+
+                let (ast, lang) = match result {
+                    Some((ast, lang)) => (ast, lang),
+                    None => {
+                        tracing::warn!("Could not parse AST {:?}", entry.path());
                         continue;
                     }
                 };
-                match lang {
-                    Language::Unknown => {}
-                    lang => language = lang,
-                }
 
-                for component in components.into_iter() {
-                    match component {
-                        ComponentType::ClassOrInterfaceComponent(component) => {
-                            match component.declaration_type {
-                                ContainerType::Class => {
-                                    module.classes.push(component);
-                                }
-                                ContainerType::Interface => {
-                                    module.interfaces.push(component);
-                                }
-                                r#type => {
-                                    println!(
-                                        "got other label when it should have been class/ifc: {:#?}",
-                                        r#type
-                                    );
-                                }
-                            }
+                parsed_trees.push(ParsedTree::new(
+                    ast,
+                    lang,
+                    module_name.clone(),
+                    path.clone().into(),
+                ));
+            }
+        }
+    }
+
+    tracing::info!("Finished parsing files!");
+    Ok(parsed_trees)
+}
+
+pub fn convert_trees_to_laast(
+    parsed_trees: Vec<ParsedTree>,
+) -> std::io::Result<Vec<ModuleComponent>> {
+    let get_path_string = |path_buf: &PathBuf| path_buf.as_path().to_str().unwrap_or("").to_owned();
+    let mut modules: Vec<ModuleComponent> = vec![];
+    let mut language = Language::Unknown;
+
+    for parsed_tree in parsed_trees {
+        let path = get_path_string(&parsed_tree.path);
+        let mut module = ModuleComponent::new(
+            parsed_tree.module_name.clone(),
+            path.clone(),
+            parsed_tree.lang.into(),
+        );
+
+        let (components, lang) = parsed_tree.ast.transform(
+            parsed_tree.lang,
+            parsed_tree.path.to_str().unwrap_or_default(),
+        );
+
+        match lang {
+            Language::Unknown => {}
+            lang => language = lang,
+        }
+
+        for component in components.into_iter() {
+            match component {
+                ComponentType::ClassOrInterfaceComponent(component) => {
+                    match component.declaration_type {
+                        ContainerType::Class => {
+                            module.classes.push(component);
                         }
-                        ComponentType::MethodComponent(method) => {
-                            module.component.methods.push(method);
+                        ContainerType::Interface => {
+                            module.interfaces.push(component);
                         }
-                        ComponentType::ModuleComponent(module) => {
-                            modules.push(module);
+                        r#type => {
+                            tracing::info!(
+                                "got other label when it should have been class/ifc: {:#?}",
+                                r#type
+                            );
                         }
-                        _ => {}
                     }
                 }
+                ComponentType::MethodComponent(method) => {
+                    module.component.methods.push(method);
+                }
+                ComponentType::ModuleComponent(module) => {
+                    modules.push(module);
+                }
+                _ => {}
             }
         }
 
         modules.push(module);
     }
 
-    println!("Finished parsing file!");
     Ok(merge_modules(modules, language))
 }
 
@@ -289,7 +348,7 @@ pub fn parse_file(file: &mut File, path: &Path) -> std::io::Result<(Vec<Componen
         None => return Ok((vec![], Language::Unknown)),
     };
 
-    println!("Parsing file: {:?}", path.to_str().unwrap_or_default());
+    tracing::info!("Parsing file: {:?}", path.to_str().unwrap_or_default());
 
     Ok(ast.transform(lang, path.to_str().unwrap_or_default()))
 }
@@ -351,7 +410,7 @@ mod tests {
         pub struct Point(i32, i32);
 
         fn main() {
-            println!("{:#?}", MyStruct {
+            tracing::info!("{:#?}", MyStruct {
                 id: 10,
                 type: "hello world",
                 point: Point(10, 20)
