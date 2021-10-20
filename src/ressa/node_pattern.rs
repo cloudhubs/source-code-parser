@@ -121,7 +121,7 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
                 }
                 Err(err) => {
                     tracing::warn!(
-                        "Failed to execute callback ({:#?}) for: {:?}",
+                        "Failed to execute callback ({}) for: {:?}",
                         err,
                         pattern.callback
                     );

@@ -1,7 +1,7 @@
-use runestick::Any;
-use std::collections::HashMap;
+use runestick::{Any, Object, Shared, Value, Vec};
+use std::collections::{BTreeMap, HashMap};
 
-pub type ContextData = HashMap<String, HashMap<String, Option<String>>>;
+pub type RessaResult = HashMap<String, BTreeMap<String, Value>>;
 
 /// Special attribute that's value is the name that a tag should resolve to
 const RESOLVES_TO: &'static str = "???";
@@ -10,18 +10,19 @@ const RESOLVES_TO: &'static str = "???";
 const TRANSIENT: &'static str = "";
 
 /// Context used by the Parser, storing local variables (#{varname}) and objects/tags
-#[derive(Default, Debug, Clone, Any, PartialEq)]
+#[derive(Default, Debug, Clone, Any)]
 pub struct ParserContext {
-    variables: ContextData,
-    local_variables: HashMap<String, String>,
+    objectlike_data: HashMap<String, Object>,
+    variables: HashMap<String, String>,
     pub frame_number: i32,
 }
 
-impl Into<ContextData> for ParserContext {
-    fn into(self) -> ContextData {
-        self.variables
+impl Into<RessaResult> for ParserContext {
+    fn into(self) -> RessaResult {
+        self.objectlike_data
             .into_iter()
             .filter(|(_, val)| !val.contains_key(RESOLVES_TO) && !val.contains_key(TRANSIENT))
+            .map(|obj| (obj.0, obj.1.into_inner()))
             .collect()
     }
 }
@@ -29,12 +30,14 @@ impl Into<ContextData> for ParserContext {
 /// Interface of the Context, offering ability to create, read, and update objects/tags
 pub trait ContextObjectActions {
     fn make_object(&mut self, name: &str);
+    fn save_object(&mut self, name: &str, new_obj: &Object);
+    /// Legacy API for generating object attributes. TBD if we keep
     fn make_attribute(&mut self, name: &str, attr_name: &str, attr_value: Option<String>);
     fn make_tag(&mut self, name: &str, resolves_to: &str);
     /// Makes an existing object transient, or initializes a new object as transient
     fn make_transient(&mut self, name: &str);
-    /// Gets an object by name. The object returned shouldn't be modified from this return value. Use ContextObjectActions::make_attribute
-    fn get_object(&self, name: &str) -> Option<HashMap<String, Option<String>>>;
+    /// Gets an object by name. Modify this object as you see fit, then persist with ContextObjectActions::save_object
+    fn get_object(&self, name: &str) -> Option<Object>;
     fn resolve_tag(&self, name: &str) -> String;
 }
 
@@ -48,7 +51,7 @@ pub trait ContextLocalVariableActions {
 impl ParserContext {
     fn do_make_attribute(&mut self, obj_name: &str, attr_name: &str, attr_type: Option<String>) {
         // If a reference to a non-existant object, create it
-        if !self.variables.contains_key(obj_name) {
+        if !self.objectlike_data.contains_key(obj_name) {
             tracing::warn!(
                 "Defining attribute on a non-existant object. Defining {}...",
                 obj_name
@@ -57,18 +60,27 @@ impl ParserContext {
         }
 
         // Insert
-        let vars = self.variables.get_mut(obj_name).unwrap();
-        vars.insert(attr_name.into(), attr_type.clone());
+        let vars = self.objectlike_data.get_mut(obj_name).unwrap();
+        if let Some(attr_type) = attr_type {
+            vars.insert(attr_name.into(), Value::from(attr_type));
+        } else {
+            vars.insert(attr_name.into(), Value::from(Shared::new(None)));
+        }
     }
 }
 
 impl ContextObjectActions for ParserContext {
     fn make_object(&mut self, name: &str) {
         let obj_name: String = name.into();
-        if !self.variables.contains_key(&obj_name) {
+        if !self.objectlike_data.contains_key(&obj_name) {
             // tracing::info!("Making: {}", obj_name);
-            (&mut self.variables).insert(obj_name, HashMap::new());
+            (&mut self.objectlike_data).insert(obj_name.clone(), Object::new());
         }
+    }
+
+    fn save_object(&mut self, name: &str, new_obj: &Object) {
+        // tracing::info!("Saving {}: {:?}", name, new_obj);
+        self.objectlike_data.insert(name.into(), new_obj.clone());
     }
 
     fn make_attribute(&mut self, name: &str, attr_name: &str, attr_type: Option<String>) {
@@ -86,11 +98,11 @@ impl ContextObjectActions for ParserContext {
         self.make_attribute(name, TRANSIENT, None);
     }
 
-    fn get_object(&self, name: &str) -> Option<HashMap<String, Option<String>>> {
+    fn get_object(&self, name: &str) -> Option<Object> {
         // tracing::info!("Looking for {}...", name);
         let name = self.resolve_tag(name);
 
-        if let Some(obj) = self.variables.get(&name) {
+        if let Some(obj) = self.objectlike_data.get(&name) {
             // tracing::info!("Retrieved {} Found {:?}", name, obj);
             Some(obj.clone())
         } else {
@@ -99,24 +111,22 @@ impl ContextObjectActions for ParserContext {
     }
 
     fn resolve_tag(&self, name: &str) -> String {
-        if let Some(map) = &self.variables.get(name).as_ref() {
+        // Check that the object exists
+        if let Some(map) = self.objectlike_data.get(name) {
+            // Check that the object is a tag
             if map.contains_key(RESOLVES_TO) {
-                if &*map
-                    .get(RESOLVES_TO)
-                    .unwrap()
-                    .as_ref()
-                    .expect("RESOLVES_TO malformed, does not have a value")
-                    == name
-                {
-                    panic!("{}", name);
+                // Check that the tag is not self-referential, and return resolving it
+                if let Value::String(tag) = map.get(RESOLVES_TO).expect("Contains key lied") {
+                    if let Ok(tag) = tag.borrow_ref() {
+                        let tag = tag.as_str();
+                        if tag == name {
+                            panic!("{}", name);
+                        }
+                        return self.resolve_tag(tag);
+                    } else {
+                        panic!("Could not acquire tag field on {} for comparison", name);
+                    }
                 }
-                return self.resolve_tag(
-                    &*map
-                        .get(RESOLVES_TO)
-                        .unwrap()
-                        .as_ref()
-                        .expect("RESOLVES_TO malformed, does not have a value"),
-                );
             }
         }
         name.into()
@@ -126,7 +136,7 @@ impl ContextObjectActions for ParserContext {
 impl ContextLocalVariableActions for ParserContext {
     fn make_variable(&mut self, name: &str, val: &str) {
         // tracing::info!("Made: ({:?}, {:?})", name, val);
-        if let Some(overwritten) = self.local_variables.insert(name.into(), val.into()) {
+        if let Some(overwritten) = self.variables.insert(name.into(), val.into()) {
             // tracing::warn!(
             //     "Warning: overwrote {} with {} for name {}",
             //     overwritten, val, name
@@ -135,7 +145,7 @@ impl ContextLocalVariableActions for ParserContext {
     }
 
     fn get_variable(&self, name: &str) -> Option<String> {
-        let var = match self.local_variables.get(name.into()) {
+        let var = match self.variables.get(name.into()) {
             Some(value) => Some(value.clone()),
             None => None,
         };
@@ -144,6 +154,6 @@ impl ContextLocalVariableActions for ParserContext {
     }
 
     fn clear_variables(&mut self) {
-        self.local_variables.clear();
+        self.variables.clear();
     }
 }
