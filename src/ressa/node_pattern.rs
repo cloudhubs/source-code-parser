@@ -113,7 +113,7 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     let mut transaction = ctx.clone();
     let passed = if parse(pattern, node, &mut transaction) {
         if pattern.callback.is_some() {
-            let tmp = transaction.clone();
+            // let tmp = transaction.clone();
             match Executor::get().execute(pattern, transaction) {
                 Ok(new_ctx) => {
                     *ctx = new_ctx;

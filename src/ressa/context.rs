@@ -1,4 +1,4 @@
-use runestick::{Any, Object, Shared, Value, Vec};
+use runestick::{Any, Object, Shared, Value};
 use std::collections::{BTreeMap, HashMap};
 
 pub type RessaResult = HashMap<String, BTreeMap<String, Value>>;
@@ -136,12 +136,13 @@ impl ContextObjectActions for ParserContext {
 impl ContextLocalVariableActions for ParserContext {
     fn make_variable(&mut self, name: &str, val: &str) {
         // tracing::info!("Made: ({:?}, {:?})", name, val);
-        if let Some(overwritten) = self.variables.insert(name.into(), val.into()) {
-            // tracing::warn!(
-            //     "Warning: overwrote {} with {} for name {}",
-            //     overwritten, val, name
-            // );
-        }
+        // if let Some(overwritten) = self.variables.insert(name.into(), val.into()) {
+        // tracing::warn!(
+        //     "Warning: overwrote {} with {} for name {}",
+        //     overwritten, val, name
+        // );
+        // }
+        self.variables.insert(name.into(), val.into());
     }
 
     fn get_variable(&self, name: &str) -> Option<String> {

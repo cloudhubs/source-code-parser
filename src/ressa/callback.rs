@@ -113,7 +113,7 @@ mod tests {
             false,
         );
         let mut ctx = ParserContext::default();
-        let old = ctx.clone();
+        // let old = ctx.clone();
         ctx = Executor::get().execute(&pattern, ctx).unwrap();
         // assert_ne!(old, ctx); // TODO fix
         assert_eq!("bar", ctx.get_variable("foo").unwrap())

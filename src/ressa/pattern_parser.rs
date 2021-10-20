@@ -34,7 +34,7 @@ fn match_subsequence<T: RessaNodeExplorer>(
     ctx: &mut ParserContext,
 ) -> Option<()> {
     let (mut start, mut end) = (0 as usize, params.len());
-    let mut matched = true;
+    // let mut matched = true;
 
     while start < explorable.len() {
         // Pre
@@ -62,11 +62,12 @@ fn match_subsequence<T: RessaNodeExplorer>(
     }
 
     // Determine if we matched the pattern at some point
-    if matched {
-        Some(())
-    } else {
-        None
-    }
+    // if matched {
+    //     Some(())
+    // } else {
+    //     None
+    // }
+    Some(())
 }
 
 /// Verify if an Option<Regex> matches a specific string; if it fails, exits
@@ -399,7 +400,7 @@ impl NodePatternParser for CallExpr {
                     match expr.as_ref() {
                         Expr::Ident(Ident { ref name, .. }) => Some(name),
                         Expr::Literal(Literal { ref value, .. }) => Some(value),
-                        ref unknown => {
+                        ref _unknown => {
                             // tracing::warn!(
                             //     "Currently unhandled CallExpression auxiliary match {:?}",
                             //     unknown
@@ -415,7 +416,7 @@ impl NodePatternParser for CallExpr {
                 match selected.as_ref() {
                     Expr::Ident(Ident { ref name, .. }) => (name, aux_name),
                     Expr::Literal(Literal { ref value, .. }) => (value, aux_name),
-                    ref unknown => {
+                    ref _unknown => {
                         // tracing::warn!("Currently unhandled CallExpression name {:?}", unknown);
                         return None;
                     }
@@ -423,7 +424,7 @@ impl NodePatternParser for CallExpr {
             }
             Expr::Ident(Ident { ref name, .. }) => (name, None),
             Expr::Literal(Literal { ref value, .. }) => (value, None),
-            ref unknown => {
+            ref _unknown => {
                 // tracing::warn!("Currently unhandled CallExpression name {:?}", unknown);
                 return None;
             }
