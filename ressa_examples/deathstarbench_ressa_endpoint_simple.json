@@ -251,7 +251,7 @@
           "identifier": "Method",
           "pattern": "#{endpoint}(^[a-zA-Z]*$)",
           "subpatterns": [],
-          "callback": "let endpoint = ctx.get_variable(\"endpoint\").unwrap();let service = ctx.get_variable(\"service_name\").unwrap();if (!endpoint.ends_with(\"Handler\")) { ctx.make_attribute(service, endpoint, None); }",
+          "callback": "let endpoint = ctx.get_variable(\"endpoint\").unwrap();let service = ctx.get_variable(\"service_name\").unwrap();if (!endpoint.ends_with(\"Handler\")) { ctx.make_object(service); let result = ctx.get_object(service).unwrap(); result[endpoint] = None; ctx.save_object(service, result); }",
           "essential": true
         }
       ],

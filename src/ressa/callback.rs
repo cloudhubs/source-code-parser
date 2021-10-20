@@ -28,8 +28,8 @@ impl Executor {
         module.inst_fn("make_transient", ParserContext::make_transient)?;
         module.inst_fn("get_variable", ParserContext::get_variable)?;
         module.inst_fn("clear_variables", ParserContext::clear_variables)?;
-        module.inst_fn("make_attribute", ParserContext::make_attribute)?;
         module.inst_fn("get_object", ParserContext::get_object)?;
+        module.inst_fn("get_or_create_object", ParserContext::get_or_create_object)?;
         module.inst_fn("resolve_tag", ParserContext::resolve_tag)?;
 
         // Add more option methods

@@ -22,7 +22,7 @@ impl Into<RessaResult> for ParserContext {
         self.objectlike_data
             .into_iter()
             .filter(|(_, val)| !val.contains_key(RESOLVES_TO) && !val.contains_key(TRANSIENT))
-            .map(|obj| (obj.0, obj.1.into_inner()))
+            .map(|(name, value)| (name, value.into_inner()))
             .collect()
     }
 }
@@ -31,13 +31,13 @@ impl Into<RessaResult> for ParserContext {
 pub trait ContextObjectActions {
     fn make_object(&mut self, name: &str);
     fn save_object(&mut self, name: &str, new_obj: &Object);
-    /// Legacy API for generating object attributes. TBD if we keep
-    fn make_attribute(&mut self, name: &str, attr_name: &str, attr_value: Option<String>);
     fn make_tag(&mut self, name: &str, resolves_to: &str);
     /// Makes an existing object transient, or initializes a new object as transient
     fn make_transient(&mut self, name: &str);
     /// Gets an object by name. Modify this object as you see fit, then persist with ContextObjectActions::save_object
     fn get_object(&self, name: &str) -> Option<Object>;
+    /// Shorthand for `ctx.make_object(name); let x = ctx.get_object(name);`
+    fn get_or_create_object(&mut self, name: &str) -> Object;
     fn resolve_tag(&self, name: &str) -> String;
 }
 
@@ -80,11 +80,8 @@ impl ContextObjectActions for ParserContext {
 
     fn save_object(&mut self, name: &str, new_obj: &Object) {
         // tracing::info!("Saving {}: {:?}", name, new_obj);
-        self.objectlike_data.insert(name.into(), new_obj.clone());
-    }
-
-    fn make_attribute(&mut self, name: &str, attr_name: &str, attr_type: Option<String>) {
-        self.do_make_attribute(&*self.resolve_tag(name), attr_name, attr_type);
+        self.objectlike_data
+            .insert(self.resolve_tag(name.into()), new_obj.clone());
     }
 
     fn make_tag(&mut self, name: &str, resolves_to: &str) {
@@ -95,7 +92,7 @@ impl ContextObjectActions for ParserContext {
     fn make_transient(&mut self, name: &str) {
         // tracing::info!("Making transient {}", name);
         self.make_object(name);
-        self.make_attribute(name, TRANSIENT, None);
+        self.do_make_attribute(self.resolve_tag(name).as_str(), TRANSIENT, None);
     }
 
     fn get_object(&self, name: &str) -> Option<Object> {
@@ -110,22 +107,24 @@ impl ContextObjectActions for ParserContext {
         }
     }
 
+    fn get_or_create_object(&mut self, name: &str) -> Object {
+        self.make_object(name);
+        return self.get_object(name).unwrap(); // Guaranteed safe, just made
+    }
+
     fn resolve_tag(&self, name: &str) -> String {
         // Check that the object exists
         if let Some(map) = self.objectlike_data.get(name) {
-            // Check that the object is a tag
-            if map.contains_key(RESOLVES_TO) {
-                // Check that the tag is not self-referential, and return resolving it
-                if let Value::String(tag) = map.get(RESOLVES_TO).expect("Contains key lied") {
-                    if let Ok(tag) = tag.borrow_ref() {
-                        let tag = tag.as_str();
-                        if tag == name {
-                            panic!("{}", name);
-                        }
-                        return self.resolve_tag(tag);
-                    } else {
-                        panic!("Could not acquire tag field on {} for comparison", name);
+            // Check that the tag is not self-referential, and return resolving it
+            if let Some(Value::String(tag)) = map.get(RESOLVES_TO) {
+                if let Ok(tag) = tag.borrow_ref() {
+                    let tag = tag.as_str();
+                    if tag == name {
+                        panic!("{}", name);
                     }
+                    return self.resolve_tag(tag);
+                } else {
+                    panic!("Could not acquire tag field on {} for comparison", name);
                 }
             }
         }
