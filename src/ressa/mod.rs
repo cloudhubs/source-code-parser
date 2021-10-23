@@ -14,6 +14,9 @@ pub use pattern_parser::*;
 mod callback;
 pub use callback::*;
 
+mod index;
+pub use index::*;
+
 use crate::ModuleComponent;
 
 /// Run the user-defined parsers, in the order they were defined, on our AST

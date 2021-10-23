@@ -1,5 +1,5 @@
 use rust_code_analysis::LANG;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub enum InstanceType {
@@ -64,7 +64,7 @@ pub enum AccessorType {
     Default,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, Serialize, Deserialize)]
 pub enum Language {
     Java,
     Cpp,

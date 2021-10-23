@@ -15,8 +15,10 @@ derive-new = "0.5.8"
 itertools = "0.10.0"
 enum_dispatch = "0.3.5"
 regex = "1.5.3"
-rune = "0.9.1"
-runestick = "0.9.1"
+# rune = "0.9.1"
+rune = { git = "https://github.com/rune-rs/rune", rev = "f002e48" }
+# runestick = "0.9.1"
+runestick = { git = "https://github.com/rune-rs/rune", rev = "f002e48" }
 once_cell = "1.7.2"
 tracing = "0.1.26"
 

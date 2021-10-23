@@ -24,6 +24,16 @@ pub enum Node {
     Expr(Expr),
 }
 
+impl Node {
+    fn get_lang(&self) -> Language {
+        match self {
+            Node::Block(block) => block.language,
+            Node::Stmt(stmt) => stmt.get_lang(),
+            Node::Expr(expr) => expr.get_lang(),
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
 pub struct Block {
     pub nodes: Vec<Node>,
