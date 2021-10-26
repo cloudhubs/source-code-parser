@@ -20,7 +20,7 @@ pub use index::*;
 use crate::ModuleComponent;
 
 /// Run the user-defined parsers, in the order they were defined, on our AST
-pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>) -> ContextData {
+pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>) -> RessaResult {
     let mut ctx = ParserContext::default();
 
     // Explore

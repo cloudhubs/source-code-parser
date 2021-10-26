@@ -1,16 +1,261 @@
-[
-  {
-    "identifier": "ClassOrInterface",
-    "pattern": "#{service_name}Handler",
-    "subpatterns": [
+{
+  "project_dir": {
+    "instanceType": "DirectoryComponent",
+    "path": "",
+    "files": [],
+    "subDirectories": [
       {
-        "identifier": "Method",
-        "pattern": "#{endpoint}(^[a-zA-Z]*$)",
-        "subpatterns": [],
-        "callback": "let endpoint = ctx.get_variable(\"endpoint\").unwrap();let service = ctx.get_variable(\"service_name\").unwrap();if (!endpoint.ends_with(\"Handler\")) { ctx.make_attribute(service, endpoint, None); }",
-        "essential": true
+        "instanceType": "DIRECTORYCOMPONENT",
+        "path": "{{DSB_ROOT}}/mediaMicroservices",
+        "instanceName": "{{DSB_ROOT}}/mediaMicroservices::DirectoryComponent",
+        "files": [
+          "{{DSB_ROOT}}/mediaMicroservices/docker",
+          "{{DSB_ROOT}}/mediaMicroservices/third_party",
+          "{{DSB_ROOT}}/mediaMicroservices/src",
+          "{{DSB_ROOT}}/mediaMicroservices/datasets",
+          "{{DSB_ROOT}}/mediaMicroservices/wrk2",
+          "{{DSB_ROOT}}/mediaMicroservices/docker-compose.yml",
+          "{{DSB_ROOT}}/mediaMicroservices/README.md",
+          "{{DSB_ROOT}}/mediaMicroservices/CMakeLists.txt",
+          "{{DSB_ROOT}}/mediaMicroservices/gen-py",
+          "{{DSB_ROOT}}/mediaMicroservices/.dockerignore",
+          "{{DSB_ROOT}}/mediaMicroservices/scripts",
+          "{{DSB_ROOT}}/mediaMicroservices/cmake",
+          "{{DSB_ROOT}}/mediaMicroservices/nginx-web-server",
+          "{{DSB_ROOT}}/mediaMicroservices/config",
+          "{{DSB_ROOT}}/mediaMicroservices/media_service.thrift",
+          "{{DSB_ROOT}}/mediaMicroservices/gen-lua",
+          "{{DSB_ROOT}}/mediaMicroservices/test",
+          "{{DSB_ROOT}}/mediaMicroservices/Dockerfile",
+          "{{DSB_ROOT}}/mediaMicroservices/docker-compose-sharding.yml",
+          "{{DSB_ROOT}}/mediaMicroservices/openshift",
+          "{{DSB_ROOT}}/mediaMicroservices/gen-cpp"
+        ],
+        "subDirectories": [
+          {
+            "instanceType": "DIRECTORYCOMPONENT",
+            "path": "{{DSB_ROOT}}/mediaMicroservices/src",
+            "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src::DirectoryComponent",
+            "files": [
+              "{{DSB_ROOT}}/mediaMicroservices/src/UserReviewService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/tracing.h",
+              "{{DSB_ROOT}}/mediaMicroservices/src/PlotService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/RatingService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/utils_mongodb.h",
+              "{{DSB_ROOT}}/mediaMicroservices/src/utils.h",
+              "{{DSB_ROOT}}/mediaMicroservices/src/UniqueIdService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/PageService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/logger.h",
+              "{{DSB_ROOT}}/mediaMicroservices/src/CMakeLists.txt",
+              "{{DSB_ROOT}}/mediaMicroservices/src/utils_memcached.h",
+              "{{DSB_ROOT}}/mediaMicroservices/src/UserService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/GenericClient.h",
+              "{{DSB_ROOT}}/mediaMicroservices/src/MovieReviewService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/MovieInfoService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/ThriftClient.h",
+              "{{DSB_ROOT}}/mediaMicroservices/src/MovieIdService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/TextService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/ReviewStorageService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/ComposeReviewService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/RedisClient.h",
+              "{{DSB_ROOT}}/mediaMicroservices/src/CastInfoService",
+              "{{DSB_ROOT}}/mediaMicroservices/src/ClientPool.h"
+            ],
+            "subDirectories": [
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/UserReviewService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/UserReviewService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/UserReviewService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/UserReviewService/UserReviewHandler.h",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/UserReviewService/UserReviewService.cpp"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/UserReviewService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/PlotService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/PlotService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/PlotService/PlotHandler.h",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/PlotService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/PlotService/PlotService.cpp"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/PlotService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/RatingService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/RatingService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/RatingService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/RatingService/RatingService.cpp",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/RatingService/RatingHandler.h"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/RatingService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/UniqueIdService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/UniqueIdService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/UniqueIdService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/UniqueIdService/UniqueIdHandler.h",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/UniqueIdService/UniqueIdService.cpp"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/UniqueIdService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/PageService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/PageService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/PageService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/PageService/PageService.cpp",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/PageService/PageHandler.h"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/PageService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/UserService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/UserService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/UserService/UserHandler.h",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/UserService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/UserService/UserService.cpp"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/UserService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/MovieReviewService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/MovieReviewService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/MovieReviewService/MovieReviewService.cpp",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/MovieReviewService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/MovieReviewService/MovieReviewHandler.h"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/MovieReviewService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/MovieInfoService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/MovieInfoService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/MovieInfoService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/MovieInfoService/MovieInfoService.cpp",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/MovieInfoService/MovieInfoHandler.h"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/MovieInfoService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/MovieIdService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/MovieIdService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/MovieIdService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/MovieIdService/MovieIdHandler.h",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/MovieIdService/MovieIdService.cpp"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/MovieIdService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/TextService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/TextService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/TextService/TextService.cpp",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/TextService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/TextService/TextHandler.h"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/TextService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/ReviewStorageService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/ReviewStorageService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/ReviewStorageService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/ReviewStorageService/ReviewStorageHandler.h",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/ReviewStorageService/ReviewStorageService.cpp"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/ReviewStorageService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/ComposeReviewService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/ComposeReviewService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/ComposeReviewService/CMakeLists.txt",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/ComposeReviewService/ComposeReviewService.cpp"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/ComposeReviewService::PackageName"
+              },
+              {
+                "instanceType": "DIRECTORYCOMPONENT",
+                "path": "{{DSB_ROOT}}/mediaMicroservices/src/CastInfoService",
+                "instanceName": "{{DSB_ROOT}}/mediaMicroservices/src/CastInfoService::DirectoryComponent",
+                "files": [
+                  "{{DSB_ROOT}}/mediaMicroservices/src/CastInfoService/CastInfoService.cpp",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/CastInfoService/CastInfoHandler.h",
+                  "{{DSB_ROOT}}/mediaMicroservices/src/CastInfoService/CMakeLists.txt"
+                ],
+                "subDirectories": [],
+                "numFiles": 3,
+                "package_name": "{{DSB_ROOT}}/mediaMicroservices/src/CastInfoService::PackageName"
+              }
+            ],
+            "numFiles": 23,
+            "package_name": "{{DSB_ROOT}}/mediaMicroservices/src::PackageName"
+          }
+        ],
+        "numFiles": 21,
+        "package_name": "{{DSB_ROOT}}/mediaMicroservices::PackageName"
       }
     ],
-    "essential": true
-  }
-]
+    "numFiles": 0
+  },
+  "patterns": [
+    {
+      "identifier": "ClassOrInterface",
+      "pattern": "#{service_name}Handler",
+      "subpatterns": [
+        {
+          "identifier": "Method",
+          "pattern": "#{endpoint}(^[a-zA-Z]*$)",
+          "subpatterns": [],
+          "callback": "let endpoint = ctx.get_variable(\"endpoint\").unwrap();let service = ctx.get_variable(\"service_name\").unwrap();if (!endpoint.ends_with(\"Handler\")) { ctx.make_object(service); let result = ctx.get_object(service).unwrap(); result[endpoint] = None; ctx.save_object(service, result); }",
+          "essential": true
+        }
+      ],
+      "essential": true
+    }
+  ]
+}

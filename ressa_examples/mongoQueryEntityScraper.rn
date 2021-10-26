@@ -1,139 +1,101 @@
 // Expanded form of the Mongo query parsing script found in https://github.com/cloudhubs/source-code-parser/blob/main/ressa_examples/deathstarbench_ressa_entity.json
 
-fn done(ndx, tokens) {
-  match tokens.get(`${ndx}`).iter().next() {
-    Some(Some(_)) => false,
-    _ => true
-  }
-}
-fn parse_pair(parent_tag, tokens, ndx, ctx) {
-  loop {
-    ndx = do_parse_pair(parent_tag, tokens, ndx, ctx);
-    if done(ndx, tokens) { break; }
-    match tokens.get(`${ndx}`).iter().next() {
-      Some(Some(token)) => {
-        if token == \"}\" { break; }
-      }
-      _ => {},
-    }
-  }
-  ndx
-}
-fn do_parse_pair(parent_tag, tokens, ndx, ctx) {
-  ndx = choose_action(parent_tag, tokens, ndx, ctx);
-  loop {
-    match tokens.get(`${ndx}`).iter().next() {
-      Some(Some(token)) => {
-        if token == \"{\" {
-          ndx = choose_action(parent_tag, tokens, ndx + 1, ctx);
-        } else { break; }
-      }
-      _ => return -100,
-    }
-  }
-  let lhs = tokens.get(`${ndx}`).iter().next().unwrap().iter().next().unwrap();
-  ndx = choose_action(`${parent_tag}.${lhs}`, tokens, ndx + 1, ctx);
-  if done(ndx, tokens) { return -100; }
-  let rhs = tokens.get(`${ndx}`).iter().next().unwrap().iter().next().unwrap();
-  if rhs == \"}\" || rhs == \"]\" { return ndx; }
-  if rhs == \"[\" { return parse_array_literal(parent_tag, tokens, ndx - 1, ctx); }
-  ctx.make_attribute(parent_tag, lhs, Some(rhs));
-  ndx + 1
-}
-fn do_and(parent_tag, tokens, ndx, ctx) {
-  loop {
-    match tokens.get(`${ndx}`).iter().next() {
-      Some(Some(token)) => {
-        if token != \"]\" {
-          ndx = choose_action(parent_tag, tokens, ndx + 1, ctx);
-        } else { break; }
-      }
-      _ => return -100,
-    }
-  }
-  ndx
-}
-fn parse_array(parent_tag, tokens, ndx, ctx) {
-  let array_name = tokens.get(`${ndx + 1}`).iter().next();
-  array_name = match array_name {
-    Some(Some(val)) => val,
-    _ => return -100,
-  };
-  ctx.make_attribute(parent_tag, array_name, Some(\"[]\"));
-  choose_action(`${parent_tag}.${array_name}`, tokens, ndx + 2, ctx) + 1
-}
-fn parse_array_literal(parent_tag, tokens, ndx, ctx) {
-  let array_name = tokens.get(`${ndx}`).iter().next();
-  array_name = match array_name {
-    Some(Some(val)) => val,
-    _ => return -100,
-  };
-  ctx.make_attribute(parent_tag, array_name, Some(\"[]\"));
-  do_each(`${parent_tag}.${array_name}`, tokens, ndx + 2, ctx) + 1
-}
-fn do_each(parent_tag, tokens, ndx, ctx) {
-  loop {
-    match tokens.get(`${ndx}`).iter().next() {
-      Some(Some(token)) => {
-        if token != \"]\" {
-          ndx = parse_pair(parent_tag, tokens, ndx + 1, ctx);
-        } else { break; }
-      }
-      _ => return -100,
-    }
-  }
-  ndx
-}
-fn do_elemMatch(parent_tag, tokens, ndx, ctx) { parse_pair(parent_tag, tokens, ndx, ctx) }
-fn choose_action(parent, tokens, ndx, ctx) {
-  if done(ndx, tokens) { return -1; }
-  match tokens.get(`${ndx}`).iter().next() {
-    Some(Some(token)) => match token {
-      \"$and\" => do_and(parent, tokens, ndx + 1, ctx),
-      \"$not\" => parse_pair(parent, tokens, ndx + 1, ctx),
-      \"$push\" => parse_array(parent, tokens, ndx + 1, ctx),
-      \"$pull\" => parse_array(parent, tokens, ndx + 1, ctx),
-      \"$each\" => do_each(parent, tokens, ndx + 1, ctx),
-      \"projection\" => panic(\"Unhandled\"),
-      \"$elemMatch\" => do_elemMatch(parent, tokens, ndx + 1, ctx),
-      \"{\" => parse_pair(parent, tokens, ndx + 1, ctx),
-      \"}\" => ndx + 1,
-      \"$position\" => ndx + 2,
-      \"$set\" => choose_action(parent, tokens, ndx + 1, ctx),
-      other => {
-        if !other.starts_with(\"$\") { return ndx; }
-        else { panic(\"Unknown command\"); }
-      }
-    }
-    _ => ndx
-  }
-}
-fn cleanup(ctx) {
-  ctx.make_transient(\"tokens\");
-  let tokens = ctx.get_object(\"tokens\").unwrap();
-  let ndx = 0;
-  while tokens.contains_key(`${ndx}`) {
-    ctx.make_attribute(\"tokens\", `${ndx}`, None);
-    ndx = ndx + 1;
-  }
+fn valid_ndx(tokens, ndx) {
+    0 <= ndx && ndx < tokens.len()
 }
 
-let tokens = ctx.get_object(\"tokens\").unwrap();
-let coll = ctx.get_variable(\"collection_name\").unwrap();
-match tokens.get(\"0\").iter().next() {
-  Some(Some(token)) => {
-    if token.starts_with(\"$\") || token == \"{\" || token == \"[\" {
-      choose_action(coll, tokens, 0, ctx);
-    } else if token != \"projection\" {
-      parse_pair(coll, tokens, 0, ctx);
+fn handle_attribute(parent, tokens, ndx, ctx, name, isCollection) {
+    let newParent = if parent.contains_key(name) { parent[name] } else { #{} };
+    if newParent.contains_key("") {
+        newParent[""].isCollection = isCollection || newParent[""].isCollection;
     } else {
-      cleanup(ctx);
-      panic(\"unhandled\");
+        newParent[""] = #{ "isCollection": isCollection };
     }
-  }
-  _ => {
-    cleanup(ctx);
-    panic(\"No tokens\");
-  }
+    let tuple = choose_action(newParent, tokens, ndx + 2, ctx);
+    parent[name] = tuple.0;
+    (parent, tuple.1)
 }
-cleanup(ctx);
+
+fn handle_dollar(parent, tokens, ndx, ctx) {
+    if !valid_ndx(tokens, ndx + 1) { return (parent, ndx); }
+    println(`dollar-${ndx} (${tokens[ndx]})`);
+    match tokens[ndx] {
+        "$pull" => handle_attribute(parent, tokens, ndx + 2, ctx, tokens[ndx + 2], true),
+        "$push" => handle_attribute(parent, tokens, ndx + 2, ctx, tokens[ndx + 2], true),
+        "$elemMatch" => {
+            parent[""].isCollection = true;
+            choose_action(parent, tokens, ndx + 1, ctx)
+        }
+        _ => choose_action(parent, tokens, ndx + 1, ctx)
+    }
+}
+
+fn handle_name(parent, tokens, ndx, ctx) {
+    if !valid_ndx(tokens, ndx + 1) { return (parent, ndx); }
+    println(`name-${ndx} (${tokens[ndx]})`);
+    let name = tokens[ndx];
+    if name == "}" { return (parent, ndx); }
+    else if name == "projection" { return (parent, tokens.len() + 1) }
+    match tokens[ndx + 1] {
+        "{" => handle_attribute(parent, tokens, ndx, ctx, name, false),
+        "[" => handle_attribute(parent, tokens, ndx, ctx, name, true),
+        "}" => (parent, ndx + 1),
+        "]" => (parent, ndx + 1),
+        literal => {
+            if literal.starts_with("$") {
+                handle_dollar(parent, tokens, ndx, ctx)
+            } else {
+                parent[name] = tokens[ndx + 1];
+                handle_name(parent, tokens, ndx + 2, ctx)
+            }
+        }
+    }
+}
+
+fn choose_action(parent, tokens, ndx, ctx) {
+    if !valid_ndx(tokens, ndx) { return parent; }
+    println(`act-${ndx} (${tokens[ndx]})`);
+    match tokens[ndx] {
+        "{" => choose_action(parent, tokens, ndx + 1, ctx),
+        "[" => choose_action(parent, tokens, ndx + 1, ctx),
+        "}" => (parent, ndx + 1),
+        "]" => (parent, ndx + 1),
+        token => {
+            if token.starts_with("$") {
+                handle_dollar(parent, tokens, ndx, ctx)
+            } else {
+                handle_name(parent, tokens, ndx, ctx)
+            }
+        }
+    }
+}
+
+fn start(parent, tokens, ctx) {
+    let ndx = 0;
+    while valid_ndx(tokens, ndx) {
+        let tuple = choose_action(parent, tokens, ndx, ctx);
+        parent = tuple.0;
+        ndx = tuple.1;
+    }
+    parent
+}
+
+fn cleanup(ctx) {
+    ctx.save_object("tokens", #{ "vec": [] });
+}
+
+let tokens = ctx.get_object("tokens").unwrap().vec;
+let coll = ctx.get_variable("collection_name").unwrap();
+ctx.make_object(coll);
+let collectionObj = ctx.get_object(coll).unwrap();
+match tokens.get(0) {
+    Some(token) => {
+        let result = start(collectionObj, tokens, ctx);
+        ctx.save_object(coll, result);
+        tokens.clear();
+    }
+    _ => {
+        tokens.clear();
+        panic("No tokens");
+    }
+}
