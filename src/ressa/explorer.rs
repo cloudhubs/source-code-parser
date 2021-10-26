@@ -430,7 +430,7 @@ mod tests {
 
     #[test]
     fn does_this_call() {
-        let mut c: Expr = CallExpr::new(
+        let c: Expr = CallExpr::new(
             Box::new(Ident::new("".into(), Language::Unknown).into()),
             vec![],
             Language::Unknown,
