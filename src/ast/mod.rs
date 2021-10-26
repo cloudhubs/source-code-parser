@@ -52,3 +52,20 @@ pub fn to_block(node: Node, language: Language) -> Block {
         ),
     }
 }
+
+pub trait NodeLanguage {
+    fn get_language(&self) -> Language;
+}
+
+macro_rules! impl_node_language {
+    ( $( $ty_name:ty ),+ ) => {
+        $(
+            impl NodeLanguage for $ty_name {
+                fn get_language(&self) -> Language {
+                    self.get_lang()
+                }
+            }
+        )*
+    };
+}
+impl_node_language!(Node, Expr, Stmt);
