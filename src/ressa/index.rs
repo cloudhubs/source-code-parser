@@ -1,12 +1,63 @@
 use crate::ast::{Expr, Node, NodeLanguage, Stmt};
 use crate::ressa::explorer::RessaNodeExplorer;
-use crate::Language;
+use crate::{Language, ModuleComponent};
+use bitmaps::Bitmap;
 use std::collections::HashMap;
+use std::ops::BitOrAssign;
 
+use super::NodePattern;
+
+pub type SingleLanguageIndex<'a> = HashMap<Language, Vec<&'a dyn Indexable>>;
+pub type LaastIndex<'a> = HashMap<LanguageSet, SingleLanguageIndex<'a>>;
+pub type LanguageSet = Bitmap<512>;
+
+/// Compute the languages to index over
+pub fn compute_index_languages<'a>(patterns: &Vec<NodePattern>) -> LaastIndex<'a> {
+    let mut indices = HashMap::new();
+    for pattern in patterns.iter() {
+        recursively_compute_lang(pattern, LanguageSet::new(), &mut indices);
+    }
+    indices
+}
+
+fn recursively_compute_lang<'a>(
+    node: &dyn Indexable,
+    curr_langs: LanguageSet,
+    indices: &mut LaastIndex<'a>,
+) -> LanguageSet {
+    // If this node's language hasn't been found yet, record it and prepare to create an index entry
+    let lang = node.get_language();
+    let ndx = Language::get_index(&lang);
+    let add_entry = if node.get_language() != Language::Unknown && !curr_langs.get(ndx) {
+        curr_langs.set(ndx, true);
+        true
+    } else {
+        false
+    };
+
+    // Compute languages of all child nodes
+    for child in node.get_children().iter() {
+        curr_langs.bitor_assign(recursively_compute_lang(node, curr_langs, indices));
+    }
+
+    // If a new index is needed, record before returning
+    if add_entry {
+        if let Some(map) = indices.get(&curr_langs) {
+            if !map.contains_key(&lang) {
+                map.insert(lang, vec![]);
+            }
+        } else {
+            indices.insert(curr_langs, HashMap::new());
+        }
+    }
+    curr_langs
+}
+
+/// Run the indexing procedure over the given
 pub fn index<'a>(
     mut current_lang: Language,
     current: &'a dyn Indexable, // Please don't touch this
-    indices: &mut HashMap<Language, Vec<&'a dyn Indexable>>,
+    indices: &mut LaastIndex<'a>,
 ) {
     let new_lang = current.get_language();
     if new_lang != current_lang {
@@ -49,6 +100,27 @@ where
             .collect()
     }
 }
+
+// ========== Module component implementations (so indexable)
+
+impl NodeLanguage for NodePattern {
+    fn get_language(&self) -> Language {}
+}
+
+impl NodeLanguage for ModuleComponent {
+    fn get_language(&self) -> Language {
+        self.get_language()
+    }
+}
+
+/// TODO delete when Jacob's macro is done
+impl ChildFields for ModuleComponent {
+    fn get_fields(&self) -> Vec<Vec<&dyn Indexable>> {
+        todo!("Merge with Jacob's macro")
+    }
+}
+
+// ========== Old, currently unused implementations ==========
 
 // impl Indexable for Node {
 //     fn get_children(&self) -> Vec<&dyn Indexable> {

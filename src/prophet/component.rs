@@ -131,6 +131,11 @@ impl ModuleComponent {
         self.classes.append(&mut other.classes);
         self.interfaces.append(&mut other.interfaces);
     }
+
+    /// Retrieve the language the module is in
+    pub fn get_language(&self) -> Language {
+        self.component.component.language
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]

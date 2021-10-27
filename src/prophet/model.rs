@@ -75,6 +75,19 @@ pub enum Language {
     Unknown,
 }
 
+impl Language {
+    /// TODO figure out how to handle correctly
+    pub fn get_index(lang: &Language) -> usize {
+        match lang {
+            Language::Java => 1,
+            Language::Cpp => 2,
+            Language::Python => 3,
+            Language::Go => 4,
+            Language::Unknown => 0,
+        }
+    }
+}
+
 impl Into<Language> for LANG {
     fn into(self) -> Language {
         match self {

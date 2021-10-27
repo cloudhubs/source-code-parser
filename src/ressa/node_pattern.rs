@@ -1,4 +1,4 @@
-use super::RessaNodeExplorer;
+use super::{LanguageSet, RessaNodeExplorer};
 // use super::ressaDispatch;
 use super::{pattern_parser::NodePatternParser, Executor};
 use crate::ast::*;
@@ -47,6 +47,13 @@ pub struct NodePattern {
     /// Transparently forward to child nodes
     #[serde(default = "bool::default")]
     pub transparent: bool,
+
+    /// Language this node applies to
+    pub language: Option<Language>,
+
+    /// Languages of all subnodes
+    #[serde(default = "LanguageSet::default", skip)]
+    pub languages: LanguageSet,
 }
 
 impl NodePattern {
