@@ -31,7 +31,8 @@ fn get_impl(data: &Data) -> TokenStream {
 fn get_enum_impl(r#enum: &DataEnum) -> TokenStream {
     let variants = util::get_enum_variants(r#enum).into_iter();
     // .map(|(variant_ident, variant_type| {
-    //     // How do we know whether this inner type is a struct or another enum??? Can we??
+    // How do we know whether this inner type is a struct or another enum??? Can we??
+    // I think we have to go based on name.
     // });
     quote! {
         //match self {
