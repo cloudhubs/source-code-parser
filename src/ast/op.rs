@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 #[serde(tag = "type", content = "op")]
 pub enum Op {
     Plus,
