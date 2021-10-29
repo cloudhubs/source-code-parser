@@ -1,78 +1,110 @@
-use crate::ast::{Expr, Node, NodeLanguage, Stmt};
+use crate::ast::NodeLanguage;
 use crate::ressa::explorer::RessaNodeExplorer;
 use crate::{Language, ModuleComponent};
 use bitmaps::Bitmap;
+use by_address::ByAddress;
+use derive_new::new;
 use std::collections::HashMap;
 use std::ops::BitOrAssign;
 
 use super::NodePattern;
 
-pub type SingleLanguageIndex<'a> = HashMap<Language, Vec<&'a dyn Indexable>>;
-pub type LaastIndex<'a> = HashMap<LanguageSet, SingleLanguageIndex<'a>>;
-pub type LanguageSet = Bitmap<512>;
+/// Single indexable reference
+pub type IndexableEntry<'a> = &'a dyn Indexable;
+
+/// Structure used to index the LAAST
+#[derive(new)]
+pub struct LaastIndex<'a> {
+    /// Index of language to root LAAST node (largest subtrees containing a given language)
+    language_index: HashMap<Language, Vec<IndexableEntry<'a>>>,
+
+    /// Reverse index from AST to language set, adding knowledge of subnode languages to a LAAST node
+    ast_languages: HashMap<ByAddress<IndexableEntry<'a>>, LanguageSet>,
+}
+impl<'a> LaastIndex<'a> {
+    /// Get indexed node for a language
+    pub fn get_roots(&self, language: &Language) -> Option<&Vec<IndexableEntry<'a>>> {
+        self.language_index.get(language)
+    }
+
+    /// Retrieve the language of a subtree
+    pub fn language_in_subtree(&self, language: &Language, subtree: &IndexableEntry<'a>) -> bool {
+        match self.ast_languages.get(&ByAddress(*subtree)) {
+            Some(descendent_languages) => langset_contains(descendent_languages, language),
+            None => panic!("Unknown subtree provided"),
+        }
+    }
+
+    /// Indexes the given node, if its language is indexed on
+    fn add_if_valid(&mut self, node: IndexableEntry<'a>) {
+        if let Some(index) = self.get_roots(&node.get_language()) {
+            index.push(node);
+        }
+    }
+}
+
+/// Descriptive alias. Also, centralizes size; may need to expand in the future.
+pub type LanguageSet = Bitmap<32>;
+
+/// Retrieve whether a language is recorded
+pub fn langset_contains(langset: &LanguageSet, lang: &Language) -> bool {
+    langset.get(Language::get_index(&lang))
+}
+
+/// Record a language to the set
+pub fn langset_set(langset: &mut LanguageSet, lang: &Language) -> bool {
+    langset.set(Language::get_index(lang), true)
+}
 
 /// Compute the languages to index over
-pub fn compute_index_languages<'a>(patterns: &Vec<NodePattern>) -> LaastIndex<'a> {
+pub fn compute_index_languages<'a>(
+    patterns: &Vec<NodePattern>,
+    nodes: &Vec<IndexableEntry<'a>>,
+) -> LaastIndex<'a> {
+    // Compute all languages to index on
     let mut indices = HashMap::new();
     for pattern in patterns.iter() {
-        recursively_compute_lang(pattern, LanguageSet::new(), &mut indices);
+        if let Some(lang) = pattern.language {
+            if !indices.contains_key(&lang) {
+                indices.insert(lang, vec![]);
+            }
+        }
     }
+
+    // Generate indices
+    let mut indices = LaastIndex::new(indices, HashMap::new());
+    for node in nodes.iter() {
+        index(Language::Unknown, *node, LanguageSet::new(), &mut indices);
+    }
+
     indices
 }
 
-fn recursively_compute_lang<'a>(
-    node: &dyn Indexable,
+/// Run the indexing procedure over the given node
+pub fn index<'a>(
+    mut current_lang: Language,
+    current: IndexableEntry<'a>,
     curr_langs: LanguageSet,
     indices: &mut LaastIndex<'a>,
 ) -> LanguageSet {
-    // If this node's language hasn't been found yet, record it and prepare to create an index entry
-    let lang = node.get_language();
-    let ndx = Language::get_index(&lang);
-    let add_entry = if node.get_language() != Language::Unknown && !curr_langs.get(ndx) {
-        curr_langs.set(ndx, true);
-        true
-    } else {
-        false
-    };
-
-    // Compute languages of all child nodes
-    for child in node.get_children().iter() {
-        curr_langs.bitor_assign(recursively_compute_lang(node, curr_langs, indices));
-    }
-
-    // If a new index is needed, record before returning
-    if add_entry {
-        if let Some(map) = indices.get(&curr_langs) {
-            if !map.contains_key(&lang) {
-                map.insert(lang, vec![]);
-            }
-        } else {
-            indices.insert(curr_langs, HashMap::new());
-        }
-    }
-    curr_langs
-}
-
-/// Run the indexing procedure over the given
-pub fn index<'a>(
-    mut current_lang: Language,
-    current: &'a dyn Indexable, // Please don't touch this
-    indices: &mut LaastIndex<'a>,
-) {
+    // If language changed, update data
     let new_lang = current.get_language();
     if new_lang != current_lang {
-        match indices.get_mut(&new_lang) {
-            Some(nodes) => nodes.push(current),
-            None => {
-                indices.insert(current_lang, vec![current]);
-            }
+        // If it's a new language in this subtree, try to create an index entry
+        if !langset_contains(&curr_langs, &new_lang) {
+            indices.add_if_valid(current);
         }
+
+        // Update current language data
         current_lang = new_lang;
+        langset_set(&mut curr_langs, &current_lang);
     }
-    current
-        .get_children()
-        .iter()
-        .for_each(|node| index(current_lang, *node as &dyn Indexable, indices));
+
+    // Visit decendents and retrieve descendent languages
+    for node in current.get_children() {
+        curr_langs.bitor_assign(index(current_lang, current, curr_langs.clone(), indices));
+    }
+    curr_langs
 }
 
 pub trait Indexable: RessaNodeExplorer + NodeLanguage + ChildFields {
@@ -101,12 +133,9 @@ where
     }
 }
 
-// ========== Module component implementations (so indexable)
+// ========== Module component implementations (so indexable) (TODO delete when Jacob's macro is done)
 
-impl NodeLanguage for NodePattern {
-    fn get_language(&self) -> Language {}
-}
-
+/// TODO delete when Jacob's macro is done
 impl NodeLanguage for ModuleComponent {
     fn get_language(&self) -> Language {
         self.get_language()

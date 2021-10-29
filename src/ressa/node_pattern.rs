@@ -50,10 +50,6 @@ pub struct NodePattern {
 
     /// Language this node applies to
     pub language: Option<Language>,
-
-    /// Languages of all subnodes
-    #[serde(default = "LanguageSet::default", skip)]
-    pub languages: LanguageSet,
 }
 
 impl NodePattern {
