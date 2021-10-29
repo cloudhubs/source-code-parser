@@ -11,6 +11,8 @@ pub use expr::*;
 mod op;
 pub use op::*;
 
+use source_code_parser_macro::NodeLanguage;
+
 use crate::Language;
 
 // enum_dispatch adds in our From implementations for us
@@ -57,15 +59,15 @@ pub trait NodeLanguage {
     fn get_language(&self) -> Language;
 }
 
-macro_rules! impl_node_language {
-    ( $( $ty_name:ty ),+ ) => {
-        $(
-            impl NodeLanguage for $ty_name {
-                fn get_language(&self) -> Language {
-                    self.get_lang()
-                }
-            }
-        )*
-    };
-}
-impl_node_language!(Node, Expr, Stmt);
+// macro_rules! impl_node_language {
+//     ( $( $ty_name:ty ),+ ) => {
+//         $(
+//             impl NodeLanguage for $ty_name {
+//                 fn get_language(&self) -> Language {
+//                     self.get_lang()
+//                 }
+//             }
+//         )*
+//     };
+// }
+// impl_node_language!(Node, Expr, Stmt);

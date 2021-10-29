@@ -1,21 +1,6 @@
-// use std::{ops::Index, str::FromStr};
-
 use darling::ToTokens;
-// use itertools::Itertools;
-use proc_macro2::TokenStream; //Span,
-use quote::quote; //format_ident,
-use syn::{
-    parse_macro_input,
-    Data,
-    DataStruct,
-    DeriveInput,
-    Fields,
-    GenericArgument,
-    Ident,
-    PathArguments,
-    PathSegment,
-    Type, //Attribute, Meta
-};
+use proc_macro2::TokenStream;
+use syn::{parse_macro_input, DeriveInput};
 
 #[macro_use]
 mod util;

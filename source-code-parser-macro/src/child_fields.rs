@@ -10,34 +10,18 @@ use syn::{
 
 pub fn expand_derive(input: DeriveInput) -> TokenStream {
     let item_name = input.ident;
-    let fn_impl = get_impl(&input.data);
+    let fn_impl = util::get_impl(
+        &item_name,
+        &input.data,
+        get_struct_impl,
+        |ident| quote! { #ident.get_fields() },
+    );
     quote! {
         impl source_code_parser::ressa::index::ChildFields for #item_name {
             fn get_fields(&self) -> std::vec::Vec<std::vec::Vec<&dyn source_code_parser::ressa::index::Indexable>> {
                 #fn_impl
             }
         }
-    }
-}
-
-fn get_impl(data: &Data) -> TokenStream {
-    match data {
-        Data::Struct(r#struct) => get_struct_impl(r#struct),
-        Data::Enum(r#enum) => get_enum_impl(r#enum),
-        _ => unimplemented!(),
-    }
-}
-
-fn get_enum_impl(r#enum: &DataEnum) -> TokenStream {
-    let variants = util::get_enum_variants(r#enum).into_iter();
-    // .map(|(variant_ident, variant_type| {
-    // How do we know whether this inner type is a struct or another enum??? Can we??
-    // I think we have to go based on name.
-    // });
-    quote! {
-        //match self {
-            //
-        //}
     }
 }
 
@@ -57,13 +41,14 @@ fn index_field(ident: &Ident, ty: &Type) -> Option<TokenStream> {
 
     let ndx_types = get_indexable_field(path_segment)?;
 
+    // Weed out non-node types as the innermost generic type (so things like LogLevel, Option<bool>, etc get excluded)
     match ndx_types.last() {
-        Some(IndexableType::Node) => {}
+        Some(IndexableType::Node(_)) => {}
         _ => return None,
     };
 
     let mut indexing_code = None;
-    for ndx_type in ndx_types.into_iter().rev() {
+    for ndx_type in ndx_types.into_iter() {
         indexing_code = Some(index_field_inner(indexing_code, ident, ndx_type));
     }
     match indexing_code {
@@ -79,24 +64,22 @@ fn index_field_inner(
 ) -> TokenStream {
     let indexing_code = match indexing_code {
         Some(indexing_code) => indexing_code,
-        None => quote! { self.#ident },
+        None => quote! { std::vec![&self.#ident].into_iter() },
     };
 
     match ty {
         IndexableType::Option => quote! {
-            #indexing_code.iter()
-                .map(|#ident| #ident.as_ref().map_or_else(|| std::vec![], |#ident| std::vec![#ident]))
-                .flat_map(|#ident| #ident)
+            #indexing_code.flat_map(|#ident| #ident.as_ref())
         },
+        // #ident is a &Box<T>, the two dereferences unwraps to T, and we return the reference
         IndexableType::Box => quote! {
-            #indexing_code.iter()
-                .map(|#ident| &***#ident)
+            #indexing_code.map(|#ident| &**#ident)
         },
         IndexableType::Vec => quote! {
-            #indexing_code.iter()
+            #indexing_code.flat_map(|#ident| #ident)
         },
-        IndexableType::Node => {
-            quote! { std::vec![&#indexing_code as &dyn source_code_parser::ressa::Indexable].into_iter() }
+        IndexableType::Node(_) => {
+            quote! { #indexing_code.map(|#ident| #ident as &dyn source_code_parser::ressa::Indexable) }
         }
     }
 }
@@ -105,7 +88,8 @@ enum IndexableType {
     Option,
     Box,
     Vec,
-    Node,
+    // true => enum, false => struct
+    Node(bool),
 }
 
 fn get_indexable_field(path_segment: &PathSegment) -> Option<Vec<IndexableType>> {
@@ -114,8 +98,8 @@ fn get_indexable_field(path_segment: &PathSegment) -> Option<Vec<IndexableType>>
         "Option" => select_wrapper(path_segment, Some(IndexableType::Option)),
         "Box" => select_wrapper(path_segment, Some(IndexableType::Box)),
         "Language" | "bool" | "String" | "LogLevel" => None,
-        // "Node" | "Expr" | "Stmt" | "Block" => {}
-        _ => Some(vec![IndexableType::Node]),
+        "Node" | "Expr" | "Stmt" => Some(vec![IndexableType::Node(true)]),
+        _ => Some(vec![IndexableType::Node(false)]),
     }
 }
 

@@ -57,3 +57,47 @@ pub fn get_enum_variants(r#enum: &DataEnum) -> Vec<(&Ident, &Type)> {
         })
         .collect()
 }
+
+pub fn get_impl<S, E>(
+    item_ident: &Ident,
+    data: &Data,
+    get_struct_impl: S,
+    enum_action_impl: E,
+) -> TokenStream
+where
+    S: Fn(&DataStruct) -> TokenStream,
+    E: Fn(&Ident) -> TokenStream,
+{
+    match data {
+        Data::Struct(r#struct) => get_struct_impl(r#struct),
+        Data::Enum(r#enum) => get_enum_impl(item_ident, r#enum, enum_action_impl),
+        _ => unimplemented!(),
+    }
+}
+
+fn get_enum_impl<F>(ident: &Ident, r#enum: &DataEnum, action: F) -> TokenStream
+where
+    F: Fn(&Ident) -> TokenStream,
+{
+    let action_ident = Ident::new("x", ident.span());
+    let variants = get_enum_variants(r#enum)
+        .into_iter()
+        .map(|(variant_ident, _)| {
+            let action = action(&action_ident);
+            quote! {
+                #ident ::#variant_ident(#action_ident) => #action,
+            }
+        })
+        .reduce(|variant_one, variant_two| {
+            quote! {
+                #variant_one
+                #variant_two
+            }
+        })
+        .unwrap(); // TODO better compile error
+    quote! {
+        match self {
+            #variants
+        }
+    }
+}
