@@ -30,9 +30,11 @@ fn get_struct_impl(r#struct: &DataStruct) -> TokenStream {
         .into_iter()
         .map(|(field_ident, field_type)| index_field(field_ident, field_type))
         .flat_map(|field_code| field_code)
-        .reduce(|left_field_code, right_field_code| quote! { #left_field_code, #right_field_code })
-        .unwrap(); // TODO throw better compile errors
-    quote! { std::vec![#fields] }
+        .reduce(|left_field_code, right_field_code| quote! { #left_field_code, #right_field_code });
+    match fields {
+        Some(fields) => quote! { std::vec![#fields] },
+        None => quote! { std::vec![] },
+    }
 }
 
 fn index_field(ident: &Ident, ty: &Type) -> Option<TokenStream> {

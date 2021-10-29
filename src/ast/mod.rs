@@ -11,6 +11,7 @@ pub use expr::*;
 mod op;
 pub use op::*;
 
+use source_code_parser_macro::ChildFields;
 use source_code_parser_macro::NodeLanguage;
 
 use crate::Language;

@@ -50,6 +50,12 @@ pub struct BinExpr {
 
     language: Language,
 }
+
+#[derive(NodeLanguage, ChildFields)]
+pub struct EmptyExpr {
+    language: Language,
+}
+
 #[derive(NodeLanguage, ChildFields)]
 pub enum Expr {
     CallExpr(CallExpr),

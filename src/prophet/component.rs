@@ -192,7 +192,7 @@ pub struct AnnotationComponent {
     pub annotation_meta_model: String,
     #[serde(rename = "metaModelFieldName")]
     pub meta_model_field_name: String,
-    // For now I mimiced the data structure here but this should really just be
+    // For now I mimicked the data structure here but this should really just be
     // a HashMap<&'a str, &'a str> with a manual serde::Serialize implementation.
     // I also am not sure where this is used.
     pub key_value_pairs: Vec<AnnotationValuePair>,

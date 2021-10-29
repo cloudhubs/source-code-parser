@@ -6,6 +6,9 @@ use derive_new::new;
 use enum_dispatch::enum_dispatch;
 use serde::Serialize;
 
+use source_code_parser_macro::ChildFields;
+use source_code_parser_macro::NodeLanguage;
+
 #[enum_dispatch]
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 #[serde(untagged)]
