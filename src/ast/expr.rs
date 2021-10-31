@@ -6,8 +6,11 @@ use derive_new::new;
 use enum_dispatch::enum_dispatch;
 use serde::Serialize;
 
+use source_code_parser_macro::ChildFields;
+use source_code_parser_macro::NodeLanguage;
+
 #[enum_dispatch]
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 #[serde(untagged)]
 pub enum Expr {
     AssignExpr(AssignExpr),
@@ -57,7 +60,7 @@ impl Into<Stmt> for Expr {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct AssignExpr {
     pub lhs: Vec<Expr>,
     pub rhs: Vec<Expr>,
@@ -66,7 +69,7 @@ pub struct AssignExpr {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct BinaryExpr {
     pub lhs: Box<Expr>,
     pub op: Op,
@@ -76,7 +79,7 @@ pub struct BinaryExpr {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct UnaryExpr {
     pub expr: Box<Expr>,
     pub op: Op,
@@ -85,7 +88,7 @@ pub struct UnaryExpr {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct CallExpr {
     // This could either be a Literal or a DotExpr
     pub name: Box<Expr>,
@@ -95,7 +98,7 @@ pub struct CallExpr {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct EndpointCallExpr {
     pub service_module_name: String,
     pub service_class_name: Option<String>,
@@ -106,7 +109,7 @@ pub struct EndpointCallExpr {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct IndexExpr {
     pub expr: Box<Expr>,
     pub index_expr: Box<Expr>,
@@ -115,7 +118,7 @@ pub struct IndexExpr {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct ParenExpr {
     pub expr: Box<Expr>,
     #[new(value = r#""paren_expr""#)]
@@ -123,7 +126,7 @@ pub struct ParenExpr {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct DotExpr {
     pub expr: Box<Expr>,
     pub selected: Box<Expr>,
@@ -132,7 +135,7 @@ pub struct DotExpr {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct Ident {
     pub name: String,
     #[new(value = r#""ident_expr""#)]
@@ -140,7 +143,7 @@ pub struct Ident {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct IncDecExpr {
     pub is_pre: bool,
     pub is_inc: bool,
@@ -150,7 +153,7 @@ pub struct IncDecExpr {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct InitListExpr {
     pub exprs: Vec<Expr>,
     #[new(value = r#""init_list_expr""#)]
@@ -158,7 +161,7 @@ pub struct InitListExpr {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct LogExpr {
     pub level: LogLevel,
     pub args: Vec<Expr>,
@@ -209,7 +212,7 @@ impl From<&str> for LogLevel {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct LambdaExpr {
     pub parameters: Vec<DeclStmt>,
     pub body: Block,
@@ -218,7 +221,7 @@ pub struct LambdaExpr {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct Literal {
     pub value: String,
     #[new(value = r#""literal_expr""#)]
@@ -226,7 +229,7 @@ pub struct Literal {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct SwitchExpr {
     pub condition: Box<Expr>,
     pub cases: Vec<CaseExpr>,
@@ -245,7 +248,7 @@ impl From<SwitchExpr> for Stmt {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct CaseExpr {
     pub cond: Option<Expr>,
     pub body: Block,

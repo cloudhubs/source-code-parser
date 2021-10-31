@@ -16,7 +16,7 @@ pub use pattern_parser::*;
 mod callback;
 pub use callback::*;
 
-mod index;
+pub mod index;
 pub use index::*;
 
 use crate::ModuleComponent;
