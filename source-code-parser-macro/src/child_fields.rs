@@ -107,7 +107,6 @@ fn get_indexable_field(path_segment: &PathSegment) -> Option<Vec<IndexableType>>
         | "Op"
         | "ComponentInfo"
         | "ContainerComponent"
-        | "AnnotationVauePair"
         | "InstanceType"
         | "AccessorType"
         | "ModuleStereotype"
