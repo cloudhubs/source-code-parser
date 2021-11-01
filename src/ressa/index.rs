@@ -1,6 +1,6 @@
 use crate::ast::NodeLanguage;
 use crate::ressa::explorer::RessaNodeExplorer;
-use crate::{Language, ModuleComponent};
+use crate::Language;
 use bitmaps::Bitmap;
 use by_address::ByAddress;
 use derive_new::new;

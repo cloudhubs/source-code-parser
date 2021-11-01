@@ -1,27 +1,21 @@
-use super::Indexable;
 /// WARNING: HERE THERE BE MACROS
 use super::{ressa_node_parse, NodePattern, ParserContext};
+use super::{Indexable, LaastIndex};
 use crate::ast::*;
 use crate::prophet::*;
 use enum_dispatch::enum_dispatch;
-
-#[enum_dispatch]
-pub enum ProphetNode {
-    ClassOrInterfaceComponent(ClassOrInterfaceComponent),
-    MethodComponent(MethodComponent),
-    MethodParamComponent(MethodParamComponent),
-    FieldComponent(FieldComponent),
-    AnnotationComponent(AnnotationComponent),
-    AnnotationValuePair(AnnotationValuePair),
-}
 
 /// Describes how to visit the nodes in the AST to find nodes of interest
 #[enum_dispatch(Node)]
 #[enum_dispatch(Expr)]
 #[enum_dispatch(Stmt)]
-#[enum_dispatch(ProphetNode)]
 pub trait RessaNodeExplorer {
-    fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()>;
+    fn explore(
+        &self,
+        pattern: &mut NodePattern,
+        ctx: &mut ParserContext,
+        index: &LaastIndex,
+    ) -> Option<()>;
 }
 
 /// Create a no-operation implementation of exploring a node
@@ -30,7 +24,12 @@ macro_rules! ressa_dispatch_default_impl {
     ( $( $struct_name:ty ),+ ) => {
         $(
             impl RessaNodeExplorer for $struct_name {
-                fn explore(&self, pattern: &mut NodePattern, _ctx: &mut ParserContext) -> Option<()> {
+                fn explore(
+                    &self,
+                    pattern: &mut NodePattern,
+                    _ctx: &mut ParserContext,
+                    _index: &LaastIndex
+                ) -> Option<()> {
                     if pattern.essential {
                         None
                     } else {
@@ -42,36 +41,47 @@ macro_rules! ressa_dispatch_default_impl {
     };
 }
 
-/// Generate a default explore implementation that delegates to the child fields (blanked implementation caused problems)
+/// Generate a default explore implementation that delegates to the child fields (blanket implementation caused problems)
 macro_rules! ressa_dispatch_delegate_impl {
     ( $( $struct_name:ty ),+ ) => {
         $(
             impl RessaNodeExplorer for $struct_name {
-                fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
-                    crate::ressa::explorer::explore(self, pattern, ctx)
+                fn explore(
+                    &self,
+                    pattern: &mut NodePattern,
+                    ctx: &mut ParserContext,
+                    index: &LaastIndex
+                ) -> Option<()> {
+                    crate::ressa::explorer::explore(self, pattern, ctx, index)
                 }
             }
         )*
     };
 }
 
-/// Generate a default explore implementation that delegates to the child fields (blanked implementation caused problems)
+/// Generate a default explore implementation that attempts to match, then delegates to the child fields
 macro_rules! ressa_dispatch_match_impl {
     ( $( $struct_name:ty ),+ ) => {
         $(
             impl RessaNodeExplorer for $struct_name {
-                fn explore(&self, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()> {
+                fn explore(
+                    &self,
+                    pattern: &mut NodePattern,
+                    ctx: &mut ParserContext,
+                    index: &LaastIndex
+                ) -> Option<()> {
                     use crate::ressa::explorer::*;
 
                     // Record if this node matched
                     let found = if pattern.matches(self) {
-                        ressa_node_parse(pattern, self, ctx).is_some()
+                        ressa_node_parse(pattern, self, ctx, index).is_some()
                     } else {
                         false
                     };
 
-                    // Explore subnodes, but also return if this node matched
-                    choose_exit(pattern.essential, explore(self, pattern, ctx).is_some() || found)
+                    // Explore subnodes, then return if this node matched
+                    let matched = explore(self, pattern, ctx, index).is_some();
+                    choose_exit(pattern.essential, matched || found)
                 }
             }
         )*
@@ -88,7 +98,7 @@ pub(crate) fn choose_exit(essential: bool, found: bool) -> Option<()> {
     }
 }
 
-ressa_dispatch_default_impl!(
+ressa_dispatch_delegate_impl!(
     IncDecExpr,
     LogExpr,
     IndexExpr,
@@ -97,9 +107,7 @@ ressa_dispatch_default_impl!(
     BreakStmt,
     ContinueStmt,
     ThrowStmt,
-    LabelStmt
-);
-ressa_dispatch_delegate_impl!(
+    LabelStmt,
     LambdaExpr,
     CaseExpr,
     ExprStmt,
@@ -136,17 +144,22 @@ ressa_dispatch_match_impl!(
     AnnotationValuePair
 );
 
-pub fn explore<T>(source: &T, pattern: &mut NodePattern, ctx: &mut ParserContext) -> Option<()>
+pub fn explore<T>(
+    source: &T,
+    pattern: &mut NodePattern,
+    ctx: &mut ParserContext,
+    index: &LaastIndex,
+) -> Option<()>
 where
     T: Indexable,
 {
-    let mut result = false;
+    let mut found_essential = false;
     for child in source.get_children().iter() {
-        if child.explore(pattern, ctx).is_some() {
-            result = true;
+        if child.explore(pattern, ctx, index).is_some() {
+            found_essential = true;
         }
     }
-    choose_exit(pattern.essential, result)
+    choose_exit(pattern.essential, found_essential)
 }
 
 #[cfg(test)]
@@ -176,6 +189,6 @@ mod tests {
             None,
         );
         tracing::warn!("hello?");
-        c.explore(&mut np, &mut ParserContext::default());
+        // c.explore(&mut np, &mut ParserContext::default());
     }
 }

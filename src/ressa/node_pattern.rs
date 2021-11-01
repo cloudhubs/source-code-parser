@@ -1,4 +1,4 @@
-use super::{LanguageSet, RessaNodeExplorer};
+use super::{LaastIndex, RessaNodeExplorer};
 // use super::ressaDispatch;
 use super::{pattern_parser::NodePatternParser, Executor};
 use crate::ast::*;
@@ -87,13 +87,14 @@ fn parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
     node: &N,
     ctx: &mut ParserContext,
+    index: &LaastIndex,
 ) -> bool {
     if !pattern.transparent {
-        node.parse(pattern, ctx).is_some()
+        node.parse(pattern, ctx, index).is_some()
     } else {
         let mut explore_all_found_essential = false;
         for subpattern in pattern.subpatterns.iter_mut() {
-            if node.explore(subpattern, ctx).is_some() {
+            if node.explore(subpattern, ctx, index).is_some() {
                 explore_all_found_essential = true;
             }
         }
@@ -106,6 +107,7 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
     node: &N,
     ctx: &mut ParserContext,
+    index: &LaastIndex,
 ) -> Option<()> {
     // Lazily compile patterns
     pattern.lazy_compile()?;
@@ -114,7 +116,7 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     ctx.frame_number += 1;
 
     let mut transaction = ctx.clone();
-    let passed = if parse(pattern, node, &mut transaction) {
+    let passed = if parse(pattern, node, &mut transaction, index) {
         if pattern.callback.is_some() {
             // let tmp = transaction.clone();
             match Executor::get().execute(pattern, transaction) {
