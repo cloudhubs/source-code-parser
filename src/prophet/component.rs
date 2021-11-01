@@ -2,8 +2,9 @@ use super::*;
 use crate::ast::Block;
 use crate::ast::Expr;
 use serde::Serialize;
+use source_code_parser_macro::{ChildFields, NodeLanguage};
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage)]
 pub struct ComponentInfo {
     pub path: String,
     pub package_name: String,
@@ -41,7 +42,7 @@ pub enum ComponentType {
     FieldComponent(FieldComponent),
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct MethodComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -67,7 +68,7 @@ pub struct MethodComponent {
     pub body: Option<Block>,
 }
 
-#[derive(Debug, Eq, Serialize, Clone)]
+#[derive(Debug, Eq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct MethodParamComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -85,7 +86,7 @@ impl PartialEq for MethodParamComponent {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct ModuleComponent {
     // can contain functions here
     #[serde(flatten)]
@@ -131,14 +132,9 @@ impl ModuleComponent {
         self.classes.append(&mut other.classes);
         self.interfaces.append(&mut other.interfaces);
     }
-
-    /// Retrieve the language the module is in
-    pub fn get_language(&self) -> Language {
-        self.component.component.language
-    }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage)]
 pub struct ContainerComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -155,7 +151,7 @@ pub struct ContainerComponent {
     // raw_source: &'a str,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct ClassOrInterfaceComponent {
     #[serde(flatten)]
     pub component: ContainerComponent,
@@ -167,7 +163,7 @@ pub struct ClassOrInterfaceComponent {
     pub field_components: Vec<FieldComponent>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct FieldComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -187,7 +183,7 @@ pub struct FieldComponent {
 }
 
 // For some reason prophet-utils relies on an actual javaparser AnnotationExpr instead of putting the info here. Needs fix.
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct AnnotationComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,

@@ -37,7 +37,7 @@ impl<'a> LaastIndex<'a> {
 
     /// Indexes the given node, if its language is indexed on
     fn add_if_valid(&mut self, node: IndexableEntry<'a>) {
-        if let Some(index) = self.get_roots(&node.get_language()) {
+        if let Some(index) = self.language_index.get_mut(&node.get_language()) {
             index.push(node);
         }
     }
@@ -84,7 +84,7 @@ pub fn compute_index_languages<'a>(
 pub fn index<'a>(
     mut current_lang: Language,
     current: IndexableEntry<'a>,
-    curr_langs: LanguageSet,
+    mut curr_langs: LanguageSet,
     indices: &mut LaastIndex<'a>,
 ) -> LanguageSet {
     // If language changed, update data
@@ -102,7 +102,7 @@ pub fn index<'a>(
 
     // Visit decendents and retrieve descendent languages
     for node in current.get_children() {
-        curr_langs.bitor_assign(index(current_lang, current, curr_langs.clone(), indices));
+        curr_langs.bitor_assign(index(current_lang, node, curr_langs.clone(), indices));
     }
     curr_langs
 }
@@ -130,22 +130,6 @@ where
             .into_iter()
             .flat_map(|field_children| field_children)
             .collect()
-    }
-}
-
-// ========== Module component implementations (so indexable) (TODO delete when Jacob's macro is done)
-
-/// TODO delete when Jacob's macro is done
-impl NodeLanguage for ModuleComponent {
-    fn get_language(&self) -> Language {
-        self.get_language()
-    }
-}
-
-/// TODO delete when Jacob's macro is done
-impl ChildFields for ModuleComponent {
-    fn get_fields(&self) -> Vec<Vec<&dyn Indexable>> {
-        todo!("Merge with Jacob's macro")
     }
 }
 

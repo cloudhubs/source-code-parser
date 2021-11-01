@@ -22,7 +22,10 @@ use crate::ModuleComponent;
 /// Run the user-defined parsers, in the order they were defined, on our AST
 pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>) -> RessaResult {
     let mut ctx = ParserContext::default();
-    let mut project_index = compute_index_languages(&ressas, ast);
+    let mut project_index = compute_index_languages(
+        &ressas,
+        &ast.iter().map(|module| module as &dyn Indexable).collect(),
+    );
 
     // Explore
     for mut ressa in ressas.into_iter() {
