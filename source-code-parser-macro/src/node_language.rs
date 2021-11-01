@@ -1,3 +1,5 @@
+use std::path::Component;
+
 use crate::util;
 use proc_macro2::TokenStream; //Span,
 use quote::quote; //format_ident,
@@ -23,20 +25,65 @@ pub fn expand_derive(input: DeriveInput) -> TokenStream {
     }
 }
 
-fn get_struct_impl(r#struct: &DataStruct) -> TokenStream {
-    let (field_ident, _) = util::get_struct_fields(r#struct)
-        .into_iter()
-        .find(|(_, field_type)| is_language_field(field_type).is_some())
-        .unwrap(); // TODO throw better compile errors
-    quote! { self.#field_ident }
+enum AccessorField {
+    Language,
+    ComponentInfo,
+    ContainerComponent,
+    Other,
 }
 
-fn is_language_field(ty: &Type) -> Option<()> {
+impl ToString for AccessorField {
+    fn to_string(&self) -> String {
+        use AccessorField::*;
+        match self {
+            Language => "Language".to_string(),
+            ComponentInfo => "ComponentInfo".to_string(),
+            ContainerComponent => "ContainerComponent".to_string(),
+            _ => "Other".to_string(),
+        }
+    }
+}
+
+impl From<&str> for AccessorField {
+    fn from(s: &str) -> Self {
+        use AccessorField::*;
+        match s {
+            "Language" => Language,
+            "ComponentInfo" => ComponentInfo,
+            "ContainerComponent" => ContainerComponent,
+            _ => Other,
+        }
+    }
+}
+
+fn get_struct_impl(r#struct: &DataStruct, _struct_ident: &Ident) -> TokenStream {
+    // let struct_ident = struct_ident.to_string();
+    let fields = util::get_struct_fields(r#struct)
+        .into_iter()
+        .filter_map(|(field_ident, field_type)| {
+            let field = can_access_language(field_type);
+            match field {
+                Some(field) => Some((field_ident, field)),
+                _ => None,
+            }
+        })
+        .collect::<Vec<_>>();
+    let (field_ident, field_variant) = fields.first().unwrap(); // TODO throw better compile errors
+    use AccessorField::*;
+    match field_variant {
+        Language => quote! { self.#field_ident },
+        ComponentInfo => quote! { self.#field_ident.language },
+        ContainerComponent => quote! { self.#field_ident.get_language() },
+        _ => unreachable!(),
+    }
+}
+
+fn can_access_language(ty: &Type) -> Option<AccessorField> {
     let type_path = match_or!(Type::Path(type_path), type_path, ty)?;
     let path_segment = match_or!(Some(seg), seg, type_path.path.segments.first())?;
-    if path_segment.ident.to_string() == "Language" {
-        Some(())
-    } else {
-        None
+    use AccessorField::*;
+    match AccessorField::from(&*path_segment.ident.to_string()) {
+        Other => None,
+        field => Some(field),
     }
 }
