@@ -99,7 +99,19 @@ fn get_indexable_field(path_segment: &PathSegment) -> Option<Vec<IndexableType>>
         "Vec" => select_wrapper(path_segment, Some(IndexableType::Vec)),
         "Option" => select_wrapper(path_segment, Some(IndexableType::Option)),
         "Box" => select_wrapper(path_segment, Some(IndexableType::Box)),
-        "Language" | "bool" | "String" | "LogLevel" | "Op" => None,
+        "Language"
+        | "bool"
+        | "String"
+        | "LogLevel"
+        | "Op"
+        | "ComponentInfo"
+        | "ContainerComponent"
+        | "AnnotationVauePair"
+        | "InstanceType"
+        | "AccessorType"
+        | "ModuleStereotype"
+        | "ContainerStereotype"
+        | "ContainerType" => None,
         "Node" | "Expr" | "Stmt" => Some(vec![IndexableType::Node(true)]),
         _ => Some(vec![IndexableType::Node(false)]),
     }
