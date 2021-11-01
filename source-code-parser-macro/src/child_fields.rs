@@ -101,6 +101,7 @@ fn get_indexable_field(path_segment: &PathSegment) -> Option<Vec<IndexableType>>
         "Box" => select_wrapper(path_segment, Some(IndexableType::Box)),
         "Language"
         | "bool"
+        | "i32"
         | "String"
         | "LogLevel"
         | "Op"
