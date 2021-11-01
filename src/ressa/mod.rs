@@ -1,7 +1,5 @@
 mod node_pattern;
 
-use std::collections::HashMap;
-
 pub use node_pattern::*;
 
 mod explorer;

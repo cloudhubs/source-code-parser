@@ -92,6 +92,25 @@ macro_rules! quit {
     };
 }
 
+/// Explore all elements in the provided collections
+#[macro_export]
+macro_rules! explore_all {
+    ( $pattern:expr, $ctx:expr, $( $explorable:expr ),+ ) => {{
+        use crate::ressa::explorer::choose_exit;
+
+        let mut explore_all_found_essential = false;
+         $(
+            for x in $explorable.iter() {
+                if x.explore($pattern, $ctx).is_some() {
+                    explore_all_found_essential = true;
+
+                 }
+             }
+         )*
+        choose_exit($pattern.essential, explore_all_found_essential)
+    }};
+}
+
 /// Explores all subpatterns, verifying each essential pattern matches
 #[macro_export]
 macro_rules! explore_all_subpatterns {
