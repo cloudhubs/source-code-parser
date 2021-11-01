@@ -65,11 +65,11 @@ pub fn get_impl<S, E>(
     enum_action_impl: E,
 ) -> TokenStream
 where
-    S: Fn(&DataStruct) -> TokenStream,
+    S: Fn(&DataStruct, &Ident) -> TokenStream,
     E: Fn(&Ident) -> TokenStream,
 {
     match data {
-        Data::Struct(r#struct) => get_struct_impl(r#struct),
+        Data::Struct(r#struct) => get_struct_impl(r#struct, item_ident),
         Data::Enum(r#enum) => get_enum_impl(item_ident, r#enum, enum_action_impl),
         _ => unimplemented!(),
     }

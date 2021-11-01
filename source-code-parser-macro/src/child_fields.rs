@@ -25,7 +25,7 @@ pub fn expand_derive(input: DeriveInput) -> TokenStream {
     }
 }
 
-fn get_struct_impl(r#struct: &DataStruct) -> TokenStream {
+fn get_struct_impl(r#struct: &DataStruct, _struct_ident: &Ident) -> TokenStream {
     let fields = util::get_struct_fields(r#struct)
         .into_iter()
         .map(|(field_ident, field_type)| index_field(field_ident, field_type))
