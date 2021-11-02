@@ -18,29 +18,6 @@ pub trait RessaNodeExplorer {
     ) -> Option<()>;
 }
 
-/// Create a no-operation implementation of exploring a node
-#[macro_export]
-macro_rules! ressa_dispatch_default_impl {
-    ( $( $struct_name:ty ),+ ) => {
-        $(
-            impl RessaNodeExplorer for $struct_name {
-                fn explore(
-                    &self,
-                    pattern: &mut NodePattern,
-                    _ctx: &mut ParserContext,
-                    _index: &LaastIndex
-                ) -> Option<()> {
-                    if pattern.essential {
-                        None
-                    } else {
-                        Some(())
-                    }
-                }
-            }
-        )*
-    };
-}
-
 /// Generate a default explore implementation that delegates to the child fields (blanket implementation caused problems)
 macro_rules! ressa_dispatch_delegate_impl {
     ( $( $struct_name:ty ),+ ) => {
