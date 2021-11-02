@@ -11,6 +11,7 @@ pub(crate) fn parse_function(ast: &AST, module_name: &str, path: &str) -> Option
     let return_type = find_type(ast);
 
     let component = ComponentInfo {
+        language: Language::Go,
         path: path.to_string(),
         package_name: module_name.to_string(),
         instance_name: fn_identifier.clone(),
@@ -48,6 +49,7 @@ pub(crate) fn parse_function(ast: &AST, module_name: &str, path: &str) -> Option
 
     let func = MethodComponent {
         component: ComponentInfo {
+            language: Language::Go,
             path: path.into(),
             package_name: module_name.to_string(),
             instance_name: fn_identifier.clone(),
@@ -75,6 +77,7 @@ pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str) -> (String,
     let return_type = find_type(ast);
 
     let component = ComponentInfo {
+        language: Language::Go,
         path: path.to_string(),
         package_name: module_name.to_string(),
         instance_name: method_identifier.clone(),
@@ -134,6 +137,7 @@ pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str) -> (String,
 
     let func = MethodComponent {
         component: ComponentInfo {
+            language: Language::Go,
             path: path.into(),
             package_name: module_name.to_string(),
             instance_name: method_identifier.clone(),
@@ -163,6 +167,7 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
 
     MethodParamComponent {
         component: ComponentInfo {
+            language: Language::Go,
             path: component.path.clone(),
             package_name: component.package_name.clone(),
             instance_name: component.instance_name.clone(),

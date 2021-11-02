@@ -1,3 +1,4 @@
+use crate::Language;
 use crate::go::util::identifier::parse_identifier;
 
 use crate::ast::*;
@@ -11,7 +12,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         // Variables and initialization
         "identifier" => parse_ident(ast, component),
         "int_literal" | 
-        "interpreted_string_literal" => Some(Expr::Literal(ast.value.clone().into())),
+        "interpreted_string_literal" => Some(Expr::Literal(Literal::new(ast.value.clone(), Language::Go))),
         "assignment_statement" => parse_assignment(ast, component),
 
         //language specific
@@ -38,7 +39,7 @@ pub(crate) fn parse_expr_stmt(ast: &AST, component: &ComponentInfo) -> Option<Ex
 }
 
 fn parse_ident(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
-    let ident: Expr = Ident::new(ast.value.clone()).into();
+    let ident: Expr = Ident::new(ast.value.clone(), Language::Go).into();
     Some(ident.into())
 }
 
@@ -77,7 +78,7 @@ pub(crate) fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<E
     // Assemble
     if let Some(lhs) = lhs {
         if let Some(rhs) = rhs {
-            let bin: Expr = BinaryExpr::new(Box::new(lhs.into()), "=".into(), Box::new(rhs)).into();
+            let bin: Expr = BinaryExpr::new(Box::new(lhs.into()), "=".into(), Box::new(rhs), Language::Go).into();
             Some(bin.into())
         } else {
             Some(lhs.into())
@@ -102,6 +103,7 @@ fn parse_inc_dec(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
             op < name,
             ast.children[op].r#type == "++",
             Box::new(parse_expr(&ast.children[name], component)?),
+            Language::Go,
         )
         .into(),
     )
@@ -133,6 +135,7 @@ fn parse_binary(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
                         Box::new(parse_expr(lhs, component)?),
                         op.value.as_str().into(),
                         Box::new(parse_expr(rhs, component)?),
+                        Language::Go
                     )
                     .into(),
                 );
@@ -167,11 +170,11 @@ fn parse_function(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         //member functions
         let function_name = parse_dot_expr(selector)?;
 
-        Some(CallExpr::new(Box::new(function_name.into()), args).into())
+        Some(CallExpr::new(Box::new(function_name.into()), args, Language::Go).into())
     } else {
         //regular functions
-        let name = Ident::new(parse_identifier(&selector.children[0]));
-        Some(CallExpr::new(Box::new(name.into()), args).into())
+        let name = Ident::new(parse_identifier(&selector.children[0]), Language::Go);
+        Some(CallExpr::new(Box::new(name.into()), args, Language::Go).into())
     }
     
 
@@ -184,10 +187,10 @@ fn parse_function(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
 
 fn parse_dot_expr(node: &AST) -> Option<DotExpr>{
     //get the name of what called the function
-    let lhs = Ident::new(parse_identifier(&node.children[0]));
-    let rhs = Ident::new(parse_identifier(&node.children[2]));
+    let lhs = Ident::new(parse_identifier(&node.children[0]), Language::Go);
+    let rhs = Ident::new(parse_identifier(&node.children[2]), Language::Go);
 
     
-    Some(DotExpr::new(Box::new(lhs.into()), Box::new(rhs.into())))
+    Some(DotExpr::new(Box::new(lhs.into()), Box::new(rhs.into()), Language::Go))
 }
 

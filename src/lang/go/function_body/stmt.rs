@@ -1,6 +1,7 @@
 use crate::ast::{to_block, DeclStmt, Expr, ExprStmt, ForStmt, IfStmt, Node, Stmt, VarDecl};
 use crate::ComponentInfo;
 use crate::AST;
+use crate::Language;
 
 use super::{expr::parse_expr, is_common_junk_tag, node::parse_node, parse_block};
 use crate::go::function_body::node::parse_child_nodes;
@@ -18,7 +19,7 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
     // Determine the value it was set to
     let rhs = parse_child_nodes(ast, component);
 
-    let mut decl = DeclStmt::new(vec![], vec![]);
+    let mut decl = DeclStmt::new(vec![], vec![], Language::Go);
     for var in rhs.iter() {
         // Extract expression from the hierarchy
         let base = match var {
@@ -34,14 +35,14 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
             Expr::BinaryExpr(expr) => match expr.lhs.as_ref() {
                 Expr::Ident(lhs) => {
                     decl.variables
-                        .push(VarDecl::new(Some(r#type.clone()), lhs.clone()));
+                        .push(VarDecl::new(Some(r#type.clone()), lhs.clone(), Language::Go));
                     decl.expressions.push(Some(expr.rhs.as_ref().clone()));
                 }
                 unknown => eprintln!("Expected Ident got {:#?}", unknown),
             },
             Expr::Ident(id) => {
                 decl.variables
-                    .push(VarDecl::new(Some(r#type.clone()), id.clone()));
+                    .push(VarDecl::new(Some(r#type.clone()), id.clone(), Language::Go));
                 decl.expressions.push(None);
             }
             Expr::Literal(lit) => decl.expressions.push(Some(lit.clone().into())),
@@ -77,7 +78,7 @@ pub(crate) fn parse_short_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt
     // Determine the value it was set to
     let rhs = parse_child_nodes(ast, component);
 
-    let mut decl = DeclStmt::new(vec![], vec![]);
+    let mut decl = DeclStmt::new(vec![], vec![], Language::Go);
     for var in rhs.iter() {
         // Extract expression from the hierarchy
         let base = match var {
@@ -93,14 +94,14 @@ pub(crate) fn parse_short_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt
             Expr::BinaryExpr(expr) => match expr.lhs.as_ref() {
                 Expr::Ident(lhs) => {
                     decl.variables
-                        .push(VarDecl::new(Some(r#type.clone()), lhs.clone()));
+                        .push(VarDecl::new(Some(r#type.clone()), lhs.clone(), Language::Go));
                     decl.expressions.push(Some(expr.rhs.as_ref().clone()));
                 }
                 unknown => eprintln!("Expected Ident got {:#?}", unknown),
             },
             Expr::Ident(id) => {
                 decl.variables
-                    .push(VarDecl::new(Some(r#type.clone()), id.clone()));
+                    .push(VarDecl::new(Some(r#type.clone()), id.clone(), Language::Go));
                 decl.expressions.push(None);
             }
             Expr::Literal(lit) => decl.expressions.push(Some(lit.clone().into())),
@@ -131,7 +132,7 @@ pub(crate) fn parse_if(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             
             _ => {
                 if let Some(stmt) = parse_node(child, component) {
-                    let stmt = to_block(stmt);
+                    let stmt = to_block(stmt, Language::Go);
                     if if_stmt.is_none() {
                         if_stmt = Some(stmt);
                     } else {
@@ -142,7 +143,7 @@ pub(crate) fn parse_if(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             }
         }
     }
-    let retNode = Some(Node::Stmt(IfStmt::new(guard?, if_stmt?, else_stmt).into()));
+    let retNode = Some(Node::Stmt(IfStmt::new(guard?, if_stmt?, else_stmt, Language::Go).into()));
     retNode
 }
 
@@ -204,7 +205,7 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             .into_iter()
             .flat_map(|p| match p {
                 Node::Stmt(node) => Some(node),
-                Node::Expr(node) => Some(Stmt::ExprStmt(ExprStmt::new(node))),
+                Node::Expr(node) => Some(Stmt::ExprStmt(ExprStmt::new(node, Language::Go))),
                 _ => panic!("Not supported: block in for loop init"),
             })
             .collect()
@@ -231,6 +232,7 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
         guard,
         post,
         block_node,
+        Language::Go,
     );
     //return the node
     Some(Stmt::ForStmt(for_stmt).into())

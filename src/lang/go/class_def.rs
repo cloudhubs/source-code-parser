@@ -45,6 +45,7 @@ pub(crate) fn parse_type_internal(
 
     //get the component information using the path, package, instance name, and instance type
     let component = ComponentInfo {
+        language: Language::Go,
         path: path.into(),
         package_name: package.into(),
         instance_name: format!(
@@ -120,6 +121,7 @@ fn parse_fields(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
 
                 fields.push(FieldComponent {
                     component: ComponentInfo {
+                        language: Language::Go,
                         path: component.path.clone(),
                         package_name: component.package_name.clone(),
                         instance_name: field_identifier.clone(),
@@ -133,6 +135,7 @@ fn parse_fields(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
                     is_final: false,
                     default_value: String::new(),
                     r#type: type_identifier,
+                    expression: None,
                 })
             }
             _ => {}

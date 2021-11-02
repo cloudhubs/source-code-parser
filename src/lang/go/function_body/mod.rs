@@ -1,4 +1,4 @@
-use crate::{ast::Block, ComponentInfo, AST};
+use crate::{AST, ComponentInfo, Language, ast::Block};
 
 use self::node::parse_child_nodes;
 
@@ -8,7 +8,7 @@ mod stmt;
 
 /// Parse the body of a method, static block, constructor, etc.
 pub(crate) fn parse_block(ast: &AST, component: &ComponentInfo) -> Block {
-    Block::new(parse_child_nodes(ast, component))
+    Block::new(parse_child_nodes(ast, component), Language::Go)
 }
 
 /*
