@@ -49,12 +49,44 @@ pub struct NodePattern {
     pub transparent: bool,
 
     /// Language this node applies to
+    #[serde(default = "Option::default")]
     pub language: Option<Language>,
 }
 
 impl NodePattern {
+    /// Determine whether this node matches the language of the provided node
+    /// If no language initialized, assume failure.
+    pub fn language_matches(&self, node: &impl NodeLanguage) -> bool {
+        if let Some(lang) = self.language {
+            lang == Language::Unknown || lang == node.get_language()
+        } else {
+            false
+        }
+    }
+
+    /// Determine whether this node's fields match the provided node. Does not verify language.
     pub fn matches(&self, node: &impl IntoRessaNode) -> bool {
         self.identifier == node.into_ressa_node() || self.transparent
+    }
+
+    // Consume self to update language references. Unsure if this is the best way.
+    pub fn cascade_language(mut self, parent_lang: &Language) -> NodePattern {
+        // Update own language if unknown
+        let parent_lang = match self.language.as_ref() {
+            Some(lang) => lang,
+            None => {
+                self.language = Some(*parent_lang);
+                parent_lang
+            }
+        };
+
+        // Cascade to children
+        self.subpatterns = self
+            .subpatterns
+            .into_iter()
+            .map(|child| child.cascade_language(parent_lang))
+            .collect();
+        self
     }
 
     /// Lazy-compile the regexes on this NodePattern
@@ -69,6 +101,16 @@ impl NodePattern {
             }
         }
         Some(())
+    }
+}
+
+impl NodeLanguage for NodePattern {
+    fn get_language(&self) -> Language {
+        if let Some(language) = self.language {
+            language.clone()
+        } else {
+            Language::default()
+        }
     }
 }
 

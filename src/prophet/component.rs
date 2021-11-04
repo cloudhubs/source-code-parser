@@ -134,7 +134,7 @@ impl ModuleComponent {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct ContainerComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,

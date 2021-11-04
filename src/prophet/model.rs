@@ -78,6 +78,13 @@ pub enum Language {
     Unknown,
 }
 
+/// Default for language is defined as an unknown language
+impl Default for Language {
+    fn default() -> Self {
+        Language::Unknown
+    }
+}
+
 impl Language {
     /// TODO figure out how to handle correctly
     pub fn get_index(lang: &Language) -> usize {

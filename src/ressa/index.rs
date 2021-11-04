@@ -28,18 +28,43 @@ impl<'a> LaastIndex<'a> {
     }
 
     /// Retrieve the language of a subtree
-    pub fn language_in_subtree(&self, language: &Language, subtree: &IndexableEntry<'a>) -> bool {
-        match self.ast_languages.get(&ByAddress(*subtree)) {
+    pub fn language_in_subtree(&self, language: &Language, subtree: IndexableEntry) -> bool {
+        // Edge case: any language requested
+        if *language == Language::Unknown {
+            return true;
+        }
+
+        // Handle main case
+        println!("Check index...");
+        match self.ast_languages.get(&ByAddress(subtree)) {
             Some(descendent_languages) => langset_contains(descendent_languages, language),
-            None => panic!("Unknown subtree provided"),
+            None => {
+                // println!("{:#?}", subtree);
+                panic!("Unknown subtree provided");
+            }
         }
     }
 
     /// Indexes the given node, if its language is indexed on
     fn add_if_valid(&mut self, node: IndexableEntry<'a>) {
+        // Index under specific language
         if let Some(index) = self.language_index.get_mut(&node.get_language()) {
+            println!("{:#?}", node.get_language());
+            index.push(node);
+        } else {
+            println!("Reject {:#?}", node.get_language());
+        }
+
+        // Index under catchall
+        if let Some(index) = self.language_index.get_mut(&Language::Unknown) {
+            println!("Catchall");
             index.push(node);
         }
+    }
+
+    /// Indexes the given node, if its language is indexed on
+    fn record_subtree_langs(&mut self, node: IndexableEntry<'a>, langs: LanguageSet) {
+        self.ast_languages.insert(ByAddress(node), langs);
     }
 }
 
@@ -48,7 +73,7 @@ pub type LanguageSet = Bitmap<32>;
 
 /// Retrieve whether a language is recorded
 pub fn langset_contains(langset: &LanguageSet, lang: &Language) -> bool {
-    langset.get(Language::get_index(&lang))
+    langset.get(Language::get_index(lang))
 }
 
 /// Record a language to the set
@@ -64,16 +89,16 @@ pub fn compute_index_languages<'a>(
     // Compute all languages to index on
     let mut indices = HashMap::new();
     for pattern in patterns.iter() {
-        if let Some(lang) = pattern.language {
-            if !indices.contains_key(&lang) {
-                indices.insert(lang, vec![]);
-            }
+        let language = pattern.get_language();
+        if !indices.contains_key(&language) {
+            indices.insert(language, vec![]);
         }
     }
 
     // Generate indices
     let mut indices = LaastIndex::new(indices, HashMap::new());
     for node in nodes.iter() {
+        println!("Node: {:#?}", node.get_language());
         index(Language::Unknown, *node, LanguageSet::new(), &mut indices);
     }
 
@@ -92,22 +117,28 @@ pub fn index<'a>(
     if new_lang != current_lang {
         // If it's a new language in this subtree, try to create an index entry
         if !langset_contains(&curr_langs, &new_lang) {
+            println!("Index {:#?}", new_lang);
             indices.add_if_valid(current);
         }
 
         // Update current language data
+        langset_set(&mut curr_langs, &new_lang);
         current_lang = new_lang;
-        langset_set(&mut curr_langs, &current_lang);
     }
 
     // Visit decendents and retrieve descendent languages
+    let mut my_set = LanguageSet::new();
+    langset_set(&mut my_set, &current_lang);
     for node in current.get_children() {
-        curr_langs.bitor_assign(index(current_lang, node, curr_langs.clone(), indices));
+        my_set.bitor_assign(index(current_lang, node, curr_langs.clone(), indices));
     }
-    curr_langs
+
+    // Record and return node's languages
+    indices.record_subtree_langs(current, my_set);
+    my_set
 }
 
-pub trait Indexable: RessaNodeExplorer + NodeLanguage + ChildFields {
+pub trait Indexable: RessaNodeExplorer + NodeLanguage + ChildFields + std::fmt::Debug {
     fn get_children(&self) -> Vec<&dyn Indexable>;
 }
 
@@ -123,7 +154,7 @@ pub trait ChildFields {
 
 impl<T> Indexable for T
 where
-    T: RessaNodeExplorer + ChildFields + NodeLanguage,
+    T: RessaNodeExplorer + ChildFields + NodeLanguage + std::fmt::Debug,
 {
     fn get_children(&self) -> Vec<&dyn Indexable> {
         self.get_fields()
@@ -132,66 +163,3 @@ where
             .collect()
     }
 }
-
-// ========== Old, currently unused implementations ==========
-
-// impl Indexable for Node {
-//     fn get_children(&self) -> Vec<&dyn Indexable> {
-//         match self {
-//             Node::Block(block) => block.nodes.iter().collect(),
-//             Node::Stmt(stmt) => stmt.get_children(),
-//             Node::Expr(expr) => expr.get_children(),
-//         }
-//     }
-// }
-
-// impl Indexable for Stmt {
-//     fn get_children(&self) -> Vec<&dyn Indexable> {
-//         use Stmt::*;
-//         match self {
-//             DeclStmt(decl) => (&decl.variables)
-//                 .iter()
-//                 .map(|decl| decl as &dyn Indexable)
-//                 .chain(decl.expressions.iter().flat_map(|expr| expr))
-//                 .into(),
-//             ExprStmt(expr) => expr.expr.get_children(),
-//             IfStmt(if_stmt) => todo!(),
-//             ForStmt(for_stmt) => todo!(),
-//             ForRangeStmt(for_range_stmt) => todo!(),
-//             WhileStmt(while_stmt) => todo!(),
-//             DoWhileStmt(do_while_stmt) => todo!(),
-//             ReturnStmt(return_stmt) => todo!(),
-//             ImportStmt(import_stmt) => todo!(),
-//             BreakStmt(break_stmt) => todo!(),
-//             ContinueStmt(continue_stmt) => todo!(),
-//             ThrowStmt(throw_stmt) => todo!(),
-//             TryCatchStmt(try_catch_stmt) => todo!(),
-//             CatchStmt(catch_stmt) => todo!(),
-//             WithResourceStmt(with_rss_stmt) => todo!(),
-//             LabelStmt(label_stmt) => todo!(),
-//         }
-//     }
-// }
-
-// impl Indexable for Expr {
-//     fn get_children(&self) -> Vec<&dyn Indexable> {
-//         use Expr::*;
-//         match self {
-//             AssignExpr(_) => todo!(),
-//             BinaryExpr(_) => todo!(),
-//             UnaryExpr(_) => todo!(),
-//             CallExpr(_) => todo!(),
-//             EndpointCallExpr(_) => todo!(),
-//             IndexExpr(_) => todo!(),
-//             ParenExpr(_) => todo!(),
-//             DotExpr(_) => todo!(),
-//             IncDecExpr(_) => todo!(),
-//             InitListExpr(_) => todo!(),
-//             LogExpr(_) => todo!(),
-//             LambdaExpr(_) => todo!(),
-//             Ident(_) => todo!(),
-//             Literal(_) => todo!(),
-//             SwitchExpr(_) => todo!(),
-//         }
-//     }
-// }

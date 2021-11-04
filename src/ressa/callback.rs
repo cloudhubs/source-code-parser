@@ -111,7 +111,7 @@ mod tests {
             "".into(),
             None,
             false,
-            Some(Language::Unknown),
+            Some(Language::default()),
         );
         let mut ctx = ParserContext::default();
         // let old = ctx.clone();
@@ -141,7 +141,7 @@ mod tests {
             "".into(),
             None,
             false,
-            Some(Language::Unknown),
+            Some(Language::default()),
         );
         let old = ctx.clone();
         ctx = Executor::get().execute(&pattern, ctx).unwrap();

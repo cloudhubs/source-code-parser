@@ -1,5 +1,5 @@
 /// WARNING: HERE THERE BE MACROS
-use super::{ressa_node_parse, NodePattern, ParserContext};
+use super::{ressa_node_parse, IntoRessaNode, NodePattern, NodePatternParser, ParserContext};
 use super::{Indexable, LaastIndex};
 use crate::ast::*;
 use crate::prophet::*;
@@ -47,18 +47,7 @@ macro_rules! ressa_dispatch_match_impl {
                     ctx: &mut ParserContext,
                     index: &LaastIndex
                 ) -> Option<()> {
-                    use crate::ressa::explorer::*;
-
-                    // Record if this node matched
-                    let found = if pattern.matches(self) {
-                        ressa_node_parse(pattern, self, ctx, index).is_some()
-                    } else {
-                        false
-                    };
-
-                    // Explore subnodes, then return if this node matched
-                    let matched = explore(self, pattern, ctx, index).is_some();
-                    choose_exit(pattern.essential, matched || found)
+                    crate::ressa::explorer::explore_match(self, pattern, ctx, index)
                 }
             }
         )*
@@ -105,7 +94,8 @@ ressa_dispatch_delegate_impl!(
     ForStmt,
     ForRangeStmt,
     TryCatchStmt,
-    ReturnStmt
+    ReturnStmt,
+    ContainerComponent
 );
 ressa_dispatch_match_impl!(
     Ident,
@@ -139,6 +129,33 @@ where
     choose_exit(pattern.essential, found_essential)
 }
 
+pub fn explore_match<T>(
+    source: &T,
+    pattern: &mut NodePattern,
+    ctx: &mut ParserContext,
+    index: &LaastIndex,
+) -> Option<()>
+where
+    T: Indexable + IntoRessaNode + NodePatternParser,
+{
+    // Check languages to validate remotely reasonable
+    let lang_match = pattern.language_matches(source);
+    if !lang_match && !index.language_in_subtree(&pattern.get_language(), source) {
+        return choose_exit(pattern.essential, false);
+    }
+
+    // Check if this node matches
+    let found = if lang_match && pattern.matches(source) {
+        ressa_node_parse(pattern, source, ctx, index).is_some()
+    } else {
+        false
+    };
+
+    // Explore subnodes, then return if this node matched
+    let matched = explore(source, pattern, ctx, index).is_some();
+    choose_exit(pattern.essential, matched || found)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::ressa::NodeType;
@@ -163,7 +180,7 @@ mod tests {
             "".into(),
             None,
             false,
-            None,
+            Some(Language::default()),
         );
         tracing::warn!("hello?");
         // c.explore(&mut np, &mut ParserContext::default());
