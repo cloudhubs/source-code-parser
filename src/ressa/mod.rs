@@ -33,7 +33,7 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
     // Index the AST
     let project_index = compute_index_languages(
         &ressas,
-        &ast.iter().map(|module| module as &dyn Indexable).collect(),
+        ast.iter().map(|module| module as &dyn Indexable).collect(),
     );
 
     // Explore
@@ -41,7 +41,6 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
     for mut ressa in ressas.into_iter() {
         if let Some(roots) = project_index.get_roots(&ressa.get_language()) {
             for module in roots.iter() {
-                println!("Root {:#?}", module.get_language());
                 module.explore(&mut ressa, &mut ctx, &project_index);
             }
         }

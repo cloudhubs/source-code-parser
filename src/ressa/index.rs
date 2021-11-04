@@ -2,15 +2,27 @@ use crate::ast::NodeLanguage;
 use crate::ressa::explorer::RessaNodeExplorer;
 use crate::Language;
 use bitmaps::Bitmap;
-use by_address::ByAddress;
 use derive_new::new;
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::ops::BitOrAssign;
 
 use super::NodePattern;
 
 /// Single indexable reference
 pub type IndexableEntry<'a> = &'a dyn Indexable;
+
+#[derive(Hash, PartialEq, Eq)]
+pub struct IndexableKey {
+    wrapped: String,
+}
+impl IndexableKey {
+    fn new<'a>(entry: IndexableEntry<'a>) -> IndexableKey {
+        IndexableKey {
+            wrapped: format!("{:p}", entry),
+        }
+    }
+}
 
 /// Structure used to index the LAAST
 #[derive(new)]
@@ -19,7 +31,7 @@ pub struct LaastIndex<'a> {
     language_index: HashMap<Language, Vec<IndexableEntry<'a>>>,
 
     /// Reverse index from AST to language set, adding knowledge of subnode languages to a LAAST node
-    ast_languages: HashMap<ByAddress<IndexableEntry<'a>>, LanguageSet>,
+    ast_languages: HashMap<IndexableKey, LanguageSet>,
 }
 impl<'a> LaastIndex<'a> {
     /// Get indexed node for a language
@@ -35,13 +47,10 @@ impl<'a> LaastIndex<'a> {
         }
 
         // Handle main case
-        println!("Check index...");
-        match self.ast_languages.get(&ByAddress(subtree)) {
+        // println!("Check index...");
+        match self.ast_languages.get(&IndexableKey::new(subtree)) {
             Some(descendent_languages) => langset_contains(descendent_languages, language),
-            None => {
-                // println!("{:#?}", subtree);
-                panic!("Unknown subtree provided");
-            }
+            None => panic!("Unknown subtree provided"),
         }
     }
 
@@ -49,22 +58,20 @@ impl<'a> LaastIndex<'a> {
     fn add_if_valid(&mut self, node: IndexableEntry<'a>) {
         // Index under specific language
         if let Some(index) = self.language_index.get_mut(&node.get_language()) {
-            println!("{:#?}", node.get_language());
+            // println!("{:#?}", node.get_language());
             index.push(node);
-        } else {
-            println!("Reject {:#?}", node.get_language());
         }
 
         // Index under catchall
         if let Some(index) = self.language_index.get_mut(&Language::Unknown) {
-            println!("Catchall");
+            // println!("Catchall");
             index.push(node);
         }
     }
 
     /// Indexes the given node, if its language is indexed on
     fn record_subtree_langs(&mut self, node: IndexableEntry<'a>, langs: LanguageSet) {
-        self.ast_languages.insert(ByAddress(node), langs);
+        self.ast_languages.insert(IndexableKey::new(node), langs);
     }
 }
 
@@ -84,7 +91,7 @@ pub fn langset_set(langset: &mut LanguageSet, lang: &Language) -> bool {
 /// Compute the languages to index over
 pub fn compute_index_languages<'a>(
     patterns: &Vec<NodePattern>,
-    nodes: &Vec<IndexableEntry<'a>>,
+    nodes: Vec<IndexableEntry<'a>>,
 ) -> LaastIndex<'a> {
     // Compute all languages to index on
     let mut indices = HashMap::new();
@@ -97,16 +104,16 @@ pub fn compute_index_languages<'a>(
 
     // Generate indices
     let mut indices = LaastIndex::new(indices, HashMap::new());
-    for node in nodes.iter() {
-        println!("Node: {:#?}", node.get_language());
-        index(Language::Unknown, *node, LanguageSet::new(), &mut indices);
+    for node in nodes {
+        // println!("Node: {:#?}", node.get_language());
+        index(Language::Unknown, node, LanguageSet::new(), &mut indices);
     }
 
     indices
 }
 
 /// Run the indexing procedure over the given node
-pub fn index<'a>(
+fn index<'a>(
     mut current_lang: Language,
     current: IndexableEntry<'a>,
     mut curr_langs: LanguageSet,
@@ -117,7 +124,7 @@ pub fn index<'a>(
     if new_lang != current_lang {
         // If it's a new language in this subtree, try to create an index entry
         if !langset_contains(&curr_langs, &new_lang) {
-            println!("Index {:#?}", new_lang);
+            // println!("Index {:#?}", new_lang);
             indices.add_if_valid(current);
         }
 
@@ -145,12 +152,6 @@ pub trait Indexable: RessaNodeExplorer + NodeLanguage + ChildFields + std::fmt::
 pub trait ChildFields {
     fn get_fields(&self) -> Vec<Vec<&dyn Indexable>>;
 }
-
-// impl ChildFields for Node {
-//     fn get_fields(&self) -> Vec<Vec<&dyn Indexable>> {
-//         vec![vec![&*self.child_one], self.child_two.iter().collect()]
-//     }
-// }
 
 impl<T> Indexable for T
 where
