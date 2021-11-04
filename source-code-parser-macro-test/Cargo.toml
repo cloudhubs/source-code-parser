@@ -1,0 +1,22 @@
+[package]
+name = "source-code-parser-macro-test"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[test]]
+name = "tests"
+path = "tests/test.rs"
+
+# This is just so we can run `cargo expand --bin child-fields` to see what's going on with it
+[[bin]]
+name = "fields-and-lang"
+path = "tests/fields_and_lang.rs"
+
+[dev-dependencies]
+trybuild = { version = "1.0", features = ["diff"] }
+
+[dependencies]
+source-code-parser = { path = "../" }
+source-code-parser-macro = { path = "../source-code-parser-macro" }

@@ -1,5 +1,7 @@
+use enum_ordinalize::Ordinalize;
 use rust_code_analysis::LANG;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use source_code_parser_macro::{ChildFields, NodeLanguage};
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 pub enum InstanceType {
@@ -46,8 +48,10 @@ pub enum ContainerType {
     Interface,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct AnnotationValuePair {
+    #[serde(skip_serializing)]
+    pub language: Language,
     pub key: String,
     pub value: String,
 }
@@ -64,7 +68,7 @@ pub enum AccessorType {
     Default,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, Serialize, Deserialize, Ordinalize)]
 pub enum Language {
     Java,
     Cpp,
@@ -73,6 +77,13 @@ pub enum Language {
     // ...
     #[serde(rename = "N/A")]
     Unknown,
+}
+
+/// Default for language is defined as an unknown language
+impl Default for Language {
+    fn default() -> Self {
+        Language::Unknown
+    }
 }
 
 impl Into<Language> for LANG {

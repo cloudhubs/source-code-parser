@@ -89,7 +89,7 @@ impl Executor {
 
 #[cfg(test)]
 mod tests {
-    use crate::ressa::NodeType;
+    use crate::{ressa::NodeType, Language};
 
     use super::*;
 
@@ -111,6 +111,7 @@ mod tests {
             "".into(),
             None,
             false,
+            Some(Language::default()),
         );
         let mut ctx = ParserContext::default();
         // let old = ctx.clone();
@@ -140,6 +141,7 @@ mod tests {
             "".into(),
             None,
             false,
+            Some(Language::default()),
         );
         let old = ctx.clone();
         ctx = Executor::get().execute(&pattern, ctx).unwrap();

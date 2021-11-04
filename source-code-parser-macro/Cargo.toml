@@ -1,0 +1,17 @@
+[package]
+name = "source-code-parser-macro"
+version = "0.1.0"
+edition = "2018"
+autotests = false
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.30"
+syn = "1.0.80"
+quote = "1.0.10"
+darling = "0.13.0"

@@ -118,6 +118,7 @@ pub(crate) fn parse_annotations(
                     key_value_pairs.push(AnnotationValuePair {
                         key: String::from(key),
                         value,
+                        language: Java,
                     });
                 }
 

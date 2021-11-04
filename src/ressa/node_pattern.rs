@@ -1,4 +1,4 @@
-use super::RessaNodeExplorer;
+use super::{LaastIndex, RessaNodeExplorer};
 // use super::ressaDispatch;
 use super::{pattern_parser::NodePatternParser, Executor};
 use crate::ast::*;
@@ -10,7 +10,7 @@ use serde::Deserialize;
 
 use super::{ContextLocalVariableActions, ContextObjectActions, ParserContext};
 
-/// A Node pattern describing a node of interest to the parser.
+/// A ReSSA Parser describing a node of interest.
 #[derive(Debug, Clone, Deserialize, new)]
 pub struct NodePattern {
     /// The target AST node type
@@ -47,11 +47,45 @@ pub struct NodePattern {
     /// Transparently forward to child nodes
     #[serde(default = "bool::default")]
     pub transparent: bool,
+
+    /// Language this node applies to
+    #[serde(default = "Option::default")]
+    pub language: Option<Language>,
 }
 
 impl NodePattern {
+    /// Determine whether this node matches the language of the provided node
+    /// If no language initialized, assume failure.
+    pub fn language_matches(&self, node: &impl NodeLanguage) -> bool {
+        match self.language {
+            Some(lang) => lang == Language::Unknown || lang == node.get_language(),
+            None => false,
+        }
+    }
+
+    /// Determine whether this node's fields match the provided node. Does not verify language.
     pub fn matches(&self, node: &impl IntoRessaNode) -> bool {
         self.identifier == node.into_ressa_node() || self.transparent
+    }
+
+    // Consume self to update language references. Unsure if this is the best way.
+    pub fn cascade_language(mut self, parent_lang: Language) -> NodePattern {
+        // Update own language if unknown
+        let parent_lang = match self.language {
+            Some(lang) => lang,
+            None => {
+                self.language = Some(parent_lang);
+                parent_lang
+            }
+        };
+
+        // Cascade to children
+        self.subpatterns = self
+            .subpatterns
+            .into_iter()
+            .map(|child| child.cascade_language(parent_lang))
+            .collect();
+        self
     }
 
     /// Lazy-compile the regexes on this NodePattern
@@ -69,6 +103,13 @@ impl NodePattern {
     }
 }
 
+impl NodeLanguage for NodePattern {
+    fn get_language(&self) -> Language {
+        self.language.unwrap_or_default()
+    }
+}
+
+/// Optionally compile a provided pattern, if possible
 pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     let compiled_result = super::CompiledPattern::from_pattern(pattern);
     match compiled_result {
@@ -80,17 +121,19 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     }
 }
 
+/// Parse the results
 fn parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
     node: &N,
     ctx: &mut ParserContext,
+    index: &LaastIndex,
 ) -> bool {
     if !pattern.transparent {
-        node.parse(pattern, ctx).is_some()
+        node.parse(pattern, ctx, index).is_some()
     } else {
         let mut explore_all_found_essential = false;
         for subpattern in pattern.subpatterns.iter_mut() {
-            if node.explore(subpattern, ctx).is_some() {
+            if node.explore(subpattern, ctx, index).is_some() {
                 explore_all_found_essential = true;
             }
         }
@@ -98,11 +141,12 @@ fn parse<N: NodePatternParser + RessaNodeExplorer>(
     }
 }
 
-/// Parse an individual node with this NodePattern, lazily-initializing its CompiledPattern as needed
+/// Run general ReSSA match acquired routine: compile patterns if needed, maintain context transactions, parse the node pattern, and
 pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
     node: &N,
     ctx: &mut ParserContext,
+    index: &LaastIndex,
 ) -> Option<()> {
     // Lazily compile patterns
     pattern.lazy_compile()?;
@@ -111,7 +155,7 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     ctx.frame_number += 1;
 
     let mut transaction = ctx.clone();
-    let passed = if parse(pattern, node, &mut transaction) {
+    let passed = if parse(pattern, node, &mut transaction, index) {
         if pattern.callback.is_some() {
             // let tmp = transaction.clone();
             match Executor::get().execute(pattern, transaction) {
