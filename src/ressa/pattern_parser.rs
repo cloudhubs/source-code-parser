@@ -1,10 +1,7 @@
 use super::{CompiledPattern, NodePattern, ParserContext, RessaNodeExplorer};
 use super::{LaastIndex, NodeType};
-use crate::{ast::*, explore_all};
-use crate::{
-    prophet::*,
-    ressa::{choose_exit, explore},
-};
+use crate::ast::*;
+use crate::{prophet::*, ressa::choose_exit};
 use itertools::Itertools;
 
 /// Defines how to parse an individual node that has been confirmed to be of interest

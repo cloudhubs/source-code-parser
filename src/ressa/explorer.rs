@@ -158,6 +158,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use crate::ressa::NodeType;
 
     use super::*;
@@ -182,7 +184,8 @@ mod tests {
             false,
             Some(Language::default()),
         );
+        let index = LaastIndex::new(HashMap::new(), HashMap::new());
         tracing::warn!("hello?");
-        // c.explore(&mut np, &mut ParserContext::default());
+        c.explore(&mut np, &mut ParserContext::default(), &index);
     }
 }
