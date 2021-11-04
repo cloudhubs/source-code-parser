@@ -17,7 +17,7 @@ pub use callback::*;
 pub mod index;
 pub use index::*;
 
-use crate::{ast::NodeLanguage, ModuleComponent};
+use crate::{ast::NodeLanguage, Language, ModuleComponent};
 
 /// Run the user-defined parsers, in the order they were defined, on our AST
 pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>) -> RessaResult {
@@ -39,10 +39,25 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
     // Explore
     let mut ctx = ParserContext::default();
     for mut ressa in ressas.into_iter() {
-        if let Some(roots) = project_index.get_roots(&ressa.get_language()) {
-            for module in roots.iter() {
-                module.explore(&mut ressa, &mut ctx, &project_index);
+        match ressa.language {
+            // Wildcard language (apply to any language)
+            Some(Language::Unknown) => {
+                for module in ast.iter() {
+                    module.explore(&mut ressa, &mut ctx, &project_index);
+                }
             }
+
+            Some(_) => {
+                // Apply to targeted language
+                if let Some(roots) = project_index.get_roots(&ressa.get_language()) {
+                    for module in roots.iter() {
+                        module.explore(&mut ressa, &mut ctx, &project_index);
+                    }
+                }
+            }
+
+            // No language, we've got a problem
+            None => panic!("Root parser with no language after language resolution step"),
         }
     }
 

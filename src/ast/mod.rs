@@ -27,16 +27,6 @@ pub enum Node {
     Expr(Expr),
 }
 
-impl Node {
-    fn get_lang(&self) -> Language {
-        match self {
-            Node::Block(block) => block.language,
-            Node::Stmt(stmt) => stmt.get_lang(),
-            Node::Expr(expr) => expr.get_lang(),
-        }
-    }
-}
-
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct Block {
     pub nodes: Vec<Node>,
@@ -59,16 +49,3 @@ pub fn to_block(node: Node, language: Language) -> Block {
 pub trait NodeLanguage {
     fn get_language(&self) -> Language;
 }
-
-// macro_rules! impl_node_language {
-//     ( $( $ty_name:ty ),+ ) => {
-//         $(
-//             impl NodeLanguage for $ty_name {
-//                 fn get_language(&self) -> Language {
-//                     self.get_lang()
-//                 }
-//             }
-//         )*
-//     };
-// }
-// impl_node_language!(Node, Expr, Stmt);
