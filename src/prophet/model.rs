@@ -1,3 +1,4 @@
+use enum_ordinalize::Ordinalize;
 use rust_code_analysis::LANG;
 use serde::{Deserialize, Serialize};
 use source_code_parser_macro::{ChildFields, NodeLanguage};
@@ -67,7 +68,7 @@ pub enum AccessorType {
     Default,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, Serialize, Deserialize, Ordinalize)]
 pub enum Language {
     Java,
     Cpp,
@@ -82,19 +83,6 @@ pub enum Language {
 impl Default for Language {
     fn default() -> Self {
         Language::Unknown
-    }
-}
-
-impl Language {
-    /// TODO figure out how to handle correctly
-    pub fn get_index(lang: &Language) -> usize {
-        match lang {
-            Language::Java => 1,
-            Language::Cpp => 2,
-            Language::Python => 3,
-            Language::Go => 4,
-            Language::Unknown => 0,
-        }
     }
 }
 

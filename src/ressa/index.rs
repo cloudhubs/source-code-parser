@@ -12,6 +12,7 @@ use super::NodePattern;
 /// Single indexable reference
 pub type IndexableEntry<'a> = &'a dyn Indexable;
 
+/// Maps references to IndexableEntry to a hash table key
 #[derive(Hash, PartialEq, Eq)]
 pub struct IndexableKey {
     wrapped: String,
@@ -34,27 +35,27 @@ pub struct LaastIndex<'a> {
     ast_languages: HashMap<IndexableKey, LanguageSet>,
 }
 impl<'a> LaastIndex<'a> {
-    /// Get indexed node for a language
-    pub fn get_roots(&self, language: &Language) -> Option<&Vec<IndexableEntry<'a>>> {
-        self.language_index.get(language)
+    /// Get all nodes indexed for a language
+    pub fn get_roots(&self, language: Language) -> Option<&Vec<IndexableEntry<'a>>> {
+        self.language_index.get(&language)
     }
 
-    /// Retrieve the language of a subtree
-    pub fn language_in_subtree(&self, language: &Language, subtree: IndexableEntry) -> bool {
+    /// Retrieve whether a given language exists in the subtree of the provided node
+    pub fn language_in_subtree(&self, language: Language, subtree: IndexableEntry) -> bool {
         // Edge case: any language requested
-        if *language == Language::Unknown {
+        if language == Language::Unknown {
             return true;
         }
 
         // Handle main case
         // println!("Check index...");
         match self.ast_languages.get(&IndexableKey::new(subtree)) {
-            Some(descendent_languages) => langset_contains(descendent_languages, language),
+            Some(descendent_languages) => descendent_languages.contains(language),
             None => panic!("Unknown subtree provided"),
         }
     }
 
-    /// Indexes the given node, if its language is indexed on
+    /// Indexes the given node, if its language is allowed to be indexed on
     fn add_if_valid(&mut self, node: IndexableEntry<'a>) {
         // Index under specific language
         if let Some(index) = self.language_index.get_mut(&node.get_language()) {
@@ -75,17 +76,29 @@ impl<'a> LaastIndex<'a> {
     }
 }
 
-/// Descriptive alias. Also, centralizes size; may need to expand in the future.
-pub type LanguageSet = Bitmap<32>;
+/// Describe a specialization of the Bitmap type for indexing Languages
+#[derive(Clone, Copy)]
+pub struct LanguageSet(Bitmap<32>);
+impl LanguageSet {
+    fn new() -> LanguageSet {
+        LanguageSet(Bitmap::new())
+    }
 
-/// Retrieve whether a language is recorded
-pub fn langset_contains(langset: &LanguageSet, lang: &Language) -> bool {
-    langset.get(Language::get_index(lang))
+    /// Retrieve whether a language is recorded
+    fn contains(&self, lang: Language) -> bool {
+        self.0.get(lang.ordinal() as usize)
+    }
+
+    /// Record a language to the set
+    fn set(&mut self, lang: Language) -> bool {
+        self.0.set(lang.ordinal() as usize, true)
+    }
 }
-
-/// Record a language to the set
-pub fn langset_set(langset: &mut LanguageSet, lang: &Language) -> bool {
-    langset.set(Language::get_index(lang), true)
+impl BitOrAssign for LanguageSet {
+    /// Perform the |= operation, setting all bits set in the provided LanguageSet.
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0.bitor_assign(rhs.0)
+    }
 }
 
 /// Compute the languages to index over
@@ -123,21 +136,21 @@ fn index<'a>(
     let new_lang = current.get_language();
     if new_lang != current_lang {
         // If it's a new language in this subtree, try to create an index entry
-        if !langset_contains(&curr_langs, &new_lang) {
+        if !curr_langs.contains(new_lang) {
             // println!("Index {:#?}", new_lang);
             indices.add_if_valid(current);
         }
 
         // Update current language data
-        langset_set(&mut curr_langs, &new_lang);
+        curr_langs.set(new_lang);
         current_lang = new_lang;
     }
 
     // Visit decendents and retrieve descendent languages
     let mut my_set = LanguageSet::new();
-    langset_set(&mut my_set, &current_lang);
+    my_set.set(current_lang);
     for node in current.get_children() {
-        my_set.bitor_assign(index(current_lang, node, curr_langs.clone(), indices));
+        my_set |= index(current_lang, node, curr_langs, indices);
     }
 
     // Record and return node's languages

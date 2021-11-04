@@ -26,7 +26,7 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
         .into_iter()
         .map(|ressa| {
             let lang = ressa.get_language();
-            ressa.cascade_language(&lang)
+            ressa.cascade_language(lang)
         })
         .collect();
 
@@ -49,7 +49,7 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
 
             Some(_) => {
                 // Apply to targeted language
-                if let Some(roots) = project_index.get_roots(&ressa.get_language()) {
+                if let Some(roots) = project_index.get_roots(ressa.get_language()) {
                     for module in roots.iter() {
                         module.explore(&mut ressa, &mut ctx, &project_index);
                     }

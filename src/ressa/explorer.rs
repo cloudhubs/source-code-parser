@@ -1,5 +1,7 @@
 /// WARNING: HERE THERE BE MACROS
-use super::{ressa_node_parse, IntoRessaNode, NodePattern, NodePatternParser, ParserContext};
+use super::{
+    ressa_node_parse, ChildFields, IntoRessaNode, NodePattern, NodePatternParser, ParserContext,
+};
 use super::{Indexable, LaastIndex};
 use crate::ast::*;
 use crate::prophet::*;
@@ -140,7 +142,7 @@ where
 {
     // Check languages to validate remotely reasonable
     let lang_match = pattern.language_matches(source);
-    if !lang_match && !index.language_in_subtree(&pattern.get_language(), source) {
+    if !lang_match && !index.language_in_subtree(pattern.get_language(), source) {
         return choose_exit(pattern.essential, false);
     }
 

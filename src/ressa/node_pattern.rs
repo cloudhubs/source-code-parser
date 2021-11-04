@@ -10,7 +10,7 @@ use serde::Deserialize;
 
 use super::{ContextLocalVariableActions, ContextObjectActions, ParserContext};
 
-/// A Node pattern describing a node of interest to the parser.
+/// A ReSSA Parser describing a node of interest.
 #[derive(Debug, Clone, Deserialize, new)]
 pub struct NodePattern {
     /// The target AST node type
@@ -57,10 +57,9 @@ impl NodePattern {
     /// Determine whether this node matches the language of the provided node
     /// If no language initialized, assume failure.
     pub fn language_matches(&self, node: &impl NodeLanguage) -> bool {
-        if let Some(lang) = self.language {
-            lang == Language::Unknown || lang == node.get_language()
-        } else {
-            false
+        match self.language {
+            Some(lang) => lang == Language::Unknown || lang == node.get_language(),
+            None => false,
         }
     }
 
@@ -70,12 +69,12 @@ impl NodePattern {
     }
 
     // Consume self to update language references. Unsure if this is the best way.
-    pub fn cascade_language(mut self, parent_lang: &Language) -> NodePattern {
+    pub fn cascade_language(mut self, parent_lang: Language) -> NodePattern {
         // Update own language if unknown
-        let parent_lang = match self.language.as_ref() {
+        let parent_lang = match self.language {
             Some(lang) => lang,
             None => {
-                self.language = Some(*parent_lang);
+                self.language = Some(parent_lang);
                 parent_lang
             }
         };
@@ -106,14 +105,11 @@ impl NodePattern {
 
 impl NodeLanguage for NodePattern {
     fn get_language(&self) -> Language {
-        if let Some(language) = self.language {
-            language.clone()
-        } else {
-            Language::default()
-        }
+        self.language.unwrap_or_default()
     }
 }
 
+/// Optionally compile a provided pattern, if possible
 pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     let compiled_result = super::CompiledPattern::from_pattern(pattern);
     match compiled_result {
@@ -125,6 +121,7 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
     }
 }
 
+/// Parse the results
 fn parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
     node: &N,
@@ -144,7 +141,7 @@ fn parse<N: NodePatternParser + RessaNodeExplorer>(
     }
 }
 
-/// Parse an individual node with this NodePattern, lazily-initializing its CompiledPattern as needed
+/// Run general ReSSA match acquired routine: compile patterns if needed, maintain context transactions, parse the node pattern, and
 pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
     node: &N,
