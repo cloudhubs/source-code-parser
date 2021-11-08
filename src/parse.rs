@@ -99,7 +99,7 @@ impl AST {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, new)]
 #[serde(rename_all = "camelCase")]
 pub struct Directory {
     files: Vec<PathBuf>,
