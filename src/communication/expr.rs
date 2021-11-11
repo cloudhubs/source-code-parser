@@ -120,11 +120,11 @@ impl CommunicationReplacer for CallExpr {
                         .to_lowercase(),
                 );
 
-                let base = class
-                    .annotations
-                    .iter()
-                    .find(|a| a.name.contains("RequestMapping"))
-                    .map(|a| a.value.clone());
+                // let base = class
+                //     .annotations
+                //     .iter()
+                //     .find(|a| a.name.contains("RequestMapping"))
+                //     .map(|a| a.value.clone());
                 let tail = method
                     .annotations
                     .iter()

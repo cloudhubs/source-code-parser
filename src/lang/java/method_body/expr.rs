@@ -8,7 +8,7 @@ use crate::ComponentInfo;
 use crate::AST;
 use crate::{ast::*, Language::Java};
 
-use super::is_common_junk_tag;
+use super::{is_common_junk_tag, log_unknown_tag};
 
 pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     match &*ast.r#type {
@@ -40,7 +40,10 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "cast_expression" => parse_cast(ast, component),
 
         // Base case
-        unknown => None,
+        unknown => {
+            log_unknown_tag(unknown, "expression");
+            None
+        }
     }
 }
 
@@ -81,7 +84,7 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
                 let result = format!("{}{}", generic, comp.value);
                 name = Some(Literal::new(result, Java).into());
             }
-            unknown => {}
+            unknown => log_unknown_tag(unknown, "method declaration"),
         }
     }
 
@@ -173,7 +176,7 @@ fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Expr {
                     .flat_map(|expr| expr)
                     .collect()
             }
-            unknown => {}
+            unknown => log_unknown_tag(unknown, "object creation"),
         }
     }
 
@@ -337,7 +340,7 @@ pub(crate) fn parse_switch(ast: &AST, component: &ComponentInfo) -> Option<Expr>
                     gen_cases(&mut cases, &guard, &in_case);
                 }
             }
-            unknown => {}
+            unknown => log_unknown_tag(unknown, "switch"),
         }
     }
 

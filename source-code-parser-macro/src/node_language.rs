@@ -1,12 +1,7 @@
-use std::path::Component;
-
 use crate::util;
 use proc_macro2::TokenStream; //Span,
 use quote::quote; //format_ident,
-use syn::{
-    parse_macro_input, Data, DataEnum, DataStruct, DeriveInput, Fields, GenericArgument, Ident,
-    PathArguments, PathSegment, Type,
-};
+use syn::{DataStruct, DeriveInput, Ident, Type};
 
 pub fn expand_derive(input: DeriveInput) -> TokenStream {
     let item_name = input.ident;

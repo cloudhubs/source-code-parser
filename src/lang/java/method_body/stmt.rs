@@ -1,4 +1,5 @@
 use crate::ast::*;
+use crate::java::method_body::log_unknown_tag;
 use crate::java::method_body::parse_block;
 use crate::java::method_body::parse_child_nodes;
 use crate::java::modifier::find_modifier;
@@ -158,7 +159,7 @@ pub(crate) fn parse_try_catch(ast: &AST, component: &ComponentInfo) -> Option<No
                 ));
             }
             "finally_clause" => finally_clause = Some(parse_block(ast, component)),
-            unknown => {}
+            unknown => log_unknown_tag(unknown, "try/catch"),
         }
     }
 

@@ -1,9 +1,7 @@
-use darling::ToTokens;
 use proc_macro2::TokenStream; //Span,
 use quote::quote; //format_ident,
 use syn::{
-    parse_macro_input, Data, DataEnum, DataStruct, DeriveInput, Fields, GenericArgument, Ident,
-    PathArguments, PathSegment, Type,
+    Data, DataEnum, DataStruct, Fields, GenericArgument, Ident, PathArguments, PathSegment, Type,
 };
 
 macro_rules! match_or {

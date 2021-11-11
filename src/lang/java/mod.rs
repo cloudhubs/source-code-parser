@@ -36,7 +36,7 @@ pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
     find_components_internal(ast, String::new(), path)
 }
 
-fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<ComponentType> {
+fn find_components_internal(ast: AST, package: String, path: &str) -> Vec<ComponentType> {
     let mut components = vec![];
 
     for node in ast
@@ -54,8 +54,8 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         match &*node.r#type {
             "import_declaration" => tracing::info!("{}", parse_import(&node)),
             "package_declaration" => {
-                package = parse_package(&node)
-                    .expect(&*format!("Malformed package declaration {:#?}!", node));
+                // package = parse_package(&node)
+                //     .expect(&*format!("Malformed package declaration {:#?}!", node));
                 // tracing::info!("{}", package);
             }
             "class_declaration"
@@ -78,47 +78,22 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         };
     }
 
-    // Create module this falls in. If default package, use "default" (no name collisions possible, it's a reserved word)
-    if package == "" {
-        package = "default".into();
-    }
-    // let module = create_module(package.as_str(), path, &components);
-    // vec![module]
     components
 }
 
-fn create_module(package: &str, path: &str, components: &Vec<ComponentType>) -> ComponentType {
-    let mut module = ModuleComponent::new(package.to_string(), path.to_string(), Language::Java);
-    let classes = components.iter().filter_map(|comp| match comp {
-        ComponentType::ClassOrInterfaceComponent(class_ix) => Some(class_ix),
-        _ => None,
-    });
-
-    // Get classes
-    for comp in classes {
-        if comp.declaration_type == ContainerType::Class {
-            module.classes.push(comp.clone());
-        } else if comp.declaration_type == ContainerType::Interface {
-            module.interfaces.push(comp.clone());
-        }
-    }
-
-    return ComponentType::ModuleComponent(module);
-}
-
 /// Take in the AST node containing the package declaration, and--if it is not malformed--return a string representing the package
-fn parse_package(ast: &AST) -> Option<String> {
-    let result = ast.find_child_by_type(&["identifier", "scoped_identifier"])?;
-    let mut buffer = String::new();
-    for member in result.children.iter() {
-        if member.r#type == "scoped_identifier" {
-            buffer = format!("{}{}", parse_package(result)?, buffer);
-        } else {
-            buffer.push_str(&*member.value);
-        }
-    }
-    Some(buffer)
-}
+// fn parse_package(ast: &AST) -> Option<String> {
+//     let result = ast.find_child_by_type(&["identifier", "scoped_identifier"])?;
+//     let mut buffer = String::new();
+//     for member in result.children.iter() {
+//         if member.r#type == "scoped_identifier" {
+//             buffer = format!("{}{}", parse_package(result)?, buffer);
+//         } else {
+//             buffer.push_str(&*member.value);
+//         }
+//     }
+//     Some(buffer)
+// }
 
 /// Take the AST node containing an import statement, and return back the String describing the package imported
 fn parse_import(ast: &AST) -> String {
