@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry, HashMap};
 
 use crate::parse::AST;
 use crate::prophet::*;
@@ -20,13 +20,17 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
     for module in modules.into_iter() {
         let name = module.module_name.clone();
         tracing::info!("Mod. Name: {}", name);
-        if packages.contains_key(&name) {
-            // tracing::info!("Merging...");
-            let orig_module = packages.get_mut(&name).expect("Contains key lied to me!");
-            orig_module.merge_into(module);
-        } else {
-            // tracing::info!("New! {}", module.module_name);
-            packages.insert(name, module);
+
+        match packages.entry(name) {
+            Entry::Occupied(mut packages) => {
+                // tracing::info!("Merging...");
+                let orig_module = packages.get_mut();
+                orig_module.merge_into(module);
+            }
+            Entry::Vacant(packages) => {
+                // tracing::info!("New! {}", module.module_name);
+                packages.insert(module);
+            }
         }
     }
     packages.into_iter().map(|kv| kv.1).collect()
@@ -52,7 +56,7 @@ fn find_components_internal(ast: AST, package: String, path: &str) -> Vec<Compon
         .iter()
     {
         match &*node.r#type {
-            "import_declaration" => tracing::info!("{}", parse_import(&node)),
+            "import_declaration" => tracing::info!("{}", parse_import(node)),
             "package_declaration" => {
                 // package = parse_package(&node)
                 //     .expect(&*format!("Malformed package declaration {:#?}!", node));
@@ -61,8 +65,8 @@ fn find_components_internal(ast: AST, package: String, path: &str) -> Vec<Compon
             "class_declaration"
             | "interface_declaration"
             | "enum_declaration"
-            | "annotation_declaration" => match parse_class(node, &*package, path) {
-                Some(class) => {
+            | "annotation_declaration" => {
+                if let Some(class) = parse_class(node, &*package, path) {
                     // Save the methods
                     for method in class.component.methods.iter() {
                         components.push(ComponentType::MethodComponent(method.clone()));
@@ -72,8 +76,7 @@ fn find_components_internal(ast: AST, package: String, path: &str) -> Vec<Compon
                     // Save the class itself
                     components.push(ComponentType::ClassOrInterfaceComponent(class));
                 }
-                None => {}
-            },
+            }
             tag => todo!("Cannot identify provided tag {:#?}", tag),
         };
     }

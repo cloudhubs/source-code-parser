@@ -8,18 +8,16 @@ comm_repl_default_impl!(ImportStmt, BreakStmt, ContinueStmt, ThrowStmt, LabelStm
 impl CommunicationReplacer for DeclStmt {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
     ) -> Option<Node> {
-        for expr in self.expressions.iter_mut() {
-            if let Some(expr) = expr {
-                if let Some(Node::Expr(replacement)) =
-                    expr.replace_communication_call(modules, module, class, method)
-                {
-                    *expr = replacement;
-                }
+        for expr in self.expressions.iter_mut().flatten() {
+            if let Some(Node::Expr(replacement)) =
+                expr.replace_communication_call(modules, module, class, method)
+            {
+                *expr = replacement;
             }
         }
         None
@@ -29,7 +27,7 @@ impl CommunicationReplacer for DeclStmt {
 impl CommunicationReplacer for ExprStmt {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -42,7 +40,7 @@ impl CommunicationReplacer for ExprStmt {
 impl CommunicationReplacer for IfStmt {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -59,7 +57,7 @@ impl CommunicationReplacer for IfStmt {
 impl CommunicationReplacer for ForStmt {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -84,7 +82,7 @@ impl CommunicationReplacer for ForStmt {
 impl CommunicationReplacer for ForRangeStmt {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -104,7 +102,7 @@ impl CommunicationReplacer for ForRangeStmt {
 impl CommunicationReplacer for WhileStmt {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -112,7 +110,7 @@ impl CommunicationReplacer for WhileStmt {
         if let Some(Node::Expr(replacement)) =
             (&mut self.condition).replace_communication_call(modules, module, class, method)
         {
-            *&mut self.condition = replacement;
+            self.condition = replacement;
         };
         self.body
             .replace_communication_call(modules, module, class, method)
@@ -121,7 +119,7 @@ impl CommunicationReplacer for WhileStmt {
 impl CommunicationReplacer for DoWhileStmt {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -129,7 +127,7 @@ impl CommunicationReplacer for DoWhileStmt {
         if let Some(Node::Expr(replacement)) =
             (&mut self.condition).replace_communication_call(modules, module, class, method)
         {
-            *&mut self.condition = replacement;
+            self.condition = replacement;
         }
         self.body
             .replace_communication_call(modules, module, class, method)
@@ -139,7 +137,7 @@ impl CommunicationReplacer for DoWhileStmt {
 impl CommunicationReplacer for TryCatchStmt {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -155,7 +153,7 @@ impl CommunicationReplacer for TryCatchStmt {
 impl CommunicationReplacer for CatchStmt {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -168,7 +166,7 @@ impl CommunicationReplacer for CatchStmt {
 impl CommunicationReplacer for ReturnStmt {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -187,7 +185,7 @@ impl CommunicationReplacer for ReturnStmt {
 impl CommunicationReplacer for WithResourceStmt {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,

@@ -18,7 +18,7 @@ pub fn expression(node: &AST) -> Option<Expr> {
             Some(Literal::new(node.value.clone(), Cpp).into())
         }
         "condition_clause" => {
-            let cond = node.children.iter().nth(1)?;
+            let cond = node.children.get(1)?;
             expression(cond)
         }
         // Handle scoped identifiers
@@ -81,13 +81,13 @@ fn dot_expression(field_expr: &AST) -> Option<DotExpr> {
 }
 
 fn unary_expression(unary_expr: &AST) -> Option<UnaryExpr> {
-    let op = Op::from(&*unary_expr.children.iter().next()?.value);
+    let op = Op::from(&*unary_expr.children.first()?.value);
     let expr = expression(unary_expr.children.iter().last()?)?;
     Some(UnaryExpr::new(Box::new(expr), op, Cpp))
 }
 
 fn paren_expression(paren_expr: &AST) -> Option<ParenExpr> {
-    let expr = paren_expr.children.iter().nth(1)?;
+    let expr = paren_expr.children.get(1)?;
     Some(ParenExpr::new(Box::new(expression(expr)?), Cpp))
 }
 
@@ -120,16 +120,16 @@ fn update_expression(update_expr: &AST) -> Option<Expr> {
 /// Converts an "array_declarator", "subscript_expression", or "new_declarator" into an IndexExpr
 fn index_expression(node: &AST) -> Option<IndexExpr> {
     // Identifier won't be found when the type is new_declarator.
-    let ident = expression(node.children.iter().nth(0)?)
-        .unwrap_or(Literal::new("Missing Ident".into(), Cpp).into());
-    let ndx_expr = expression(node.children.iter().nth(2)?)?;
+    let ident = expression(node.children.first()?)
+        .unwrap_or_else(|| Literal::new("Missing Ident".into(), Cpp).into());
+    let ndx_expr = expression(node.children.get(2)?)?;
     let ndx = IndexExpr::new(Box::new(ident), Box::new(ndx_expr), Cpp);
     Some(ndx)
 }
 
 fn new_expression(new_expr: &AST) -> Option<CallExpr> {
-    let r#type = expression(new_expr.children.iter().nth(1)?)?;
-    let expr = expression(new_expr.children.iter().last()?)?;
+    let r#type = expression(new_expr.children.get(1)?)?;
+    let expr = expression(new_expr.children.last()?)?;
     match expr {
         Expr::IndexExpr(mut ndx) => {
             ndx.expr = Box::new(r#type);
@@ -145,10 +145,7 @@ fn delete_expression(delete_expr: &AST) -> Option<CallExpr> {
     let expr = delete_expr
         .children
         .iter()
-        .find(|node| match &*node.r#type {
-            "delete" | "[" | "]" => false,
-            _ => true,
-        })?;
+        .find(|node| !matches!(&*node.r#type, "delete" | "[" | "]"))?;
     let expr = expression(expr)?;
     let delete = Literal::new("delete".to_string(), Cpp);
     let del = CallExpr::new(Box::new(delete.into()), vec![expr], Cpp);
@@ -159,11 +156,8 @@ fn init_list_expression(initializer_list: &AST) -> InitListExpr {
     let exprs = initializer_list
         .children
         .iter()
-        .filter(|node| match &*node.r#type {
-            "{" | "}" | "," => false,
-            _ => true,
-        })
-        .map(|node| expression(node))
+        .filter(|node| !matches!(&*node.r#type, "{" | "}" | ","))
+        .map(expression)
         .flatten()
         .collect();
     InitListExpr::new(exprs, Cpp)
@@ -174,10 +168,7 @@ fn sizeof_expression(sizeof_expr: &AST) -> Option<CallExpr> {
         sizeof_expr
             .children
             .iter()
-            .filter(|node| match &*node.r#type {
-                "(" | ")" => false,
-                _ => true,
-            })
+            .filter(|node| !matches!(&*node.r#type, "(" | ")"))
             .last()?,
     )?;
     let sizeof = Literal::new("sizeof".to_string(), Cpp);
@@ -196,20 +187,14 @@ fn binary_expression(node: &AST) -> Option<Expr> {
     let is_log = match (&op, &lhs) {
         // Identify the log call to know to create a LogExpr
         (Op::BitShiftLeft, Expr::CallExpr(call)) => match &*call.name {
-            Expr::Ident(ident) => match &*ident.name.to_lowercase() {
-                "log" => true,
-                _ => false,
-            },
+            Expr::Ident(ident) => matches!(&*ident.name.to_lowercase(), "log"),
             _ => false,
         },
         // LogExpr already created on left hand side, so append this expr
         // to its arguments
         (Op::BitShiftLeft, Expr::LogExpr(_)) => true,
         // Printing to screen counts as a log
-        (Op::BitShiftLeft, Expr::Ident(ident)) => match &*ident.name {
-            "std::cout" | "cout" => true,
-            _ => false,
-        },
+        (Op::BitShiftLeft, Expr::Ident(ident)) => matches!(&*ident.name, "std::cout" | "cout"),
         _ => false,
     };
 
@@ -233,7 +218,7 @@ fn binary_expression(node: &AST) -> Option<Expr> {
         let log = convert_binary_expr_to_log(binary_expr)?;
         Some(log.into())
     } else {
-        Some(expr.into())
+        Some(expr)
     }
 }
 
@@ -299,8 +284,8 @@ fn call_expression(node: &AST) -> Option<Expr> {
     let args: Vec<Expr> = argument_list
         .children
         .iter()
-        .map(|arg| expression(arg))
-        .flat_map(|arg| arg)
+        .map(expression)
+        .flatten()
         .collect();
     Some(CallExpr::new(Box::new(function_name), args, Cpp).into())
 }
@@ -312,7 +297,7 @@ fn lambda_expression(lambda_expr: &AST) -> Option<LambdaExpr> {
         .children
         .iter()
         .filter(|child| child.r#type == "parameter_declaration")
-        .map(|param_decl| variable_declaration(param_decl))
+        .map(variable_declaration)
         .collect();
 
     let body = func_body(lambda_expr.find_child_by_type(&["compound_statement"])?);
@@ -321,7 +306,7 @@ fn lambda_expression(lambda_expr: &AST) -> Option<LambdaExpr> {
 }
 
 fn type_descriptor(type_desc: &AST) -> Option<Literal> {
-    let specifier = type_desc.children.iter().next()?;
+    let specifier = type_desc.children.first()?;
     match &*specifier.r#type {
         "struct_specifier" => Some(Literal::new(
             format!("struct {}", type_ident(specifier.children.iter().last()?)),

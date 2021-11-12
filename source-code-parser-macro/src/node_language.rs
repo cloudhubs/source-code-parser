@@ -57,10 +57,7 @@ fn get_struct_impl(r#struct: &DataStruct, _struct_ident: &Ident) -> TokenStream 
         .into_iter()
         .filter_map(|(field_ident, field_type)| {
             let field = can_access_language(field_type);
-            match field {
-                Some(field) => Some((field_ident, field)),
-                _ => None,
-            }
+            field.map(|field| (field_ident, field))
         })
         .collect::<Vec<_>>();
     let (field_ident, field_variant) = fields.first().unwrap(); // TODO throw better compile errors

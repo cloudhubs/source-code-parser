@@ -86,14 +86,14 @@ pub(crate) fn parse_class(
         component: ContainerComponent {
             component,
             accessor: modifier.accessor,
-            stereotype: stereotype,
+            stereotype,
             methods,
             container_name: instance_name,
             line_count: end - start + 1,
         },
         declaration_type,
         annotations: modifier.annotations,
-        constructors: constructors,
+        constructors,
         field_components: fields,
     })
 }
@@ -166,15 +166,15 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
                 variables: vec![],
                 field_name,
                 accessor: modifier.accessor.clone(),
-                is_static: modifier.is_static.clone(),
-                is_final: modifier.is_final.clone(),
+                is_static: modifier.is_static,
+                is_final: modifier.is_final,
                 default_value: String::new(),
                 r#type: r#type.clone(),
                 expression: expr,
             }
         })
         .collect();
-    return fields;
+    fields
 
     // TODO: How to handle field_name, default_value?
     // variables

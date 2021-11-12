@@ -59,7 +59,7 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
         var_decl.is_static = Some(modifier.is_static);
         var_decl.var_type = Some(r#type.clone());
     }
-    decl.into()
+    decl
 }
 
 pub(crate) fn parse_if(ast: &AST, component: &ComponentInfo) -> Option<Node> {
@@ -123,17 +123,16 @@ pub(crate) fn parse_try_catch(ast: &AST, component: &ComponentInfo) -> Option<No
                         .find_child_by_type(&["identifier"])
                         .expect("No name for caught variable!")
                         .value;
-                    let types: Vec<String> = catch_comp
+                    catch_comp
+                        // Get child catch block
                         .find_child_by_type(&["catch_type"])
                         .expect("No type on catch block!")
+                        // Get type on catch block
                         .find_all_children_by_type(&["type_identifier"])
                         .expect("No type on catch block!")
                         .iter()
+                        // Clone each type on the catch block and map to a VarDecl
                         .map(|child| child.value.clone())
-                        .collect();
-
-                    types
-                        .into_iter()
                         .map(|t| {
                             let mut decl =
                                 VarDecl::new(Some(t), Ident::new(name.clone(), Java), Java);
@@ -227,7 +226,7 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     // Coerce an Option<Node> to an Expr, if it can be
     let to_expr = |parts: &Vec<Node>| -> Vec<Expr> {
         parts
-            .into_iter()
+            .iter()
             .flat_map(|part| match part.clone() {
                 Node::Expr(node) => Some(node),
                 Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. })) => Some(expr),
@@ -239,7 +238,7 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     // Find all init, guard, and postcondition blocks
     for child in ast.children.iter() {
         match &*child.r#type {
-            ";" | ")" => i = i + 1,
+            ";" | ")" => i += 1,
             unknown => {
                 if !is_common_junk_tag(unknown) {
                     clauses[i].push(child);
@@ -251,7 +250,7 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     // Parse loop body (should be last)
     let body;
     let raw_body = clauses.pop()?;
-    if raw_body.len() > 0 {
+    if !raw_body.is_empty() {
         body = parse_child_nodes(raw_body[0], component);
     } else {
         body = vec![];
@@ -261,11 +260,11 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     let parts: Vec<Option<Vec<Node>>> = clauses
         .iter()
         .map(|c| {
-            if c.len() > 0 {
+            if !c.is_empty() {
                 Some(
                     c.iter()
                         .map(|c| parse_node(c, component))
-                        .flat_map(|c| c)
+                        .flatten()
                         .collect(),
                 )
             } else {
@@ -287,9 +286,7 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     });
 
     // Parse guard condition
-    let guard = parts[1]
-        .clone()
-        .map_or(None, |guard| Some(to_expr(&guard)[0].clone()));
+    let guard = parts[1].clone().map(|guard| to_expr(&guard)[0].clone());
 
     // Parse postcondition
     let post = parts[2].clone().map_or(vec![], |post| to_expr(&post));

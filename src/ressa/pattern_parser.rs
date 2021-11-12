@@ -15,31 +15,25 @@ pub trait NodePatternParser {
 }
 
 fn write_to_context(
-    to_match: &String,
+    to_match: &str,
     essential: bool,
     pattern: &mut Option<CompiledPattern>,
     ctx: &mut ParserContext,
 ) -> Option<()> {
-    if let Some(compiled_pattern) = pattern.as_mut() {
-        if compiled_pattern.match_and_insert(&*to_match.clone(), ctx) {
-            return Some(());
-        } else if essential {
-            None
-        } else {
-            Some(())
-        }
-    } else {
-        Some(())
+    match pattern.as_mut() {
+        Some(compiled_pattern) if compiled_pattern.match_and_insert(to_match, ctx) => Some(()),
+        Some(_) if essential => None,
+        _ => Some(()),
     }
 }
 
 fn match_subsequence<T: RessaNodeExplorer>(
     params: &mut Vec<&mut NodePattern>,
-    explorable: &Vec<T>,
+    explorable: &[T],
     ctx: &mut ParserContext,
     index: &LaastIndex,
 ) -> Option<()> {
-    let (mut start, mut end) = (0 as usize, params.len());
+    let (mut start, mut end) = (0_usize, params.len());
     // let mut matched = true;
 
     while start < explorable.len() {
@@ -189,10 +183,7 @@ impl NodePatternParser for MethodComponent {
         let mut params = pattern
             .subpatterns
             .iter_mut()
-            .filter(|child| match child.identifier {
-                crate::ressa::NodeType::MethodParam => true,
-                _ => false,
-            })
+            .filter(|child| matches!(child.identifier, crate::ressa::NodeType::MethodParam))
             .collect::<Vec<&mut NodePattern>>();
         match_subsequence(&mut params, &self.parameters, ctx, index)?;
 
@@ -208,10 +199,7 @@ impl NodePatternParser for MethodComponent {
         for pattern in pattern
             .subpatterns
             .iter_mut()
-            .filter(|child| match child.identifier {
-                crate::ressa::NodeType::MethodParam => false,
-                _ => true,
-            })
+            .filter(|child| !matches!(child.identifier, crate::ressa::NodeType::MethodParam))
         {
             explore_all!(
                 pattern,
@@ -261,14 +249,7 @@ impl NodePatternParser for MethodParamComponent {
             explore_all_subpatterns!(pattern.subpatterns, ctx, index, annotations);
             Some(())
         } else {
-            choose_exit(
-                pattern
-                    .subpatterns
-                    .iter()
-                    .find(|pat| pat.essential)
-                    .is_some(),
-                false,
-            )
+            choose_exit(pattern.subpatterns.iter().any(|pat| pat.essential), false)
         }
     }
 }
@@ -340,7 +321,7 @@ impl NodePatternParser for DeclStmt {
             // Case 2: equal lengths
 
             // If can't be right, return
-            if self.variables.len() != self.expressions.len() || self.variables.len() == 0 {
+            if self.variables.len() != self.expressions.len() || self.variables.is_empty() {
                 quit!(pattern.essential);
             }
 
@@ -370,15 +351,11 @@ impl NodePatternParser for DeclStmt {
             }
         } else if decl_patterns.len() == 1 {
             // Case 1: one Decl no non-decls
-            let pattern = pattern.subpatterns.get_mut(*decl_patterns.iter().next()?)?;
+            let pattern = pattern.subpatterns.get_mut(*decl_patterns.first()?)?;
             explore_all!(pattern, ctx, index, self.variables)?;
         } else {
             // Case 3: multiple non-Decls to fewer Decls
-            let real_expressions = self
-                .expressions
-                .iter()
-                .flat_map(|c| c)
-                .collect::<Vec<&Expr>>();
+            let real_expressions = self.expressions.iter().flatten().collect::<Vec<&Expr>>();
             match_subsequence(
                 // Get the actual pattern references from the subpatterns array using the indices in decl_patterns (I'm sorry.)
                 &mut pattern
@@ -460,7 +437,7 @@ impl NodePatternParser for CallExpr {
     ) -> Option<()> {
         // Extract the function name, and the lefthand side's name (if needed)
         let mut lhs = None;
-        let (raw_name, auxiliary_name) = match *self.name {
+        let (raw_name, auxiliary_name) = match &*self.name {
             Expr::DotExpr(DotExpr {
                 ref selected,
                 ref expr,
@@ -471,7 +448,7 @@ impl NodePatternParser for CallExpr {
                     match expr.as_ref() {
                         Expr::Ident(Ident { ref name, .. }) => Some(name),
                         Expr::Literal(Literal { ref value, .. }) => Some(value),
-                        ref _unknown => {
+                        _unknown => {
                             // tracing::warn!(
                             //     "Currently unhandled CallExpression auxiliary match {:?}",
                             //     unknown
@@ -487,7 +464,7 @@ impl NodePatternParser for CallExpr {
                 match selected.as_ref() {
                     Expr::Ident(Ident { ref name, .. }) => (name, aux_name),
                     Expr::Literal(Literal { ref value, .. }) => (value, aux_name),
-                    ref _unknown => {
+                    _unknown => {
                         // tracing::warn!("Currently unhandled CallExpression name {:?}", unknown);
                         return None;
                     }
@@ -495,7 +472,7 @@ impl NodePatternParser for CallExpr {
             }
             Expr::Ident(Ident { ref name, .. }) => (name, None),
             Expr::Literal(Literal { ref value, .. }) => (value, None),
-            ref _unknown => {
+            _unknown => {
                 // tracing::warn!("Currently unhandled CallExpression name {:?}", unknown);
                 return None;
             }

@@ -85,7 +85,7 @@ pub(crate) fn parse_type_args(ast: &AST) -> String {
 }
 
 fn make_array_type(ast: &AST, base: &str) -> String {
-    let mut result_type: String = base.clone().into();
+    let mut result_type: String = base.to_string();
     for child in ast.children.iter() {
         let tmp_result = parse_type(child);
         if tmp_result != NO_TYPE {

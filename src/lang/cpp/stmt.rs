@@ -81,7 +81,7 @@ pub fn variable_declaration(node: &AST) -> DeclStmt {
             "template_type",
             "auto",
         ])
-        .map_or_else(|| "".into(), |node| type_ident(node));
+        .map_or_else(|| "".into(), type_ident);
 
     let init_declarator =
         node.find_child_by_type(&["init_declarator", "function_declarator", "array_declarator"]);
@@ -139,15 +139,15 @@ fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -
         Some(decl_type) => match &*decl_type.r#type {
             "=" => {
                 let value = init_declarator.children.iter().next_back();
-                value.map_or_else(|| None, |value| expression(value))
+                value.map_or_else(|| None, expression)
             }
             "argument_list" | "parameter_list" => {
                 let argument_list = decl_type;
                 let args: Vec<Expr> = argument_list
                     .children
                     .iter()
-                    .map(|arg| expression(arg))
-                    .flat_map(|arg| arg)
+                    .map(expression)
+                    .flatten()
                     .collect();
                 let new = Literal::new("new".to_string(), Cpp);
                 let init = CallExpr::new(Box::new(new.into()), args, Cpp).into();
@@ -164,11 +164,7 @@ fn variable_init_declaration(init_declarator: &AST, mut variable_type: String) -
 }
 
 fn expression_statement(node: &AST) -> Option<Stmt> {
-    let expr = node
-        .children
-        .iter()
-        .next()
-        .map_or_else(|| None, |node| expression(node))?;
+    let expr = node.children.first().map_or_else(|| None, expression)?;
     Some(expr.into())
 }
 
@@ -182,17 +178,12 @@ fn import_statement(using_declaration: &AST) -> Option<ImportStmt> {
 fn return_statement(return_stmt: &AST) -> ReturnStmt {
     // If there isn't an expression and the 2nd child is of type ";",
     // the expression function will return None anyways.
-    let expr = return_stmt
-        .children
-        .iter()
-        .nth(1)
-        .map(|expr| expression(expr))
-        .flatten();
+    let expr = return_stmt.children.get(1).map(expression).flatten();
     ReturnStmt::new(expr, Cpp)
 }
 
 fn throw_statement(throw_stmt: &AST) -> ThrowStmt {
-    match throw_stmt.children.iter().nth(1) {
+    match throw_stmt.children.get(1) {
         Some(expr) => {
             let expr = expression(expr);
             ThrowStmt::new(expr, Cpp)
@@ -204,17 +195,14 @@ fn throw_statement(throw_stmt: &AST) -> ThrowStmt {
 fn try_catch_statement(try_catch_stmt: &AST) -> Option<TryCatchStmt> {
     let mut children = try_catch_stmt.children.iter();
     let body = Block::new(block_nodes(children.nth(1)?), Cpp);
-    let catch_bodies = children
-        .map(|catch| catch_statement(catch))
-        .filter_map(|catch| catch)
-        .collect();
+    let catch_bodies = children.map(catch_statement).flatten().collect();
     Some(TryCatchStmt::new(body, catch_bodies, None, Cpp))
 }
 
 fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
     let cond = if_stmt
         .find_child_by_type(&["condition_clause"])
-        .map(|cond| expression(cond))??;
+        .map(expression)??;
     let mut blocks = if_stmt
         .children
         .iter()
@@ -234,7 +222,7 @@ fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
         None => {
             let else_if = if_stmt
                 .find_child_by_type(&["if_statement"])
-                .map(|if_stmt| if_statement(if_stmt))
+                .map(if_statement)
                 .flatten()
                 .map(|if_stmt| {
                     let if_stmt: Stmt = if_stmt.into();
@@ -249,12 +237,12 @@ fn if_statement(if_stmt: &AST) -> Option<IfStmt> {
 fn switch_statement(switch_stmt: &AST) -> Option<SwitchExpr> {
     let cond = switch_stmt
         .find_child_by_type(&["condition_clause"])
-        .map(|cond| expression(cond))??;
+        .map(expression)??;
     let cases = switch_stmt
         .find_child_by_type(&["compound_statement"])
         .map(|switch_stmt| switch_stmt.children.iter())?
-        .map(|case| switch_case(case))
-        .flat_map(|case| case)
+        .map(switch_case)
+        .flatten()
         .collect();
 
     let switch_stmt = SwitchExpr::new(Box::new(cond), cases, Cpp);
@@ -265,8 +253,9 @@ fn switch_case(case_statement: &AST) -> Option<CaseExpr> {
     let expr = case_statement.find_child_by_type(&["case", "default"])?;
     // todo: add literals to expression function
     let expr = match &*expr.r#type {
-        "case" => expression(case_statement.children.iter().nth(1)?),
-        "default" | _ => None,
+        "case" => expression(case_statement.children.get(1)?),
+        // "default"
+        _ => None,
     };
     if case_statement.children.len() < 4 {
         tracing::info!("Malformed case statement {:#?}", case_statement);
@@ -275,16 +264,16 @@ fn switch_case(case_statement: &AST) -> Option<CaseExpr> {
     let nodes = block_nodes_iter(&case_statement.children[3..]);
     let block = Block::new(nodes, Cpp);
     let case = CaseExpr::new(expr, block, Cpp);
-    Some(case.into())
+    Some(case)
 }
 
 fn while_statement(while_stmt: &AST) -> Option<WhileStmt> {
     let cond = while_stmt
         .find_child_by_type(&["condition_clause"])
-        .map(|cond| expression(cond))??;
+        .map(expression)??;
     let nodes = while_stmt
         .find_child_by_type(&["compound_statement"])
-        .map(|block| block_nodes(block))?;
+        .map(block_nodes)?;
     Some(WhileStmt::new(cond, Block::new(nodes, Cpp), Cpp))
 }
 
@@ -299,10 +288,7 @@ fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
     for part in for_stmt
         .children
         .iter()
-        .filter(|child| match &*child.r#type {
-            "for" | "(" | ")" | "compound_statement" => false,
-            _ => true,
-        })
+        .filter(|child| !matches!(&*child.r#type, "for" | "(" | ")" | "compound_statement"))
     {
         if &*part.r#type == ";" {
             semicolons += 1;
@@ -325,9 +311,9 @@ fn for_statement(for_stmt: &AST) -> Option<ForStmt> {
     };
 
     let for_stmt = ForStmt::new(
-        init.map_or_else(|| vec![], |init| vec![*init]),
+        init.map_or_else(Vec::new, |init| vec![*init]),
         cond,
-        post.map_or_else(|| vec![], |post| vec![post]),
+        post.map_or_else(Vec::new, |post| vec![post]),
         block,
         Cpp,
     );
@@ -338,17 +324,19 @@ fn for_range_statement(for_range_loop: &AST) -> Option<ForRangeStmt> {
     let block = for_range_loop.find_child_by_type(&["compound_statement"])?;
     let block = func_body(block);
 
-    let mut i = 0;
     let mut r#type = None;
     let mut decl = None;
     let mut iterator = None;
-    for part in for_range_loop
+    for (i, part) in for_range_loop
         .children
         .iter()
-        .filter(|child| match &*child.r#type {
-            "for" | "(" | ":" | ")" | "compound_statement" => false,
-            _ => true,
+        .filter(|child| {
+            !matches!(
+                &*child.r#type,
+                "for" | "(" | ":" | ")" | "compound_statement"
+            )
         })
+        .enumerate()
     {
         match i {
             // Declarations need to be considered for the initialization. Regular BinExpr
@@ -358,7 +346,6 @@ fn for_range_statement(for_range_loop: &AST) -> Option<ForRangeStmt> {
             2 => iterator = expression(part),
             _ => {}
         }
-        i += 1;
     }
 
     // Convert generic node to statement
@@ -396,14 +383,13 @@ fn catch_statement(catch_clause: &AST) -> Option<CatchStmt> {
     let params = catch_clause.find_child_by_type(&["parameter_list"])?;
     let decl = params
         .children
-        .iter()
-        .nth(1)
+        .get(1)
         .map(|decl| match body_node(decl) {
             Some(Node::Stmt(Stmt::DeclStmt(decl))) => Some(decl),
             _ => None,
         })
         .flatten()
-        .unwrap_or(DeclStmt::new(vec![], vec![], Cpp));
+        .unwrap_or_else(|| DeclStmt::new(vec![], vec![], Cpp));
     let body = Block::new(
         block_nodes(catch_clause.find_child_by_type(&["compound_statement"])?),
         Cpp,
@@ -755,7 +741,7 @@ mod tests {
                 Cpp,
             )
             .into()],
-            Block::new(vec![], Cpp).into(),
+            Block::new(vec![], Cpp),
             Cpp,
         )
         .into();

@@ -53,10 +53,10 @@ impl Expr {
     }
 }
 
-impl Into<Stmt> for Expr {
-    fn into(self) -> Stmt {
-        let lang = self.get_lang();
-        Stmt::ExprStmt(ExprStmt::new(self, lang))
+impl From<Expr> for Stmt {
+    fn from(expr: Expr) -> Self {
+        let lang = expr.get_lang();
+        Stmt::ExprStmt(ExprStmt::new(expr, lang))
     }
 }
 

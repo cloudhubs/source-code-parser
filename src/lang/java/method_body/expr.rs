@@ -29,11 +29,11 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "array_access" => parse_array_access(ast, component),
 
         // Language statements
-        "method_invocation" => parse_method(ast, component).into(),
+        "method_invocation" => parse_method(ast, component),
         "lambda_expression" => parse_lambda(ast, component),
         "switch_statement" => parse_switch(ast, component),
         "parenthesized_expression" => parse_expr(&ast.children[1], component),
-        "ternary_expression" => parse_ternary(ast, component.into()),
+        "ternary_expression" => parse_ternary(ast, component),
         "binary_expression" => parse_binary(ast, component),
         "update_expression" => parse_inc_dec(ast, component),
         "unary_expression" => parse_unary(ast, component),
@@ -49,7 +49,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
 
 fn parse_ident(ast: &AST, _component: &ComponentInfo) -> Option<Expr> {
     let ident: Expr = Ident::new(ast.value.clone(), Java).into();
-    Some(ident.into())
+    Some(ident)
 }
 
 fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
@@ -89,21 +89,18 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     }
 
     // TODO add in generic
-    Some(
-        Expr::CallExpr(CallExpr::new(
-            Box::new(
-                DotExpr::new(
-                    Box::new(lhs),
-                    Box::new(name.expect("method with no name requested!")).into(),
-                    Java,
-                )
-                .into(),
-            ),
-            args,
-            Java,
-        ))
-        .into(),
-    )
+    Some(Expr::CallExpr(CallExpr::new(
+        Box::new(
+            DotExpr::new(
+                Box::new(lhs),
+                Box::new(name.expect("method with no name requested!")),
+                Java,
+            )
+            .into(),
+        ),
+        args,
+        Java,
+    )))
 }
 
 fn parse_field_access(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
@@ -145,17 +142,15 @@ pub(crate) fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<E
     }
 
     // Assemble
-    if let Some(lhs) = lhs {
-        if let Some(rhs) = rhs {
-            let bin: Expr =
-                BinaryExpr::new(Box::new(lhs.into()), "=".into(), Box::new(rhs), Java).into();
-            Some(bin.into())
-        } else {
-            Some(lhs.into())
+    match (lhs, rhs) {
+        (Some(lhs), Some(rhs)) => {
+            let bin: Expr = BinaryExpr::new(Box::new(lhs), "=".into(), Box::new(rhs), Java).into();
+            Some(bin)
         }
-    } else {
-        tracing::warn!("Assignment with no lefthand side!");
-        None
+        _ => {
+            tracing::warn!("Assignment with no lefthand side!");
+            None
+        }
     }
 }
 
@@ -173,7 +168,7 @@ fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Expr {
                         Node::Expr(expr) => Some(expr),
                         _ => None,
                     })
-                    .flat_map(|expr| expr)
+                    .flatten()
                     .collect()
             }
             unknown => log_unknown_tag(unknown, "object creation"),
@@ -182,7 +177,7 @@ fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Expr {
 
     // Create ident
     let ident: Expr = CallExpr::new(Box::new(Ident::new(name, Java).into()), arg_list, Java).into();
-    ident.into()
+    ident
 }
 
 fn parse_array_creation(ast: &AST, component: &ComponentInfo) -> Expr {
@@ -203,7 +198,7 @@ fn parse_array_creation(ast: &AST, component: &ComponentInfo) -> Expr {
         for ndx in indexes {
             expr = Expr::IndexExpr(IndexExpr::new(Box::new(expr), Box::new(ndx), Java));
         }
-        expr.into()
+        expr
     }
 }
 
@@ -237,7 +232,7 @@ pub(crate) fn parse_lambda(ast: &AST, component: &ComponentInfo) -> Option<Expr>
                         .children
                         .iter()
                         .filter(|p| p.r#type == "identifier")
-                        .map(|p| new_simple_param(p))
+                        .map(new_simple_param)
                         .collect(),
                 ]
                 .concat();
@@ -336,7 +331,7 @@ pub(crate) fn parse_switch(ast: &AST, component: &ComponentInfo) -> Option<Expr>
                 }
 
                 // Ensure we don't have a straggler case
-                if in_case.len() != 0 {
+                if !in_case.is_empty() {
                     gen_cases(&mut cases, &guard, &in_case);
                 }
             }
@@ -470,7 +465,7 @@ fn parse_cast(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     let cast = DotExpr::new(Box::new(cast), Box::new(rhs), Java);
 
     if let Some(ident) = ident {
-        Some(CallExpr::new(Box::new(cast.into()), vec![ident.into()], Java).into())
+        Some(CallExpr::new(Box::new(cast.into()), vec![ident], Java).into())
     } else {
         tracing::warn!("Cannot find cast target!");
         None

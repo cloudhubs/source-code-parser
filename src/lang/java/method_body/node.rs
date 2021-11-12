@@ -14,7 +14,7 @@ pub(crate) fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Nod
     ast.children
         .iter()
         .map(|member| parse_node(member, component))
-        .flat_map(|some| some)
+        .flatten()
         .collect()
 }
 

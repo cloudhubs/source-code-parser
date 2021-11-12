@@ -18,7 +18,7 @@ pub struct IndexableKey {
     wrapped: String,
 }
 impl IndexableKey {
-    fn new<'a>(entry: IndexableEntry<'a>) -> IndexableKey {
+    fn new(entry: IndexableEntry<'_>) -> IndexableKey {
         IndexableKey {
             wrapped: format!("{:p}", entry),
         }
@@ -103,16 +103,14 @@ impl BitOrAssign for LanguageSet {
 
 /// Compute the languages to index over
 pub fn compute_index_languages<'a>(
-    patterns: &Vec<NodePattern>,
+    patterns: &[NodePattern],
     nodes: Vec<IndexableEntry<'a>>,
 ) -> LaastIndex<'a> {
     // Compute all languages to index on
     let mut indices = HashMap::new();
     for pattern in patterns.iter() {
         let language = pattern.get_language();
-        if !indices.contains_key(&language) {
-            indices.insert(language, vec![]);
-        }
+        indices.entry(language).or_insert_with(Vec::new);
     }
 
     // Generate indices
@@ -171,9 +169,6 @@ where
     T: RessaNodeExplorer + ChildFields + NodeLanguage + std::fmt::Debug,
 {
     fn get_children(&self) -> Vec<&dyn Indexable> {
-        self.get_fields()
-            .into_iter()
-            .flat_map(|field_children| field_children)
-            .collect()
+        self.get_fields().into_iter().flatten().collect()
     }
 }

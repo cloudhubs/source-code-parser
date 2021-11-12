@@ -13,9 +13,5 @@ pub(crate) fn block_nodes(compound_statement: &AST) -> Vec<Node> {
 }
 
 pub(crate) fn block_nodes_iter(children: &[AST]) -> Vec<Node> {
-    children
-        .iter()
-        .map(|child| body_node(child))
-        .flat_map(|node| node)
-        .collect()
+    children.iter().map(body_node).flatten().collect()
 }

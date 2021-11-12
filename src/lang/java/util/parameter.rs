@@ -59,7 +59,7 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
             language: Language::Java,
         },
         annotation: fold_vec(modifier.annotations),
-        r#type: param_type.into(),
-        parameter_name: name.into(),
+        r#type: param_type,
+        parameter_name: name,
     }
 }
