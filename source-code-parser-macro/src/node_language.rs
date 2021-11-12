@@ -72,7 +72,7 @@ fn get_struct_impl(r#struct: &DataStruct, _struct_ident: &Ident) -> TokenStream 
 
 fn can_access_language(ty: &Type) -> Option<AccessorField> {
     let type_path = match_or!(Type::Path(type_path), type_path, ty)?;
-    let path_segment = match_or!(Some(seg), seg, type_path.path.segments.first())?;
+    let path_segment = type_path.path.segments.first()?;
     use AccessorField::*;
     match AccessorField::from(&*path_segment.ident.to_string()) {
         Other => None,

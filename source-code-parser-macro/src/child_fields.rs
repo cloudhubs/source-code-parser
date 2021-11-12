@@ -34,7 +34,7 @@ fn get_struct_impl(r#struct: &DataStruct, _struct_ident: &Ident) -> TokenStream 
 
 fn index_field(ident: &Ident, ty: &Type) -> Option<TokenStream> {
     let type_path = match_or!(Type::Path(type_path), type_path, ty)?;
-    let path_segment = match_or!(Some(seg), seg, type_path.path.segments.first())?;
+    let path_segment = type_path.path.segments.first()?;
 
     let ndx_types = get_indexable_field(path_segment)?;
 
