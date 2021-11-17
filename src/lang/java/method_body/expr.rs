@@ -147,6 +147,7 @@ pub(crate) fn parse_assignment(ast: &AST, component: &ComponentInfo) -> Option<E
             let bin: Expr = BinaryExpr::new(Box::new(lhs), "=".into(), Box::new(rhs), Java).into();
             Some(bin)
         }
+        (Some(lhs), _) => Some(lhs),
         _ => {
             tracing::warn!("Assignment with no lefthand side!");
             None
