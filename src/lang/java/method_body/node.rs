@@ -13,8 +13,7 @@ use super::{
 pub(crate) fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Node> {
     ast.children
         .iter()
-        .map(|member| parse_node(member, component))
-        .flatten()
+        .flat_map(|member| parse_node(member, component))
         .collect()
 }
 

@@ -241,8 +241,7 @@ fn switch_statement(switch_stmt: &AST) -> Option<SwitchExpr> {
     let cases = switch_stmt
         .find_child_by_type(&["compound_statement"])
         .map(|switch_stmt| switch_stmt.children.iter())?
-        .map(switch_case)
-        .flatten()
+        .flat_map(switch_case)
         .collect();
 
     let switch_stmt = SwitchExpr::new(Box::new(cond), cases, Cpp);

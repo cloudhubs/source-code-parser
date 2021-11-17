@@ -461,7 +461,7 @@ fn transform_into_class(
     }
 
     let line_begin = field_list.children.first()?.span?.0;
-    let line_end = field_list.children.first()?.span?.0;
+    let line_end = field_list.children.last()?.span?.0;
     let line_count = line_end as i32 - line_begin as i32 + 1;
 
     Some(ClassOrInterfaceComponent {
