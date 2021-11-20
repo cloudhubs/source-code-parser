@@ -1,7 +1,5 @@
 /// WARNING: HERE THERE BE MACROS
-use super::{
-    ressa_node_parse, ChildFields, IntoRessaNode, NodePattern, NodePatternParser, ParserContext,
-};
+use super::{ressa_node_parse, IntoRessaNode, NodePattern, NodePatternParser, ParserContext};
 use super::{Indexable, LaastIndex};
 use crate::ast::*;
 use crate::prophet::*;

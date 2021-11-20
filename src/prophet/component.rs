@@ -117,14 +117,13 @@ impl ModuleComponent {
             container_name: name.clone(),
             line_count: 0,
         };
-        let module = ModuleComponent {
+        ModuleComponent {
             component: container,
             module_name: name,
             module_stereotype: ModuleStereotype::Fabricated,
             classes: vec![],
             interfaces: vec![],
-        };
-        module
+        }
     }
 
     /// Merges the provided ModuleComponent's data into this ones
@@ -257,6 +256,7 @@ impl AnnotationComponent {
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         name: &str,
         key_value_pairs: Vec<AnnotationValuePair>,

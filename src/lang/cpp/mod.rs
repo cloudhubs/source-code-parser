@@ -18,7 +18,7 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
         merge_class_methods(&mut module);
 
         // First module is not a duplicate
-        if merged.len() == 0 {
+        if merged.is_empty() {
             merged.push(module);
             continue;
         }
@@ -78,14 +78,10 @@ fn merge_class_methods(module: &mut ModuleComponent) {
         .clone()
         .into_iter()
         .filter(|m| {
-            match module
+            !module
                 .classes
                 .iter_mut()
-                .find(|class| m.method_name.starts_with(&class.component.container_name))
-            {
-                Some(_) => false,
-                None => true,
-            }
+                .any(|class| m.method_name.starts_with(&class.component.container_name))
         })
         .collect();
 }
@@ -258,13 +254,13 @@ fn type_ident(ast: &AST) -> String {
                 .collect();
             ret
         }
-        "scoped_identifier" => ast.children.iter().map(|child| type_ident(child)).collect(),
+        "scoped_identifier" => ast.children.iter().map(type_ident).collect(),
         "template_type" | "template_function" => {
             let outer_type: String = ast
                 .children
                 .iter()
                 .filter(|child| child.r#type != "template_argument_list")
-                .map(|child| type_ident(&child))
+                .map(type_ident)
                 .collect();
 
             let type_args = ast
@@ -275,7 +271,7 @@ fn type_ident(ast: &AST) -> String {
                 .children
                 .iter()
                 .filter(|child| child.r#type == "type_descriptor")
-                .map(|child| type_ident(child))
+                .map(type_ident)
                 .fold(String::new(), |t1, t2| match &*t1 {
                     "" => t2,
                     _ => t1 + ", " + &t2,
@@ -337,7 +333,7 @@ fn func_parameters(param_list: &AST, module_name: &str, path: &str) -> Vec<Metho
         .iter()
         .filter(|child| child.r#type == "parameter_declaration")
         .map(|param_decl| func_parameter(param_decl, module_name, path))
-        .filter_map(|param_decl| param_decl)
+        .flatten()
         .collect();
 
     params
@@ -464,8 +460,8 @@ fn transform_into_class(
         }
     }
 
-    let line_begin = field_list.children.iter().next()?.span?.0;
-    let line_end = field_list.children.iter().last()?.span?.0;
+    let line_begin = field_list.children.first()?.span?.0;
+    let line_end = field_list.children.last()?.span?.0;
     let line_count = line_end as i32 - line_begin as i32 + 1;
 
     Some(ClassOrInterfaceComponent {
@@ -499,7 +495,7 @@ fn class_fields(field_list: &[AST], module_name: &str, path: &str) -> Vec<Compon
             "access_specifier" => {
                 access_specifier = field
                     .find_child_by_type(&[":"])
-                    .map(|accessor| field_accessor(accessor))
+                    .map(field_accessor)
                     .unwrap_or(AccessorType::Default);
             }
             "function_definition" | "field_declaration" | "declaration" => {

@@ -15,6 +15,16 @@ use source_code_parser::{
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
+fn abs_diff(x: usize, y: usize) -> usize {
+    if y < x {
+        // println!("{} - {} = {}", x, y, x - y);
+        x - y
+    } else {
+        // println!("{} - {} = {}", y, x, y - x);
+        y - x
+    }
+}
+
 fn laast_benchmark(c: &mut Criterion, name: &str, dir: &Directory) {
     let epoch = jemalloc_ctl::epoch::mib().unwrap();
     let allocated = jemalloc_ctl::stats::allocated::mib().unwrap();
@@ -127,7 +137,7 @@ fn ressa_benchmark_endpoint_simple_dsb(c: &mut Criterion) {
     ressa_benchmark(
         c,
         "ressa_endpoint_deathstarbench_simple_mem",
-        ressa_json_endpoint_simple_dsb,
+        RESSA_JSON_ENDPOINT_SIMPLE_DSB,
         &*directory_json_dsb(),
     )
 }
@@ -136,7 +146,7 @@ fn ressa_benchmark_endpoint_dsb(c: &mut Criterion) {
     ressa_benchmark(
         c,
         "ressa_endpoint_deathstarbench_call_graph_mem",
-        ressa_json_endpoint_dsb,
+        RESSA_JSON_ENDPOINT_DSB,
         &*directory_json_dsb(),
     )
 }
@@ -145,7 +155,7 @@ fn ressa_benchmark_entity_dsb(c: &mut Criterion) {
     ressa_benchmark(
         c,
         "ressa_entity_deathstarbench_mem",
-        ressa_json_entity_dsb,
+        RESSA_JSON_ENTITY_DSB,
         &*directory_json_dsb(),
     )
 }
@@ -154,7 +164,7 @@ fn ressa_benchmark_endpoint_tt(c: &mut Criterion) {
     ressa_benchmark(
         c,
         "ressa_endpoint_trainticket_mem",
-        ressa_json_endpoint_tt,
+        RESSA_JSON_ENDPOINT_TT,
         &*directory_json_tt(),
     )
 }
@@ -163,7 +173,7 @@ fn ressa_benchmark_entity_tt(c: &mut Criterion) {
     ressa_benchmark(
         c,
         "ressa_entity_trainticket_mem",
-        ressa_json_entity_tt,
+        RESSA_JSON_ENTITY_TT,
         &*directory_json_tt(),
     )
 }

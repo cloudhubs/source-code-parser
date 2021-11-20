@@ -1,5 +1,5 @@
 use crate::ast::Expr;
-use crate::java::method_body::parse_assignment_pub;
+use crate::java::method_body::{log_unknown_tag, parse_assignment_pub};
 use crate::java::method_def::parse_method;
 use crate::java::modifier::{find_modifier, parse_modifiers, Modifier};
 use crate::java::util::vartype::find_type;
@@ -77,7 +77,7 @@ pub(crate) fn parse_class(
                     &mut fields,
                 );
             }
-            unknown_type => {}
+            unknown_type => log_unknown_tag(unknown_type, "class"),
         };
     }
 
@@ -86,14 +86,14 @@ pub(crate) fn parse_class(
         component: ContainerComponent {
             component,
             accessor: modifier.accessor,
-            stereotype: stereotype,
+            stereotype,
             methods,
             container_name: instance_name,
             line_count: end - start + 1,
         },
         declaration_type,
         annotations: modifier.annotations,
-        constructors: constructors,
+        constructors,
         field_components: fields,
     })
 }
@@ -119,7 +119,7 @@ fn parse_class_body(
             | "enum_declaration"
             | "annotation_declaration" => { /* None, since these were extracted + handled elsewhere */
             }
-            unknown => {}
+            unknown => log_unknown_tag(unknown, "class body"),
         }
     }
 }
@@ -166,15 +166,15 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
                 variables: vec![],
                 field_name,
                 accessor: modifier.accessor.clone(),
-                is_static: modifier.is_static.clone(),
-                is_final: modifier.is_final.clone(),
+                is_static: modifier.is_static,
+                is_final: modifier.is_final,
                 default_value: String::new(),
                 r#type: r#type.clone(),
                 expression: expr,
             }
         })
         .collect();
-    return fields;
+    fields
 
     // TODO: How to handle field_name, default_value?
     // variables

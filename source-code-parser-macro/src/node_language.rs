@@ -1,12 +1,7 @@
-use std::path::Component;
-
 use crate::util;
 use proc_macro2::TokenStream; //Span,
 use quote::quote; //format_ident,
-use syn::{
-    parse_macro_input, Data, DataEnum, DataStruct, DeriveInput, Fields, GenericArgument, Ident,
-    PathArguments, PathSegment, Type,
-};
+use syn::{DataStruct, DeriveInput, Ident, Type};
 
 pub fn expand_derive(input: DeriveInput) -> TokenStream {
     let item_name = input.ident;
@@ -62,10 +57,7 @@ fn get_struct_impl(r#struct: &DataStruct, _struct_ident: &Ident) -> TokenStream 
         .into_iter()
         .filter_map(|(field_ident, field_type)| {
             let field = can_access_language(field_type);
-            match field {
-                Some(field) => Some((field_ident, field)),
-                _ => None,
-            }
+            field.map(|field| (field_ident, field))
         })
         .collect::<Vec<_>>();
     let (field_ident, field_variant) = fields.first().unwrap(); // TODO throw better compile errors
@@ -80,7 +72,7 @@ fn get_struct_impl(r#struct: &DataStruct, _struct_ident: &Ident) -> TokenStream 
 
 fn can_access_language(ty: &Type) -> Option<AccessorField> {
     let type_path = match_or!(Type::Path(type_path), type_path, ty)?;
-    let path_segment = match_or!(Some(seg), seg, type_path.path.segments.first())?;
+    let path_segment = type_path.path.segments.first()?;
     use AccessorField::*;
     match AccessorField::from(&*path_segment.ident.to_string()) {
         Other => None,

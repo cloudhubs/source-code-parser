@@ -1,3 +1,4 @@
+use source_code_parser::ressa::LaastIndex;
 use source_code_parser::ressa::NodePattern;
 use source_code_parser::ressa::ParserContext;
 use source_code_parser::ressa::RessaNodeExplorer;
@@ -9,7 +10,7 @@ macro_rules! fake_ressa_explore_impl {
     ( $( $struct_name:ty ),+ ) => {
         $(
             impl RessaNodeExplorer for $struct_name {
-                fn explore(&self, _pattern: &mut NodePattern, _ctx: &mut ParserContext) -> Option<()> {
+                fn explore(&self, _pattern: &mut NodePattern, _ctx: &mut ParserContext, _index: &LaastIndex) -> Option<()> {
                     None
                 }
             }
@@ -22,28 +23,28 @@ fake_ressa_explore_impl!(CallExpr, IndexExpr, Ident, BinExpr, Expr, ExprStmt, St
 // Rust-analyzer likes to throw a "not yet implemented" compiler error here for some reason
 // but the test passes since it compiles
 
-#[derive(NodeLanguage, ChildFields)]
+#[derive(Debug, NodeLanguage, ChildFields)]
 pub struct CallExpr {
     regular: IndexExpr,
     boxed: Box<Ident>,
     language: Language,
 }
 
-#[derive(NodeLanguage, ChildFields)]
+#[derive(Debug, NodeLanguage, ChildFields)]
 pub struct IndexExpr {
     opt: Option<Ident>,
     vec_opt: Vec<Option<Ident>>,
     opt_vec: Option<Vec<ExprStmt>>,
     language_field: Language,
 }
-#[derive(NodeLanguage, ChildFields)]
+#[derive(Debug, NodeLanguage, ChildFields)]
 pub struct Ident {
     opt_vec_opt: Option<Vec<Option<Node>>>,
     nested: BinExpr,
 
     language: Language,
 }
-#[derive(NodeLanguage, ChildFields)]
+#[derive(Debug, NodeLanguage, ChildFields)]
 pub struct BinExpr {
     left: Box<Expr>,
     right: Box<Expr>,
@@ -51,30 +52,30 @@ pub struct BinExpr {
     language: Language,
 }
 
-#[derive(NodeLanguage, ChildFields)]
+#[derive(Debug, NodeLanguage, ChildFields)]
 pub struct EmptyExpr {
     language: Language,
 }
 
-#[derive(NodeLanguage, ChildFields)]
+#[derive(Debug, NodeLanguage, ChildFields)]
 pub enum Expr {
     CallExpr(CallExpr),
     IndexExpr(IndexExpr),
     Ident(Ident),
     BinExpr(BinExpr),
 }
-#[derive(NodeLanguage, ChildFields)]
+#[derive(Debug, NodeLanguage, ChildFields)]
 pub struct ExprStmt {
     vector: Vec<Expr>,
 
     language: Language,
 }
-#[derive(NodeLanguage, ChildFields)]
+#[derive(Debug, NodeLanguage, ChildFields)]
 pub enum Stmt {
     ExprStmt(ExprStmt),
 }
 
-#[derive(NodeLanguage, ChildFields)]
+#[derive(Debug, NodeLanguage, ChildFields)]
 pub enum Node {
     Expr(Expr),
     Stmt(Stmt),

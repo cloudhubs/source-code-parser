@@ -19,7 +19,7 @@ comm_repl_default_impl!(
 impl CommunicationReplacer for AssignExpr {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -38,7 +38,7 @@ impl CommunicationReplacer for AssignExpr {
 impl CommunicationReplacer for CallExpr {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         callee_class: Option<&ClassOrInterfaceComponent>,
         callee_method: &MethodComponent,
@@ -83,7 +83,7 @@ impl CommunicationReplacer for CallExpr {
         let client_ident = match_ident_or(&*client_call.expr)?.name.to_lowercase();
         let method_ident = match_ident_or(&*client_call.selected)?;
         let client_name = get_rpc_service_name(callee_class, &client_ident);
-        let client_name = match get_rest_service_name(callee_class, self.args.iter().next()) {
+        let client_name = match get_rest_service_name(callee_class, self.args.first()) {
             Some(rest_name) => Some(rest_name),
             None => client_name,
         };
@@ -120,11 +120,11 @@ impl CommunicationReplacer for CallExpr {
                         .to_lowercase(),
                 );
 
-                let base = class
-                    .annotations
-                    .iter()
-                    .find(|a| a.name.contains("RequestMapping"))
-                    .map(|a| a.value.clone());
+                // let base = class
+                //     .annotations
+                //     .iter()
+                //     .find(|a| a.name.contains("RequestMapping"))
+                //     .map(|a| a.value.clone());
                 let tail = method
                     .annotations
                     .iter()
@@ -208,7 +208,7 @@ fn get_rpc_service_name(
         for field in class.field_components.iter() {
             // Go by type information for finding the service name. If not available
             // use naming convention.
-            let field_name = if field.r#type != "" {
+            let field_name = if !field.r#type.is_empty() {
                 field.r#type.to_lowercase()
             } else {
                 field.field_name.to_lowercase()
@@ -217,10 +217,10 @@ fn get_rpc_service_name(
             if field_name.contains("client") {
                 // Strip excess type information and unneeded naming like "client" and underscores
                 let mut field_name = field_name.split("client").next()?;
-                if field_name.contains("<") {
-                    field_name = field_name.split("<").last()?;
+                if field_name.contains('<') {
+                    field_name = field_name.split('<').last()?;
                 }
-                client_name = field_name.replace("_", "").replace("service", "").into();
+                client_name = field_name.replace("_", "").replace("service", "");
             }
         }
     }
@@ -261,11 +261,11 @@ fn get_rest_config_name(expr: &Expr) -> Option<String> {
 fn is_communication_call(client_ident: &str, method_ident: &Ident, client_name: &str) -> bool {
     // Filter out common client utility methods that aren't endpoints
     let is_rpc_call = client_ident.contains("client")
-        && client_name.len() > 0
-        && match &*method_ident.name.to_lowercase() {
-            "push" | "pop" | "getclient" => false,
-            _ => true,
-        };
+        && !client_name.is_empty()
+        && !matches!(
+            &*method_ident.name.to_lowercase(),
+            "push" | "pop" | "getclient"
+        );
 
     let is_rest_call = client_ident.contains("rest") && !client_name.contains("rest");
 
@@ -275,7 +275,7 @@ fn is_communication_call(client_ident: &str, method_ident: &Ident, client_name: 
 impl CommunicationReplacer for InitListExpr {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -294,7 +294,7 @@ impl CommunicationReplacer for InitListExpr {
 impl CommunicationReplacer for LambdaExpr {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -307,7 +307,7 @@ impl CommunicationReplacer for LambdaExpr {
 impl CommunicationReplacer for SwitchExpr {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -322,7 +322,7 @@ impl CommunicationReplacer for SwitchExpr {
 impl CommunicationReplacer for CaseExpr {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,

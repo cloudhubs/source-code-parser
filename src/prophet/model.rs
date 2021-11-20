@@ -86,9 +86,9 @@ impl Default for Language {
     }
 }
 
-impl Into<Language> for LANG {
-    fn into(self) -> Language {
-        match self {
+impl From<LANG> for Language {
+    fn from(lang: LANG) -> Self {
+        match lang {
             LANG::Cpp => Language::Cpp,
             LANG::Java => Language::Java,
             LANG::Python => Language::Python,

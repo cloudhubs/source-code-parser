@@ -49,19 +49,13 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
 
         let class_names = classes
             .iter()
-            .filter(|component| match component.declaration_type {
-                ContainerType::Class => true,
-                _ => false,
-            })
+            .filter(|component| matches!(component.declaration_type, ContainerType::Class))
             .map(|class| class.component.container_name.clone())
             .collect();
 
         let interface_names = classes
             .iter()
-            .filter(|component| match component.declaration_type {
-                ContainerType::Interface => true,
-                _ => false,
-            })
+            .filter(|component| matches!(component.declaration_type, ContainerType::Interface))
             .map(|class| class.component.container_name.clone())
             .collect();
 
@@ -74,24 +68,17 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
         let interfaces: Vec<ClassOrInterfaceComponent> = class_ix_list
             .clone()
             .into_iter()
-            .filter(|interface| match interface.declaration_type {
-                ContainerType::Interface => true,
-                _ => false,
-            })
+            .filter(|interface| matches!(interface.declaration_type, ContainerType::Interface))
             .collect();
         let classes: Vec<ClassOrInterfaceComponent> = class_ix_list
-            .clone()
             .into_iter()
-            .filter(|class| match class.declaration_type {
-                ContainerType::Class => true,
-                _ => false,
-            })
+            .filter(|class| matches!(class.declaration_type, ContainerType::Class))
             .collect();
         let modules: Vec<_> = add_ids(&other.modules, &mut id, |module, id| {
             ModuleComponent::convert_compat(module, *id, &methods, &classes)
         });
 
-        let ctx = JSSAContext {
+        JSSAContext {
             instance_type: other.component.instance_type,
             succeeded: other.succeeded,
             class_names,
@@ -107,13 +94,12 @@ impl From<super::JSSAContext<'_>> for JSSAContext {
             interfaces,
             modules,
             methods,
-        };
+        }
         // tracing::info!("{:#?}", ctx);
-        ctx
     }
 }
 
-fn add_ids<T, F, R>(components: &Vec<T>, id: &mut i64, id_adder: F) -> Vec<R>
+fn add_ids<T, F, R>(components: &[T], id: &mut i64, id_adder: F) -> Vec<R>
 where
     F: Fn(&T, &mut i64) -> R,
 {
@@ -166,12 +152,12 @@ impl MethodComponent {
         let sub_components = parameters
             .clone()
             .into_iter()
-            .map(|annotation| ComponentType::MethodParamComponent(annotation))
+            .map(ComponentType::MethodParamComponent)
             .chain(
                 annotations
                     .clone()
                     .into_iter()
-                    .map(|annotation| ComponentType::AnnotationComponent(annotation)),
+                    .map(ComponentType::AnnotationComponent),
             )
             .collect();
 
@@ -234,7 +220,7 @@ pub struct MethodParamComponent {
 impl MethodParamComponent {
     fn convert_compat(param: &super::MethodParamComponent, id: &mut i64) -> MethodParamComponent {
         let annotation = match &param.annotation {
-            Some(annotation_list) => AnnotationComponent::convert_all(&annotation_list, id),
+            Some(annotation_list) => AnnotationComponent::convert_all(annotation_list, id),
             _ => vec![],
         };
         MethodParamComponent {
@@ -264,7 +250,7 @@ impl AnnotationComponent {
     }
 
     fn convert_all(
-        annotations: &Vec<super::AnnotationComponent>,
+        annotations: &[super::AnnotationComponent],
         id: &mut i64,
     ) -> Vec<AnnotationComponent> {
         add_ids(annotations, id, |anno, id| {
@@ -292,26 +278,20 @@ impl ModuleComponent {
     fn convert_compat(
         other: &super::ModuleComponent,
         id: i64,
-        methods: &Vec<MethodComponent>,
-        classes: &Vec<ClassOrInterfaceComponent>,
+        methods: &[MethodComponent],
+        classes: &[ClassOrInterfaceComponent],
     ) -> ModuleComponent {
         let class_names = other
             .classes
             .iter()
-            .filter(|component| match component.declaration_type {
-                ContainerType::Class => true,
-                _ => false,
-            })
+            .filter(|component| matches!(component.declaration_type, ContainerType::Class))
             .map(|class| class.component.container_name.clone())
             .collect();
 
         let interface_names = other
             .classes
             .iter()
-            .filter(|component| match component.declaration_type {
-                ContainerType::Interface => true,
-                _ => false,
-            })
+            .filter(|component| matches!(component.declaration_type, ContainerType::Interface))
             .map(|class| class.component.container_name.clone())
             .collect();
 
@@ -321,14 +301,12 @@ impl ModuleComponent {
                 other
                     .classes
                     .iter()
-                    .filter(|other_class| match other_class.declaration_type {
-                        ContainerType::Class => true,
-                        _ => false,
+                    .filter(|other_class| {
+                        matches!(other_class.declaration_type, ContainerType::Class)
                     })
-                    .find(|other_class| class.is_equiv(other_class))
-                    .is_some()
+                    .any(|other_class| class.is_equiv(other_class))
             })
-            .map(|class| class.clone())
+            .cloned()
             .collect();
 
         let interface_ids: Vec<_> = classes
@@ -337,24 +315,16 @@ impl ModuleComponent {
                 other
                     .classes
                     .iter()
-                    .filter(|other_class| match other_class.declaration_type {
-                        ContainerType::Interface => true,
-                        _ => false,
+                    .filter(|other_class| {
+                        matches!(other_class.declaration_type, ContainerType::Interface)
                     })
-                    .find(|other_class| class.is_equiv(other_class))
-                    .is_some()
+                    .any(|other_class| class.is_equiv(other_class))
             })
-            .map(|class| class.clone())
+            .cloned()
             .collect();
 
         ModuleComponent {
-            component: ContainerComponent::convert_compat(
-                &other.component,
-                id,
-                methods,
-                &vec![],
-                true,
-            ),
+            component: ContainerComponent::convert_compat(&other.component, id, methods, &[], true),
             module_name: other.module_name.clone(),
             module_stereotype: other.module_stereotype.clone(),
             class_names,
@@ -402,7 +372,7 @@ impl ClassOrInterfaceComponent {
     fn convert_compat(
         other: &super::ClassOrInterfaceComponent,
         id: &mut i64,
-        methods: &Vec<MethodComponent>,
+        methods: &[MethodComponent],
     ) -> ClassOrInterfaceComponent {
         let constructors: Vec<_> = methods
             .iter()
@@ -410,10 +380,9 @@ impl ClassOrInterfaceComponent {
                 other
                     .constructors
                     .iter()
-                    .find(|constructor| method.is_equiv(constructor))
-                    .is_some()
+                    .any(|constructor| method.is_equiv(constructor))
             })
-            .map(|constructor| constructor.clone())
+            .cloned()
             .collect();
 
         let methods: Vec<_> = methods
@@ -458,8 +427,8 @@ impl ClassOrInterfaceComponent {
                     variables: f.variables.clone(),
                     field_name: f.field_name.clone(),
                     accessor: f.accessor.clone(),
-                    is_static: f.is_static.clone(),
-                    is_final: f.is_final.clone(),
+                    is_static: f.is_static,
+                    is_final: f.is_final,
                     default_value: f.default_value.clone(),
                     r#type: f.r#type.clone(),
                 })
@@ -498,8 +467,8 @@ impl ContainerComponent {
     fn convert_compat(
         other: &super::ContainerComponent,
         id: i64,
-        methods: &Vec<MethodComponent>,
-        annotations: &Vec<AnnotationComponent>,
+        methods: &[MethodComponent],
+        annotations: &[AnnotationComponent],
         is_module: bool,
     ) -> ContainerComponent {
         let methods: Vec<_> = methods
@@ -508,21 +477,20 @@ impl ContainerComponent {
                 other
                     .methods
                     .iter()
-                    .find(|other_method| method.is_equiv(other_method))
-                    .is_some()
+                    .any(|other_method| method.is_equiv(other_method))
             })
-            .map(|method| method.clone())
+            .cloned()
             .collect();
 
         let sub_components = methods
             .clone()
             .into_iter()
-            .map(|method| ComponentType::MethodComponent(method))
+            .map(ComponentType::MethodComponent)
             .chain(
                 annotations
-                    .clone()
-                    .into_iter()
-                    .map(|annotation| ComponentType::AnnotationComponent(annotation)),
+                    .iter()
+                    .cloned()
+                    .map(ComponentType::AnnotationComponent),
             )
             .collect();
 

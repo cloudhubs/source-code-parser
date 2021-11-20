@@ -28,7 +28,7 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
             let lang = ressa.get_language();
             ressa.cascade_language(lang)
         })
-        .collect();
+        .collect::<Vec<_>>();
 
     // Index the AST
     let project_index = compute_index_languages(

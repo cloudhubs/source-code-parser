@@ -10,6 +10,9 @@ use serde::Deserialize;
 
 use super::{ContextLocalVariableActions, ContextObjectActions, ParserContext};
 
+// There really isn't any way around the too many arguments in the new method here
+// aside from not using a `new` method
+#[allow(clippy::too_many_arguments)]
 /// A ReSSA Parser describing a node of interest.
 #[derive(Debug, Clone, Deserialize, new)]
 pub struct NodePattern {
@@ -213,6 +216,10 @@ pub enum NodeType {
 }
 
 pub trait IntoRessaNode {
+    // The normal convention is to pass an owned self for into_* methods, we maybe
+    // could rename this to follow conventions more closely but I don't think it's
+    // a big deal here
+    #[allow(clippy::wrong_self_convention)]
     fn into_ressa_node(&self) -> NodeType;
 }
 
@@ -283,7 +290,7 @@ impl CompiledPattern {
 
             // Register variables and references
             if is_ref {
-                references.push(name.clone().into());
+                references.push(name.into());
             }
             variables.push(name.into());
         }
@@ -345,9 +352,9 @@ impl CompiledPattern {
                 // Extract variables to context
                 for var_name in self.variables.iter() {
                     ctx.make_variable(
-                        &var_name,
+                        var_name,
                         matches
-                            .name(&var_name)
+                            .name(var_name)
                             .expect("Failed to match a variable name")
                             .clone()
                             .as_str(),
