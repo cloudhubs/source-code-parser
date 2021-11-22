@@ -1,7 +1,7 @@
 use runestick::{Any, Object, Shared, Value};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
-pub type RessaResult = HashMap<String, BTreeMap<String, Value>>;
+use super::RessaResult;
 
 /// Special attribute that's value is the name that a tag should resolve to
 const RESOLVES_TO: &str = "???";
@@ -17,6 +17,7 @@ pub struct ParserContext {
     pub frame_number: i32,
 }
 
+/// Convert the context into the result format
 impl From<ParserContext> for RessaResult {
     fn from(ctx: ParserContext) -> Self {
         ctx.objectlike_data
