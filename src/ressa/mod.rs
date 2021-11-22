@@ -17,6 +17,9 @@ pub use callback::*;
 pub mod index;
 pub use index::*;
 
+pub mod result;
+pub use result::*;
+
 use crate::{ast::NodeLanguage, Language, ModuleComponent};
 
 /// Run the user-defined parsers, in the order they were defined, on our AST

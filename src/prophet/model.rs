@@ -98,6 +98,18 @@ impl From<LANG> for Language {
     }
 }
 
+impl From<String> for Language {
+    fn from(lang: String) -> Self {
+        match &*lang {
+            "Cpp" => Language::Cpp,
+            "Java" => Language::Java,
+            "Python" => Language::Python,
+            "Go" => Language::Go,
+            _ => Language::Unknown,
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ModuleStereotype {
