@@ -9,6 +9,7 @@ mod stmt;
 /// Parse the body of a method, static block, constructor, etc.
 pub(crate) fn parse_block(ast: &AST, component: &ComponentInfo) -> Block {
     Block::new(parse_child_nodes(ast, component), Language::Go)
+    
 }
 
 /*

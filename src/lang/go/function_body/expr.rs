@@ -10,9 +10,9 @@ use super::is_common_junk_tag;
 pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     match &*ast.r#type {
         // Variables and initialization
-        "identifier" => parse_ident(ast, component),
+        "identifier" | "field_identifier" => parse_ident(ast, component),
         "int_literal" | 
-        "interpreted_string_literal" => Some(Expr::Literal(Literal::new(ast.value.clone(), Language::Go))),
+        "interpreted_string_literal" | "nil" | "true" | "false" => Some(Expr::Literal(Literal::new(ast.value.clone(), Language::Go))),
         "assignment_statement" => parse_assignment(ast, component),
 
         //language specific
@@ -22,6 +22,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
 
         //function and method calls
         "call_expression" => parse_function(ast, component),
+        "selector_expression" => Some(parse_dot_expr(ast, component)?.into()),
 
         unknown => None,
     }
@@ -168,7 +169,7 @@ fn parse_function(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
     //determine the type of function call
     if selector.find_child_by_type(&["."]).is_some() {
         //member functions
-        let function_name = parse_dot_expr(selector)?;
+        let function_name = parse_dot_expr(selector, component)?;
 
         Some(CallExpr::new(Box::new(function_name.into()), args, Language::Go).into())
     } else {
@@ -176,21 +177,17 @@ fn parse_function(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         let name = Ident::new(parse_identifier(&selector.children[0]), Language::Go);
         Some(CallExpr::new(Box::new(name.into()), args, Language::Go).into())
     }
-    
-
-    
-
-
-
-    
 }
 
-fn parse_dot_expr(node: &AST) -> Option<DotExpr>{
+fn parse_dot_expr(node: &AST, component: &ComponentInfo) -> Option<DotExpr>{
     //get the name of what called the function
-    let lhs = Ident::new(parse_identifier(&node.children[0]), Language::Go);
-    let rhs = Ident::new(parse_identifier(&node.children[2]), Language::Go);
-
+    //let lhs = Ident::new(parse_identifier(&node.children[0]), Language::Go);
+    let lhs = parse_expr(&node.children[0], component)?;
+    //let rhs = Ident::new(parse_identifier(&node.children[2]), Language::Go);
+    let rhs = parse_expr(&node.children[2], component)?;
     
-    Some(DotExpr::new(Box::new(lhs.into()), Box::new(rhs.into()), Language::Go))
+    Some(DotExpr::new(Box::new(lhs), Box::new(rhs), Language::Go))
 }
+
+
 

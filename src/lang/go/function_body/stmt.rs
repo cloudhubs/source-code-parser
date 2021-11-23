@@ -1,7 +1,8 @@
-use crate::ast::{to_block, DeclStmt, Expr, ExprStmt, ForStmt, IfStmt, Node, Stmt, VarDecl};
+use crate::ast::{to_block, DeclStmt, Expr, ExprStmt, ForStmt, IfStmt, Node, Stmt, VarDecl, Ident};
 use crate::ComponentInfo;
 use crate::AST;
 use crate::Language;
+use crate::go::util::identifier::parse_identifier;
 
 use super::{expr::parse_expr, is_common_junk_tag, node::parse_node, parse_block};
 use crate::go::function_body::node::parse_child_nodes;
@@ -60,9 +61,11 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
     decl.into()
 }
 
-pub(crate) fn parse_short_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
+pub(crate) fn parse_short_decl(ast: &AST, component: &ComponentInfo) -> Option<DeclStmt> {
     let mut r#type = "N/A".to_string();
     let mut i = 0;
+    
+    /*
     for expr in ast.find_all_children_by_type(&["expression_list"]).get_or_insert(vec![]).iter() {
         if i == 0 {
             i+= 1;
@@ -71,16 +74,45 @@ pub(crate) fn parse_short_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt
             r#type = determine_var_type(expr);
         }
     }
-    
+    */
+
+    let expr_lists = ast.find_all_children_by_type(&["expression_list"]).unwrap_or_default();
+    let lhs = *expr_lists.first()?;
+    let rhs = *expr_lists.last()?;
 
 
+    //println!("{:#?}", ast);
 
     // Determine the value it was set to
-    let rhs = parse_child_nodes(ast, component);
+    let var_names =  lhs.children.iter()
+        .filter(|child| child.r#type == "identifier")
+        .map(|node| parse_identifier(node))
+        .map(|variable| VarDecl::new(None, Ident::new(variable, Language::Go), Language::Go))
+        .collect::<Vec<_>>();
 
-    let mut decl = DeclStmt::new(vec![], vec![], Language::Go);
-    for var in rhs.iter() {
+   
+    // let rhs_vals = parse_child_nodes(rhs, component).into_iter().map(|node| match node {
+    //     Node::Expr(expr) => Some(expr),
+    //     var_name => {
+    //         println!("{:#?}", var_name);
+    //         None
+    //     }
+    // }).collect::<Vec<_>>();
+    
+
+    let rhs_vals = rhs.children.iter()
+        .map(|child| parse_expr(child, component))
+        .collect();
+
+    println!("{:#?}", rhs_vals);
+
+    Some(DeclStmt::new(var_names, rhs_vals, Language::Go))
+
+    /*
+    ///FIX ME!!!! need base to hold a vector of Ident, right now it is only getting the first var!
+    for var in lhs.iter() {
         // Extract expression from the hierarchy
+        /*
         let base = match var {
             Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. })) | Node::Expr(expr) => expr,
             _ => {
@@ -88,8 +120,13 @@ pub(crate) fn parse_short_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt
                 continue;
             }
         };
+        */
+
+        //println!("{:#?}", base);
+        //println!("{:#?}", lhs);
 
         // Parse variable
+        /*
         match base {
             Expr::BinaryExpr(expr) => match expr.lhs.as_ref() {
                 Expr::Ident(lhs) => {
@@ -105,10 +142,16 @@ pub(crate) fn parse_short_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt
                 decl.expressions.push(None);
             }
             Expr::Literal(lit) => decl.expressions.push(Some(lit.clone().into())),
+           
+            //Expr::DotExpr()
             unknown => {
-                eprintln!("Expected BinaryExpr or Ident, got {:#?}", unknown);
+                eprintln!("Expected BinaryExpr, Ident or Literal, got {:#?}", unknown);
             }
         }
+        */
+        
+
+        //decl.expressions.push(Some(base.clone()));
     }
 
     for var_decl in decl.variables.iter_mut() {
@@ -117,6 +160,9 @@ pub(crate) fn parse_short_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt
         var_decl.var_type = Some(r#type.clone());
     }
     decl.into()
+    */
+
+
 }
 
 pub(crate) fn parse_if(ast: &AST, component: &ComponentInfo) -> Option<Node> {
@@ -126,6 +172,7 @@ pub(crate) fn parse_if(ast: &AST, component: &ComponentInfo) -> Option<Node> {
 
     for child in ast.children.iter().filter(|node| node.r#type != "else") {
         match &*child.r#type {
+
             "binary_expression" => {
                 guard = parse_expr(child, component)
             },
@@ -153,7 +200,7 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     let mut i = 0;
 
     //find the node containing the for clauses of the statement
-    let clause_node = match ast.find_child_by_type(&["for_clause"]) {
+    let clause_node = match ast.find_child_by_type(&["for_clause", "range_clause"]) {
         Some(node) => node,
         None => ast,
     };
@@ -210,10 +257,16 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             })
             .collect()
     });
+
     //parse guard condition
-    let guard = parts[1]
-        .clone()
-        .map_or(None, |guard| Some(to_expr(&guard)[0].clone()));
+    let guard = match parts.get(1) {
+        Some(Some(guard)) => to_expr(&guard).get(0).cloned(),
+        _ => None
+    };
+    
+        //.clone()
+        //.map(|guard| to_expr(&guard).get(0).flatten())
+        //.map(|guard| (*to_expr(&guard).get(0)).clone());
 
     //parse postcondition
     let post = parts[2].clone().map_or(vec![], |post| to_expr(&post));

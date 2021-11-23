@@ -1,6 +1,8 @@
 use crate::go::function_body::parse_block;
 use crate::go::util::identifier::parse_identifier;
 use crate::go::util::vartype::find_type;
+use crate::go::util::vartype::find_return;
+use crate::go::util::vartype::unwrap_pointer_type;
 use crate::parse::AST;
 use crate::prophet::*;
 
@@ -8,8 +10,8 @@ pub(crate) fn parse_function(ast: &AST, module_name: &str, path: &str) -> Option
     //find the function name
     let fn_identifier = parse_identifier(ast);
     //get return type
-    let return_type = find_type(ast);
-
+    //let return_type = find_type(ast);
+    let return_type = find_return(ast);
     let component = ComponentInfo {
         language: Language::Go,
         path: path.to_string(),
@@ -74,8 +76,8 @@ pub(crate) fn parse_function(ast: &AST, module_name: &str, path: &str) -> Option
 
 pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str) -> (String, MethodComponent) {
     let method_identifier = parse_identifier(ast);
-    let return_type = find_type(ast);
-
+    //let return_type = find_type(ast);
+    let return_type = find_return(ast);
     let component = ComponentInfo {
         language: Language::Go,
         path: path.to_string(),
@@ -112,7 +114,7 @@ pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str) -> (String,
         .get_or_insert(vec![])
         .iter()
     {
-        if i == 0 {
+        if i == 0 || i == 2 {
             i = 1;
         } else {
             for param_node in node.children.iter() {
@@ -123,7 +125,9 @@ pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str) -> (String,
                     _ => {}
                 }
             }
+            i = 2
         }
+
     }
 
     for member in ast.children.iter() {
@@ -161,9 +165,23 @@ pub(crate) fn parse_method(ast: &AST, module_name: &str, path: &str) -> (String,
 }
 
 fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent {
-    let mut name = parse_identifier(ast);
+    let mut isPtr = false;
+
+    let myNode = unwrap_pointer_type(ast);
+
+    let mut name = "".to_string();
+    if(isPtr) {
+        //name = "*".to_string();
+    }
+    
+    name += &parse_identifier(ast);
     //let mut modifier = Modifier::new();
-    let param_type = find_type(ast);
+    let mut param_type = "".to_string();
+    if(isPtr) {
+        //param_type = "*".to_string();
+    }
+    param_type += &find_type(myNode);
+    //let param_type = find_type(myNode);
 
     MethodParamComponent {
         component: ComponentInfo {

@@ -18,7 +18,7 @@ pub(crate) fn parse_child_nodes(ast: &AST, component: &ComponentInfo) -> Vec<Nod
 pub(crate) fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     match &*ast.r#type {
         "var_declaration" => Some(Node::Stmt(parse_decl(ast, component).into())),
-        "short_var_declaration" => Some(Node::Stmt(parse_short_decl(ast, component).into())),
+        "short_var_declaration" => Some(Node::Stmt(parse_short_decl(ast, component)?.into())),
         "if_statement" => parse_if(ast, component),
         "block" => Some(parse_block(ast, component).into()),
         
