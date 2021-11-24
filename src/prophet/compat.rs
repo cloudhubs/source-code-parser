@@ -165,8 +165,7 @@ impl MethodComponent {
         let component = ComponentInfo {
             path: format!(
                 "{}::MethodDeclaration::{}",
-                other.component.path.to_string(),
-                other.method_name
+                other.component.path, other.method_name
             ),
             instance_name: format!("MethodInfoComponent::{}", id),
             ..other.component.clone()
