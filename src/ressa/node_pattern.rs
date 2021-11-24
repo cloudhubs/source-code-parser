@@ -269,7 +269,7 @@ impl CompiledPattern {
 
         let matches = tag_regex.captures_iter(pattern);
         let mut pattern: String = pattern.into();
-        for captures in matches.into_iter() {
+        for captures in matches {
             let is_ref = captures.get(1).is_some();
             let name = captures.get(2).expect("Variable must have a name").as_str();
             let s = captures
