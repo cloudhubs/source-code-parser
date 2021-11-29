@@ -5,6 +5,7 @@ use crate::prophet::*;
 
 mod class_def;
 use class_def::*;
+use itertools::Itertools;
 
 mod method_body;
 mod method_def;
@@ -24,8 +25,7 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
         match packages.entry(name) {
             Entry::Occupied(mut packages) => {
                 // tracing::info!("Merging...");
-                let orig_module = packages.get_mut();
-                orig_module.merge_into(module);
+                packages.get_mut().merge_into(module);
             }
             Entry::Vacant(packages) => {
                 // tracing::info!("New! {}", module.module_name);
@@ -33,7 +33,7 @@ pub fn merge_modules(modules: Vec<ModuleComponent>) -> Vec<ModuleComponent> {
             }
         }
     }
-    packages.into_iter().map(|kv| kv.1).collect()
+    packages.into_iter().map(|(_, module)| module).collect()
 }
 
 pub fn find_components(ast: AST, path: &str) -> Vec<ComponentType> {
@@ -57,11 +57,11 @@ fn find_components_internal(ast: AST, package: String, path: &str) -> Vec<Compon
     {
         match &*node.r#type {
             "import_declaration" => tracing::info!("{}", parse_import(node)),
-            "package_declaration" => {
-                // package = parse_package(&node)
-                //     .expect(&*format!("Malformed package declaration {:#?}!", node));
-                // tracing::info!("{}", package);
-            }
+            // "package_declaration" => {
+            //     package = parse_package(&node)
+            //         .expect(&*format!("Malformed package declaration {:#?}!", node));
+            //     tracing::info!("{}", package);
+            // }
             "class_declaration"
             | "interface_declaration"
             | "enum_declaration"
@@ -71,7 +71,6 @@ fn find_components_internal(ast: AST, package: String, path: &str) -> Vec<Compon
                     for method in class.component.methods.iter() {
                         components.push(ComponentType::MethodComponent(method.clone()));
                     }
-                    // class.component.methods = vec![];
 
                     // Save the class itself
                     components.push(ComponentType::ClassOrInterfaceComponent(class));
@@ -100,12 +99,11 @@ fn find_components_internal(ast: AST, package: String, path: &str) -> Vec<Compon
 
 /// Take the AST node containing an import statement, and return back the String describing the package imported
 fn parse_import(ast: &AST) -> String {
-    let mut buffer = String::new();
-    for child in ast.children.iter() {
-        match &*child.r#type {
-            "identifier" | "." | "*" => buffer.push_str(&*child.value),
-            _ => buffer.push_str(&*parse_import(child)),
-        };
-    }
-    buffer
+    ast.children
+        .iter()
+        .map(|child| match &*child.r#type {
+            "identifier" | "." | "*" => child.value.clone(),
+            _ => parse_import(child),
+        })
+        .join("")
 }

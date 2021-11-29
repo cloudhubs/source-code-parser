@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::parse::AST;
 use crate::prophet::*;
 use crate::Language::Java;
@@ -98,29 +100,29 @@ pub(crate) fn parse_annotations(
         if let Some(params) = params {
             if let Some(params) = params.find_all_children_by_type(&["element_value_pair"]) {
                 // Annotation with named parameters -> NormalAnnotation
-                let mut key_value_pairs = vec![];
-
-                // Generate element values
-                for child in params.iter() {
-                    let key = &*child
-                        .find_child_by_type(&["identifier"])
-                        .expect(&*format!(
-                            "Annotation with multiple elements contains unnamed element! {:#?}",
+                let key_value_pairs = params
+                    .iter()
+                    .map(|child| {
+                        (
                             child
-                        ))
-                        .value;
-                    let value = parse_annotation_value(
-                        child
-                            .children
-                            .get(2)
-                            .expect("No value provided for an annotation element! AST malformed!"),
-                    );
-                    key_value_pairs.push(AnnotationValuePair {
-                        key: String::from(key),
+                                .find_child_by_type(&["identifier"])
+                                .expect(&*format!(
+                                "Annotation with multiple elements contains unnamed element! {:#?}",
+                                child
+                            ))
+                                .value
+                                .clone(),
+                            parse_annotation_value(child.children.get(2).expect(
+                                "No value provided for an annotation element! AST malformed!",
+                            )),
+                        )
+                    })
+                    .map(|(key, value)| AnnotationValuePair {
+                        key,
                         value,
                         language: Java,
-                    });
-                }
+                    })
+                    .collect();
 
                 // Create annotation
                 annotations.push(AnnotationComponent::create_normal(
@@ -155,18 +157,16 @@ pub(crate) fn parse_annotations(
 pub(crate) fn parse_annotation_value(ast: &AST) -> String {
     if !ast.children.is_empty() {
         // Filter the tokens to ensure the RHS parses correctly
-        let tokens = ast.children.iter().map(|node| {
-            if node.value == "new" {
-                "new "
-            } else {
-                &*node.value
-            }
-        });
-        let mut buffer = String::new();
-        for term in tokens {
-            buffer.push_str(term);
-        }
-        buffer
+        ast.children
+            .iter()
+            .map(|node| {
+                if node.value == "new" {
+                    "new "
+                } else {
+                    &*node.value
+                }
+            })
+            .join("")
     } else {
         ast.value.clone()
     }

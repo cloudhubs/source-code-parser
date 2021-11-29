@@ -14,19 +14,13 @@ pub(crate) fn parse_method_parameters(
     ast: &AST,
     component: &ComponentInfo,
 ) -> Vec<MethodParamComponent> {
-    let mut params = vec![];
-
-    for parameter in ast.children.iter() {
-        parse_method_parameters(parameter, component);
-        match &*parameter.r#type {
-            "formal_parameter" | "spread_parameter" => {
-                params.push(parse_parameter(parameter, component))
-            }
-            _ => {}
-        }
-    }
-
-    params
+    ast.children
+        .iter()
+        .flat_map(|parameter| match &*parameter.r#type {
+            "formal_parameter" | "spread_parameter" => Some(parse_parameter(parameter, component)),
+            _ => None,
+        })
+        .collect()
 }
 
 /// Parse the AST containing a single parameter to a method

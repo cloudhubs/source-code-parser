@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::AST;
 
 pub(crate) mod parameter;
@@ -14,9 +16,5 @@ pub(crate) fn fold_vec<T>(vector: Vec<T>) -> Option<Vec<T>> {
 
 /// Convert the children of a provided tree into a single, consecutive string
 pub(crate) fn stringify_tree_children(ast: &AST) -> String {
-    let mut buffer = String::new();
-    for member in ast.children.iter() {
-        buffer.push_str(&*member.value);
-    }
-    buffer
+    ast.children.iter().map(|child| &*child.value).join("")
 }

@@ -132,10 +132,12 @@ pub(crate) fn parse_try_catch(ast: &AST, component: &ComponentInfo) -> Option<No
                         .expect("No type on catch block!")
                         .iter()
                         // Clone each type on the catch block and map to a VarDecl
-                        .map(|child| child.value.clone())
-                        .map(|t| {
-                            let mut decl =
-                                VarDecl::new(Some(t), Ident::new(name.clone(), Java), Java);
+                        .map(|child| {
+                            let mut decl = VarDecl::new(
+                                Some(child.value.clone()),
+                                Ident::new(name.clone(), Java),
+                                Java,
+                            );
                             decl.is_final = Some(modifiers.is_final);
                             decl.is_static = Some(modifiers.is_static);
                             decl.annotation = modifiers.annotations.clone();
@@ -319,12 +321,10 @@ pub(crate) fn parse_enhanced_for(ast: &AST, component: &ComponentInfo) -> Option
     let iter = parse_expr(&ast.children[5], component);
 
     // Extract body
-    let body;
-    if let Some(block) = ast.find_child_by_type(&["block"]) {
-        body = parse_block(block, component);
-    } else {
-        body = Block::new(vec![], Java);
-    }
+    let body = match ast.find_child_by_type(&["block"]) {
+        Some(block) => parse_block(block, component),
+        _ => Block::new(vec![], Java),
+    };
 
     Some(Node::Stmt(
         ForRangeStmt::new(Box::new(Stmt::DeclStmt(iter_var)), iter, body, Java).into(),

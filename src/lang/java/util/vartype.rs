@@ -43,12 +43,11 @@ pub(crate) fn find_type(ast: &AST) -> String {
     ]);
 
     // If type found, record it
-    let mut result: String;
-    if let Some(r#type) = r#type {
-        result = parse_type(r#type);
+    let mut result = if let Some(r#type) = r#type {
+        parse_type(r#type)
     } else {
-        result = NO_TYPE.into();
-    }
+        NO_TYPE.into()
+    };
 
     // Check for C-style array declaration
     if let Some(ident) = ast.find_child_by_type(&["variable_declarator"]) {
@@ -69,9 +68,8 @@ pub(crate) fn find_type(ast: &AST) -> String {
 /// Parse the a `type_arguments` node
 pub(crate) fn parse_type_args(ast: &AST) -> String {
     // Vincent's changes here
-    let mut generic = String::new();
     if let Some(basetype) = ast.find_all_children_by_type(&["type_identifier"]) {
-        generic.push_str(&*basetype[0].r#value);
+        let mut generic = basetype[0].r#value.clone();
         if let Some(args) = ast.find_all_children_by_type(&["type_arguments"]) {
             for param in args[0].children.iter() {
                 match &*param.r#value {
@@ -80,8 +78,10 @@ pub(crate) fn parse_type_args(ast: &AST) -> String {
                 }
             }
         }
+        generic
+    } else {
+        "".to_string()
     }
-    generic
 }
 
 fn make_array_type(ast: &AST, base: &str) -> String {

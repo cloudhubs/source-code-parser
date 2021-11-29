@@ -61,12 +61,10 @@ fn make_break(ast: &AST) -> Option<Node> {
 }
 
 fn parse_expr_stmt(ast: &AST, component: &ComponentInfo) -> Option<Node> {
-    let mut expr = None;
-    for comp in ast.children.iter() {
-        expr = parse_expr(comp, component);
-        if expr.is_some() {
-            break;
-        }
-    }
+    let expr = ast
+        .children
+        .iter()
+        .flat_map(|comp| parse_expr(comp, component))
+        .next();
     Some(Node::Stmt(expr?.into()))
 }

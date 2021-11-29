@@ -19,16 +19,13 @@ pub(crate) fn parse_class(
     // Get container info
     let instance_type = match ast.find_child_by_type(&["class", "interface", "enum", "annotation"])
     {
-        Some(r#type) => match &*r#type.value {
-            "interface" => InstanceType::InterfaceComponent,
-            _ => InstanceType::ClassComponent,
-        },
-        None => InstanceType::ClassComponent,
+        Some(AST { value, .. }) if value == "interface" => InstanceType::InterfaceComponent,
+        _ => InstanceType::ClassComponent,
     };
-    let instance_name = match ast.find_child_by_type(&["identifier"]) {
-        Some(identifier) => identifier.value.clone(),
-        None => "".into(),
-    };
+    let instance_name = ast
+        .find_child_by_type(&["identifier"])
+        .map(|ident| ident.value.clone())
+        .unwrap_or_default();
 
     let declaration_type = match instance_type {
         InstanceType::InterfaceComponent => ContainerType::Interface,
@@ -126,13 +123,6 @@ fn parse_class_body(
 
 /// Parses a single field in a class
 fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
-    // let variables: Vec<String> = ast
-    //     .find_all_children_by_type(&["variable_declarator"])
-    //     .get_or_insert(vec![])
-    //     .iter()
-    //     .flat_map(|var_decl| var_decl.find_child_by_type(&["identifier"]))
-    //     .map(|identifier| identifier.value.clone())
-    //     .collect();
     let modifier = find_modifier(ast, &*component.path, &*component.package_name);
     let r#type = find_type(ast);
     let component = ComponentInfo {
@@ -142,8 +132,8 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
         instance_type: InstanceType::FieldComponent,
         language: Java,
     };
-    let fields: Vec<FieldComponent> = ast
-        .find_all_children_by_type(&["variable_declarator"])
+    
+    ast.find_all_children_by_type(&["variable_declarator"])
         .get_or_insert(vec![])
         .iter()
         .filter(|var_decl| var_decl.find_child_by_type(&["identifier"]).is_some())
@@ -173,29 +163,7 @@ fn parse_field(ast: &AST, component: &ComponentInfo) -> Vec<FieldComponent> {
                 expression: expr,
             }
         })
-        .collect();
-    fields
-
-    // TODO: How to handle field_name, default_value?
-    // variables
-    //     .into_iter()
-    //     .map(|field_name| FieldComponent {
-    //         component: ComponentInfo {
-    //             path: component.path.clone(),
-    //             package_name: component.package_name.clone(),
-    //             instance_name: field_name.clone(),
-    //             instance_type: InstanceType::FieldComponent,
-    //         },
-    //         annotations: modifier.annotations.clone(),
-    //         variables: vec![],
-    //         field_name,
-    //         accessor: modifier.accessor.clone(),
-    //         is_static: modifier.is_static.clone(),
-    //         is_final: modifier.is_final.clone(),
-    //         default_value: String::new(),
-    //         r#type: r#type.clone(),
-    //     })
-    //     .collect()
+        .collect()
 }
 
 // fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
