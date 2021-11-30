@@ -51,7 +51,9 @@
   - `ctx`: The parser context
 - `ctx` offers the following methods:
   - `make_object(name: &str)`: Defines an object with a given name in the context; if the name is already defined, does nothing.
-  - `make_attribute(name: &str, attr_name: &str, attr_value: Option<String>)`: Defines an attribute on an Object with a provided name in the context. Provides an optional value that the attribute will take on.
+  - `get_object(name: &str)`: Retrieves an object with the given name from the context. Edits to this object are not guaranteed to propogate to the context unless persisted using `save_object`.
+  - `save_object(name: &str, new_obj: &Object)`: Saves a given object into the context under the given name. If the object exists in the context, it will be overwritten. Also used to persist changes to an object retrieved by `get_object`
+  - `get_or_create_object(name: &str)`: Shorthand for `ctx.make_object(name); let x = ctx.get_object(name);`
   - `make_tag(name: &str, resolves_to: &str)`: Defines a Tag in the context.
   - `make_transient(name: &str)`: Defines a transient object, or marks an existing object as transient; if the object exists and is a transient Object, does nothing.
   - `get_object(name: &str) -> Option<HashMap<String, Option<String>>>`: Retrieves a copy of the object in the context with the given name. Automatically flattens `Tag`s, so it always returns a true Object, or `None` if the name was invalid.
@@ -60,7 +62,9 @@
   - `clear_variables()`: Manually delete all variables from the context. Happens implicitly on a Root Parser completing, after its final Callback.
   - `resolve_tag(name: &str) -> String`: This is mostly an internal function, but worth documenting for potential cases. This resolves a provided name to the name of the Object it resolves to. Object names resolve to themselves, and names which name no valid Object also resolve to themselves.
 
-### Parsers
+### Parser Types and Behaviors
+
+Parsers match specific data in the ast. They may be marked essential (if the parser fails to match, a partial match is aborted) or transparent (acting as a logical OR of their child parsers). The available parser types are:
 
 - ClassOrInterface: Describes a class definition.
   - Subpatterns: applied against all annotations, fields, and method definitions
