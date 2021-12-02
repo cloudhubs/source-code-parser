@@ -14,7 +14,7 @@ pub enum Error {
     RuneAccess(runestick::AccessError),
 }
 
-/// Coerces a `runestick::Value` into a `Shared<T>`
+/// Coerces a `runestick::Value` into a `T`
 pub fn coerce_primitive<I, T, E>(value: &Value, into: I) -> Result<T, Error>
 where
     I: FnOnce(Value) -> Result<T, E>,
