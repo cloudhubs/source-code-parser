@@ -14,6 +14,28 @@ pub enum Error {
     RuneAccess(runestick::AccessError),
 }
 
+/// Coerces a `runestick::Value` into a `T`
+pub fn coerce_primitive<I, T, E>(value: &Value, into: I) -> Result<T, Error>
+where
+    I: FnOnce(Value) -> Result<T, E>,
+{
+    into(value.clone()).map_err(|_| Error::RuneAcquisition)
+}
+
+/// Extracts a value from the given object at key `name` and coerces it into `T`
+pub fn extract_primitive<I, T, E>(
+    obj: &BTreeMap<String, Value>,
+    name: &str,
+    into: I,
+) -> Result<T, Error>
+where
+    I: FnOnce(Value) -> Result<T, E>,
+{
+    obj.get(name)
+        .ok_or_else(|| Error::MissingKey(name.to_string()))
+        .and_then(|value| coerce_primitive(value, into))
+}
+
 /// Coerces a `runestick::Value` into a `Shared<T>`
 pub fn coerce<I, T, E>(value: &Value, into: I) -> Result<T, Error>
 where
