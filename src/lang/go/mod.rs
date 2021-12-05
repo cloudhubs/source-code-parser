@@ -57,8 +57,11 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         .get_or_insert(vec![])
         .iter()
     {
-        let tuple = parse_method(node, &*package, path);
+        let mut tuple = parse_method(node, &*package, path);
 
+        if tuple.0.starts_with("*") {
+            tuple.0.remove(0);
+        }
         match types.get(&tuple.0) {
             Some(parent_struct) => {
                 //create a copy of the instance of the original struct and add the method to it

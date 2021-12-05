@@ -5,12 +5,20 @@ pub const NO_TYPE: &str = "N/A";
 
 
 pub(crate) fn find_type(ast: &AST) -> String {
-    let r#type = match ast.find_child_by_type(&["qualified_type"]) {
+    let my_node = unwrap_pointer_type(ast);
+    let mut is_ptr = false;
+
+    match my_node.find_child_by_type(&["*"]) {
+        Some(node) => {is_ptr = true;},
+        None => {}
+    }
+
+    let mut r#type = match my_node.find_child_by_type(&["qualified_type"]) {
         Some(node) => {
             parse_qualified_type(node)
         },
         None => {
-            let id_node = match ast.find_child_by_type(&["type_identifier"]) {
+            let id_node = match my_node.find_child_by_type(&["type_identifier"]) {
                 Some(node) => node,
                 None => ast,
             };
@@ -19,6 +27,9 @@ pub(crate) fn find_type(ast: &AST) -> String {
         }
     };
     
+    if is_ptr == true {
+        r#type = format!("*{}", r#type);
+    }
     r#type
 }
 
