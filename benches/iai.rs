@@ -16,29 +16,29 @@ fn laast_benchmark(dir: &str) {
 
 fn ressa_benchmark(ressa_json: &str, dir: &str) {
     let dir = serde_json::from_str::<Directory>(dir).unwrap();
-    let ctx = parse_project_context(&dir).unwrap();
+    let mut ctx = parse_project_context(&dir).unwrap();
     let ressa = serde_json::from_str::<Vec<NodePattern>>(ressa_json).unwrap();
-    let _ctx = black_box(run_ressa_parse(&mut ctx.modules.clone(), ressa.clone()));
+    let _ctx = black_box(run_ressa_parse(&mut ctx.modules, ressa));
 }
 
 fn ressa_endpoint_deathstarbench_simple() {
-    ressa_benchmark(ressa_json_endpoint_simple_dsb, &*directory_json_dsb())
+    ressa_benchmark(RESSA_JSON_ENDPOINT_SIMPLE_DSB, &*directory_json_dsb())
 }
 
 fn ressa_endpoint_deathstarbench_call_graph() {
-    ressa_benchmark(ressa_json_endpoint_dsb, &*directory_json_dsb())
+    ressa_benchmark(RESSA_JSON_ENDPOINT_DSB, &*directory_json_dsb())
 }
 
 fn ressa_entity_deathstarbench() {
-    ressa_benchmark(ressa_json_entity_dsb, &*directory_json_dsb())
+    ressa_benchmark(RESSA_JSON_ENTITY_DSB, &*directory_json_dsb())
 }
 
 fn ressa_benchmark_endpoint_tt() {
-    ressa_benchmark(ressa_json_endpoint_tt, &*directory_json_tt())
+    ressa_benchmark(RESSA_JSON_ENDPOINT_TT, &*directory_json_tt())
 }
 
 fn ressa_benchmark_entity_tt() {
-    ressa_benchmark(ressa_json_entity_tt, &*directory_json_tt())
+    ressa_benchmark(RESSA_JSON_ENTITY_TT, &*directory_json_tt())
 }
 
 fn laast_deathstarbench() {

@@ -25,14 +25,16 @@ pub(crate) fn log_unknown_tag(tag: &str, parent: &str) {
 /// Catch all for standard-issue junk tags from treesitter, to allow easy blanket-silencing of
 /// false alarms, to focus on the tags that are actually important
 pub(crate) fn is_common_junk_tag(tag: &str) -> bool {
-    // TECHNICALLY should just be 2 match arms. I split it up by the class of tag, so its easy to
-    // if a case is handled already. The compiler's gotta be smart enough to figure it out.
-    match tag {
-        "if" | "else" | "for" | "while" | "do" | "switch" | "try" | "catch" | "finally" => true,
-        "class" | "interface" | "enum" => true,
-        "(" | ")" | "{" | "}" | "->" | ";" | "," | "." | "..." => true,
-        _ => false,
-    }
+    // The compiler no longer needs to be smart enough to combine match arms :)
+    matches!(
+        tag,
+        // Control flow
+        "if" | "else" | "for" | "while" | "do" | "switch" | "try" | "catch" | "finally" |
+        // Type definitions
+        "class" | "interface" | "enum" | 
+        // Misc. Syntax
+        "(" | ")" | "{" | "}" | "->" | ";" | "," | "." | "..."
+    )
 }
 
 pub(crate) fn parse_assignment_pub(ast: &AST, component: &ComponentInfo) -> Option<Expr> {

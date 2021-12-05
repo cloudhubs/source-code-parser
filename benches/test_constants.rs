@@ -1,15 +1,5 @@
-pub const deathstarbench_root: &'static str = "/home/jacob/dev/DeathStarBench/mediaMicroservices";
-pub const trainticket_root: &'static str = "/home/jacob/dev/train-ticket";
-
-pub fn abs_diff(x: usize, y: usize) -> usize {
-    if y < x {
-        // println!("{} - {} = {}", x, y, x - y);
-        x - y
-    } else {
-        // println!("{} - {} = {}", y, x, y - x);
-        y - x
-    }
-}
+pub const DEATHSTARBENCH_ROOT: &str = "/home/jacob/dev/DeathStarBench/mediaMicroservices";
+pub const TRAINTICKET_ROOT: &str = "/home/jacob/dev/train-ticket";
 
 pub fn directory_json_dsb() -> String {
     format!(
@@ -258,7 +248,7 @@ pub fn directory_json_dsb() -> String {
     "numFiles": 0
   }}
 "#,
-        dir = deathstarbench_root
+        dir = DEATHSTARBENCH_ROOT
     )
 }
 
@@ -1779,11 +1769,11 @@ pub fn directory_json_tt() -> String {
       }}
   ]
 }}"#,
-        dir = trainticket_root
+        dir = TRAINTICKET_ROOT
     )
 }
 
-pub const ressa_json_endpoint_simple_dsb: &'static str = r##"
+pub const RESSA_JSON_ENDPOINT_SIMPLE_DSB: &str = r##"
 [
   {
     "identifier": "ClassOrInterface",
@@ -1802,7 +1792,7 @@ pub const ressa_json_endpoint_simple_dsb: &'static str = r##"
 ]
 "##;
 
-pub const ressa_json_entity_dsb: &'static str = r##"
+pub const RESSA_JSON_ENTITY_DSB: &str = r##"
 [
   {
     "identifier": "Method",
@@ -1870,7 +1860,7 @@ pub const ressa_json_entity_dsb: &'static str = r##"
 ]
 "##;
 
-pub const ressa_json_endpoint_dsb: &'static str = r##"
+pub const RESSA_JSON_ENDPOINT_DSB: &str = r##"
 [
   {
     "identifier": "Field",
@@ -1964,7 +1954,7 @@ pub const ressa_json_endpoint_dsb: &'static str = r##"
 
 "##;
 
-pub const ressa_json_endpoint_tt: &'static str = r##"
+pub const RESSA_JSON_ENDPOINT_TT: &str = r##"
 [
   {
     "identifier": "ClassOrInterface",
@@ -2131,7 +2121,7 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
 ]
 "##;
 
-pub const ressa_json_entity_tt: &'static str = r##"
+pub const RESSA_JSON_ENTITY_TT: &str = r##"
 [
   {
     "identifier": "ClassOrInterface",

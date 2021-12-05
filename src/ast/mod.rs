@@ -11,12 +11,15 @@ pub use expr::*;
 mod op;
 pub use op::*;
 
+use source_code_parser_macro::ChildFields;
+use source_code_parser_macro::NodeLanguage;
+
 use crate::Language;
 
 // enum_dispatch adds in our From implementations for us
 
 #[enum_dispatch]
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 #[serde(untagged)]
 pub enum Node {
     Block(Block),
@@ -24,7 +27,7 @@ pub enum Node {
     Expr(Expr),
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct Block {
     pub nodes: Vec<Node>,
     #[new(value = r#""block""#)]
@@ -41,4 +44,8 @@ pub fn to_block(node: Node, language: Language) -> Block {
             language,
         ),
     }
+}
+
+pub trait NodeLanguage {
+    fn get_language(&self) -> Language;
 }

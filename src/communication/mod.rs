@@ -11,7 +11,7 @@ mod stmt;
 pub trait CommunicationReplacer {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,
@@ -25,7 +25,7 @@ macro_rules! comm_repl_default_impl {
             impl CommunicationReplacer for $struct_name {
                 fn replace_communication_call(
                     &mut self,
-                    _modules: &Vec<ModuleComponent>,
+                    _modules: &[ModuleComponent],
                     _module: &ModuleComponent,
                     _class: Option<&ClassOrInterfaceComponent>,
                     _method: &MethodComponent,
@@ -40,7 +40,7 @@ macro_rules! comm_repl_default_impl {
 impl CommunicationReplacer for Block {
     fn replace_communication_call(
         &mut self,
-        modules: &Vec<ModuleComponent>,
+        modules: &[ModuleComponent],
         module: &ModuleComponent,
         class: Option<&ClassOrInterfaceComponent>,
         method: &MethodComponent,

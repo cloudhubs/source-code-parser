@@ -31,7 +31,7 @@ impl AST {
     pub fn find_child_by_type(&self, types: &[&str]) -> Option<&AST> {
         self.children
             .iter()
-            .find(|child| types.iter().find(|t| &*child.r#type == **t).is_some())
+            .find(|child| types.iter().any(|t| child.r#type == *t))
     }
 
     pub fn find_child_by_value(&self, value: &str) -> Option<&AST> {
@@ -42,7 +42,7 @@ impl AST {
         let children: Vec<&AST> = self
             .children
             .iter()
-            .filter(|child| types.iter().find(|t| &*child.r#type == **t).is_some())
+            .filter(|child| types.iter().any(|t| child.r#type == *t))
             .collect();
         if !children.is_empty() {
             Some(children)
@@ -99,7 +99,7 @@ impl AST {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, new)]
 #[serde(rename_all = "camelCase")]
 pub struct Directory {
     files: Vec<PathBuf>,
@@ -122,18 +122,14 @@ pub fn parse_project_context(directory: &Directory) -> std::io::Result<JSSAConte
             language: Language::Unknown,
         },
         succeeded: true,
-        root_path: "".into(),
+        root_path: "",
         modules,
     };
     Ok(ctx)
 }
 
 fn flatten_dirs(dir: &Directory) -> Vec<Directory> {
-    let mut dirs: Vec<Directory> = dir
-        .sub_directories
-        .iter()
-        .flat_map(|sub_dir| flatten_dirs(&sub_dir))
-        .collect();
+    let mut dirs: Vec<Directory> = dir.sub_directories.iter().flat_map(flatten_dirs).collect();
 
     dirs.push(dir.clone());
     dirs
@@ -159,7 +155,7 @@ pub fn parse_directory_trees(dir: &Directory) -> std::io::Result<Vec<ParsedTree>
     for dir in dirs {
         // Generate module constants
         let path = dir.path.as_path().to_str().unwrap_or("").to_owned();
-        if path == "" {
+        if path.is_empty() {
             continue;
         }
 
@@ -167,7 +163,7 @@ pub fn parse_directory_trees(dir: &Directory) -> std::io::Result<Vec<ParsedTree>
         let p = dir.path.clone();
         let mod_path;
         if p.is_file() {
-            let p: PathBuf = p.into_iter().dropping_back(1).collect();
+            let p: PathBuf = p.iter().dropping_back(1).collect();
             mod_path = p.into_os_string().into_string().unwrap()
         } else {
             mod_path = path.clone();
@@ -187,12 +183,7 @@ pub fn parse_directory_trees(dir: &Directory) -> std::io::Result<Vec<ParsedTree>
         for entry in read_dir {
             let entry = entry?;
             if !entry.path().is_dir() {
-                if dir
-                    .files
-                    .iter()
-                    .find(|path_buf| path_buf == &&entry.path())
-                    .is_none()
-                {
+                if !dir.files.iter().any(|path_buf| path_buf == &entry.path()) {
                     continue;
                 }
                 let mut file = File::open(entry.path())?;

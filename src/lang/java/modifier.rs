@@ -118,6 +118,7 @@ pub(crate) fn parse_annotations(
                     key_value_pairs.push(AnnotationValuePair {
                         key: String::from(key),
                         value,
+                        language: Java,
                     });
                 }
 
@@ -152,7 +153,7 @@ pub(crate) fn parse_annotations(
 
 /// Parse one of the values stored within an annotation
 pub(crate) fn parse_annotation_value(ast: &AST) -> String {
-    if ast.children.len() > 0 {
+    if !ast.children.is_empty() {
         // Filter the tokens to ensure the RHS parses correctly
         let tokens = ast.children.iter().map(|node| {
             if node.value == "new" {

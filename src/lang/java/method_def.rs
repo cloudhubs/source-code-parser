@@ -51,7 +51,7 @@ pub(crate) fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodCompon
     // Define new component info
     let component = ComponentInfo {
         path: component.path.clone(),
-        package_name: component.package_name.clone(),
+        package_name: component.package_name,
         instance_name: method_name.clone(),
         instance_type: InstanceType::MethodComponent,
         language: Java,

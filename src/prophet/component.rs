@@ -2,8 +2,9 @@ use super::*;
 use crate::ast::Block;
 use crate::ast::Expr;
 use serde::Serialize;
+use source_code_parser_macro::{ChildFields, NodeLanguage};
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage)]
 pub struct ComponentInfo {
     pub path: String,
     pub package_name: String,
@@ -41,7 +42,7 @@ pub enum ComponentType {
     FieldComponent(FieldComponent),
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct MethodComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -67,7 +68,7 @@ pub struct MethodComponent {
     pub body: Option<Block>,
 }
 
-#[derive(Debug, Eq, Serialize, Clone)]
+#[derive(Debug, Eq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct MethodParamComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -85,7 +86,7 @@ impl PartialEq for MethodParamComponent {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct ModuleComponent {
     // can contain functions here
     #[serde(flatten)]
@@ -116,14 +117,13 @@ impl ModuleComponent {
             container_name: name.clone(),
             line_count: 0,
         };
-        let module = ModuleComponent {
+        ModuleComponent {
             component: container,
             module_name: name,
             module_stereotype: ModuleStereotype::Fabricated,
             classes: vec![],
             interfaces: vec![],
-        };
-        module
+        }
     }
 
     /// Merges the provided ModuleComponent's data into this ones
@@ -133,7 +133,7 @@ impl ModuleComponent {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct ContainerComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -150,7 +150,7 @@ pub struct ContainerComponent {
     // raw_source: &'a str,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct ClassOrInterfaceComponent {
     #[serde(flatten)]
     pub component: ContainerComponent,
@@ -162,7 +162,7 @@ pub struct ClassOrInterfaceComponent {
     pub field_components: Vec<FieldComponent>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct FieldComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -182,7 +182,7 @@ pub struct FieldComponent {
 }
 
 // For some reason prophet-utils relies on an actual javaparser AnnotationExpr instead of putting the info here. Needs fix.
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
 pub struct AnnotationComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,
@@ -192,7 +192,7 @@ pub struct AnnotationComponent {
     pub annotation_meta_model: String,
     #[serde(rename = "metaModelFieldName")]
     pub meta_model_field_name: String,
-    // For now I mimiced the data structure here but this should really just be
+    // For now I mimicked the data structure here but this should really just be
     // a HashMap<&'a str, &'a str> with a manual serde::Serialize implementation.
     // I also am not sure where this is used.
     pub key_value_pairs: Vec<AnnotationValuePair>,
@@ -256,6 +256,7 @@ impl AnnotationComponent {
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         name: &str,
         key_value_pairs: Vec<AnnotationValuePair>,

@@ -48,7 +48,7 @@ fn ressa_benchmark_endpoint_simple(c: &mut Criterion) {
     ressa_benchmark(
         c,
         "ressa_endpoint_deathstarbench_simple",
-        ressa_json_endpoint_simple_dsb,
+        RESSA_JSON_ENDPOINT_SIMPLE_DSB,
         &*directory_json_dsb(),
     )
 }
@@ -57,7 +57,7 @@ fn ressa_benchmark_endpoint(c: &mut Criterion) {
     ressa_benchmark(
         c,
         "ressa_endpoint_deathstarbench_call_graph",
-        ressa_json_endpoint_dsb,
+        RESSA_JSON_ENDPOINT_DSB,
         &*directory_json_dsb(),
     )
 }
@@ -66,7 +66,7 @@ fn ressa_benchmark_entity(c: &mut Criterion) {
     ressa_benchmark(
         c,
         "ressa_entity_deathstarbench",
-        ressa_json_entity_dsb,
+        RESSA_JSON_ENTITY_DSB,
         &*directory_json_dsb(),
     )
 }
@@ -75,7 +75,7 @@ fn ressa_benchmark_endpoint_tt(c: &mut Criterion) {
     ressa_benchmark(
         c,
         "ressa_endpoint_trainticket",
-        ressa_json_endpoint_tt,
+        RESSA_JSON_ENDPOINT_TT,
         &*directory_json_tt(),
     )
 }
@@ -84,7 +84,7 @@ fn ressa_benchmark_entity_tt(c: &mut Criterion) {
     ressa_benchmark(
         c,
         "ressa_entity_trainticket",
-        ressa_json_entity_tt,
+        RESSA_JSON_ENTITY_TT,
         &*directory_json_tt(),
     )
 }

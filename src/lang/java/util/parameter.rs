@@ -1,3 +1,4 @@
+use crate::java::method_body::log_unknown_tag;
 use crate::java::modifier::parse_modifiers;
 use crate::java::modifier::Modifier;
 use crate::java::util::fold_vec;
@@ -45,7 +46,7 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
             "modifiers" => {
                 modifier = parse_modifiers(part_defn, &*component.path, &*component.package_name)
             }
-            unknown => {}
+            unknown => log_unknown_tag(unknown, "parameter list"),
         }
     }
 
@@ -58,7 +59,7 @@ fn parse_parameter(ast: &AST, component: &ComponentInfo) -> MethodParamComponent
             language: Language::Java,
         },
         annotation: fold_vec(modifier.annotations),
-        r#type: param_type.into(),
-        parameter_name: name.into(),
+        r#type: param_type,
+        parameter_name: name,
     }
 }
