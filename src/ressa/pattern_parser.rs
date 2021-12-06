@@ -118,6 +118,12 @@ impl NodePatternParser for ClassOrInterfaceComponent {
             &mut pattern.compiled_pattern,
             ctx,
         )?;
+        write_to_context(
+            &self.component.component.package_name,
+            pattern.essential,
+            &mut pattern.compiled_auxiliary_pattern,
+            ctx,
+        )?;
 
         // Check subpatterns
         explore_all_subpatterns!(
