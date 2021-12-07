@@ -65,7 +65,7 @@
 - ClassOrInterface: Describes a class definition.
   - Subpatterns: applied against all annotations, fields, and method definitions
   - Pattern: applied against class name
-  - Auxiliary pattern: unused
+  - Auxiliary pattern: applied against package name
 - Method: Describes a method definition.
   - Subpatterns: applied against all annotations, submethods, and the method body. All MethodParam subpattern nodes are applied as a subsequence against method parameters.
   - Pattern: Applied against method name
