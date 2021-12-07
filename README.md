@@ -4,14 +4,31 @@
 A library for getting the analysis context and AST of source code. Languages supported are those supported by v0.0.18 of the `rust-code-analysis` crate.
 
 ### Run Tests
+
+#### Rust Tests
 1. Have the nightly toolchain installed: `rustup toolchain install nightly-x86_64-unknown-linux-gnu`
 2. Run `cargo +nightly test --lib`
 
+
+#### Postman Tests
+
+These tests reproduce and verify the results of the initial ReSSA paper, "Advancing static code analysis with language-agnostic component identification". To run these tests:
+1. Clone the following additional required repositories:
+	* DeathStarBench (https://github.com/delimitrou/DeathStarBench), using commit b509c933faca3e5b4789c6707d3b3976537411a9
+    * TrainTicket (https://github.com/FudanSELab/train-ticket), using commit a4ed2433b0b6ab6e0d60115fc19efecb2548c6cd
+1. Import the Postman collection
+1. Set the following environment variables:
+    * DSB_ROOT: Path to the root directory of DeathStarBench
+    * TT_ROOT: Path to the root directory of TrainTicket
+1. Build and run the project on port 8080. You can now run the tests
+1. Since TrainTicket's parsing takes longer than Postman's default bulk timeout, it is best to run the tests individually. The test script attached to each request automatically runs a deep equality check on the returned values against cached versions of our results.
+
+
 ### Run Benchmarks
 1. Install the `perf` Linux utility program
-2. Have the nightly toolchain installed: `rustup toolchain install nightly-x86_64-unknown-linux-gnu`
-3. Initialize the target folder so flamegraphs can get created appropriately by running `benches/init.sh`
-4. Run `cargo +nightly bench`.
+1. Have the nightly toolchain installed: `rustup toolchain install nightly-x86_64-unknown-linux-gnu`
+1. Initialize the target folder so flamegraphs can get created appropriately by running `benches/init.sh`
+1. Run `cargo +nightly bench`.
 
 Criterion and Iai will generate output to stdout and additionally files in `target/criterion/**` for the various benchmarks, and each benchmark also has a `flamegraph.svg` in its output directory.
 

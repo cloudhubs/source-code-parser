@@ -1,0 +1,57 @@
+{
+  "CastInfo": {
+    "ReadCastInfo": null,
+    "WriteCastInfo": null
+  },
+  "ComposeReview": {
+    "UploadMovieId": null,
+    "UploadRating": null,
+    "UploadText": null,
+    "UploadUniqueId": null,
+    "UploadUserId": null
+  },
+  "MovieId": {
+    "RegisterMovieId": null,
+    "UploadMovieId": null
+  },
+  "MovieInfo": {
+    "ReadMovieInfo": null,
+    "UpdateRating": null,
+    "WriteMovieInfo": null
+  },
+  "MovieReview": {
+    "ReadMovieReviews": null,
+    "UploadMovieReview": null
+  },
+  "Page": {
+    "ReadPage": null
+  },
+  "Plot": {
+    "ReadPlot": null,
+    "WritePlot": null
+  },
+  "Rating": {
+    "UploadRating": null
+  },
+  "ReviewStorage": {
+    "ReadReviews": null,
+    "StoreReview": null
+  },
+  "Text": {
+    "UploadText": null
+  },
+  "UniqueId": {
+    "UploadUniqueId": null
+  },
+  "User": {
+    "Login": null,
+    "RegisterUser": null,
+    "RegisterUserWithId": null,
+    "UploadUserWithUserId": null,
+    "UploadUserWithUsername": null
+  },
+  "UserReview": {
+    "ReadUserReviews": null,
+    "UploadUserReview": null
+  }
+}
