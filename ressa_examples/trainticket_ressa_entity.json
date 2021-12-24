@@ -1,15 +1,21 @@
 [
   {
     "identifier": "ClassOrInterface",
-    "pattern": "#{entity_name}",
+    "pattern": ".*",
     "auxiliary_pattern": "#{package_name}",
     "subpatterns": [
       {
         "identifier": "Annotation",
-        "pattern": "@Data",
-        "auxiliary_pattern": "",
-        "subpatterns": [],
-        "callback": "",
+        "pattern": "@Document",
+        "subpatterns": [
+          {
+            "identifier": "AnnotationValuePair",
+            "pattern": "collection",
+            "auxiliary_pattern": "\"#{entity_name}\"",
+            "subpatterns": [],
+            "essential": true
+          }
+        ],
         "essential": true
       },
       {
@@ -17,11 +23,10 @@
         "pattern": "#{field_name}",
         "auxiliary_pattern": "#{field_type}",
         "subpatterns": [],
-        "callback": "let entity_name = ctx.get_variable(\"package_name\").unwrap() + \".\" + ctx.get_variable(\"entity_name\").unwrap();ctx.make_object(entity_name);let field_name = ctx.get_variable(\"field_name\").unwrap();let field_type = ctx.get_variable(\"field_type\").unwrap();ctx.make_attribute(entity_name, field_name, Some(field_type));",
+        "callback": "let entity_name = ctx.get_variable(\"package_name\").unwrap() + \": \" + ctx.get_variable(\"entity_name\").unwrap();ctx.make_object(entity_name);let field_name = ctx.get_variable(\"field_name\").unwrap();let field_type = ctx.get_variable(\"field_type\").unwrap();ctx.make_attribute(entity_name, field_name, Some(field_type));",
         "essential": true
       }
     ],
-    "callback": "",
     "essential": true
   }
 ]

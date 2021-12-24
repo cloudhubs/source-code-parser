@@ -1,226 +1,25 @@
 {
-  "adminbasic.entity.Config": {
-    "description": "String",
-    "name": "String",
-    "value": "String"
-  },
-  "adminbasic.entity.Contacts": {
-    "accountId": "UUID",
-    "documentNumber": "String",
-    "documentType": "int",
-    "id": "UUID",
-    "name": "String",
-    "phoneNumber": "String"
-  },
-  "adminbasic.entity.PriceInfo": {
-    "basicPriceRate": "double",
-    "firstClassPriceRate": "double",
-    "id": "String",
-    "routeId": "String",
-    "trainType": "String"
-  },
-  "adminbasic.entity.Station": {
-    "id": "String",
-    "name": "String",
-    "stayTime": "int"
-  },
-  "adminbasic.entity.TrainType": {
-    "averageSpeed": "int",
-    "confortClass": "int",
-    "economyClass": "int",
-    "id": "String"
-  },
-  "adminorder.entity.Order": {
-    "accountId": "UUID",
-    "boughtDate": "Date",
-    "coachNumber": "int",
-    "contactsDocumentNumber": "String",
-    "contactsName": "String",
-    "documentType": "int",
-    "from": "String",
-    "id": "UUID",
-    "price": "String",
-    "seatClass": "int",
-    "seatNumber": "String",
-    "status": "int",
-    "to": "String",
-    "trainNumber": "String",
-    "travelDate": "Date",
-    "travelTime": "Date"
-  },
-  "adminroute.entity.Route": {
-    "distances": "List<Integer>",
-    "id": "String",
-    "startStationId": "String",
-    "stations": "List<String>",
-    "terminalStationId": "String"
-  },
-  "adminroute.entity.RouteInfo": {
-    "distanceList": "String",
-    "endStation": "String",
-    "id": "String",
-    "loginId": "String",
-    "startStation": "String",
-    "stationList": "String"
-  },
-  "admintravel.entity.AdminTrip": {
-    "route": "Route",
-    "trainType": "TrainType",
-    "trip": "Trip"
-  },
-  "admintravel.entity.Route": {
-    "distances": "List<Integer>",
-    "id": "String",
-    "startStationId": "String",
-    "stations": "List<String>",
-    "terminalStationId": "String"
-  },
-  "admintravel.entity.TrainType": {
-    "averageSpeed": "int",
-    "confortClass": "int",
-    "economyClass": "int",
-    "id": "String"
-  },
-  "admintravel.entity.TravelInfo": {
-    "endTime": "Date",
-    "loginId": "String",
-    "routeId": "String",
-    "startingStationId": "String",
-    "startingTime": "Date",
-    "stationsId": "String",
-    "terminalStationId": "String",
-    "trainTypeId": "String",
-    "tripId": "String"
-  },
-  "admintravel.entity.Trip": {
-    "endTime": "Date",
-    "routeId": "String",
-    "startingStationId": "String",
-    "startingTime": "Date",
-    "stationsId": "String",
-    "terminalStationId": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "admintravel.entity.TripId": {
-    "number": "String",
-    "type": "Type"
-  },
-  "assurance.entity.Assurance": {
+  "assurance.entity: assurance": {
     "id": "UUID",
     "orderId": "UUID",
     "type": "AssuranceType"
   },
-  "assurance.entity.AssuranceTypeBean": {
-    "index": "int",
-    "name": "String",
-    "price": "double"
-  },
-  "assurance.entity.PlainAssurance": {
-    "id": "UUID",
-    "orderId": "UUID",
-    "typeIndex": "int",
-    "typeName": "String",
-    "typePrice": "double"
-  },
-  "auth.entity.User": {
-    "password": "String",
-    "roles": "Set<String>",
-    "userId": "UUID",
-    "username": "String"
-  },
-  "cancel.entity.Account": {
-    "documentNum": "String",
-    "documentType": "int",
-    "email": "String",
-    "gender": "int",
-    "id": "UUID",
-    "name": "String",
-    "password": "String"
-  },
-  "cancel.entity.GetAccountByIdInfo": {
-    "accountId": "String"
-  },
-  "cancel.entity.GetAccountByIdResult": {
-    "account": "Account",
-    "message": "String",
-    "status": "boolean"
-  },
-  "cancel.entity.GetOrderByIdInfo": {
-    "orderId": "String"
-  },
-  "cancel.entity.NotifyInfo": {
-    "date": "String",
-    "email": "String",
-    "endPlace": "String",
-    "orderNumber": "String",
-    "price": "String",
-    "seatClass": "String",
-    "seatNumber": "String",
-    "startingPlace": "String",
-    "startingTime": "String",
-    "username": "String"
-  },
-  "cancel.entity.Order": {
-    "accountId": "UUID",
-    "boughtDate": "Date",
-    "coachNumber": "int",
-    "contactsDocumentNumber": "String",
-    "contactsName": "String",
-    "documentType": "int",
-    "from": "String",
-    "id": "UUID",
-    "price": "String",
-    "seatClass": "int",
-    "seatNumber": "String",
-    "status": "int",
-    "to": "String",
-    "trainNumber": "String",
-    "travelDate": "Date",
-    "travelTime": "Date"
-  },
-  "cancel.entity.User": {
-    "documentNum": "String",
-    "documentType": "int",
-    "email": "String",
-    "gender": "int",
-    "password": "String",
-    "userId": "UUID",
-    "userName": "String"
-  },
-  "cancel.entity.VerifyResult": {
-    "message": "String",
-    "status": "boolean"
-  },
-  "com.trainticket.entity.Money": {
+  "com.trainticket.entity: addMoney": {
     "money": "String",
     "userId": "String"
   },
-  "com.trainticket.entity.Payment": {
+  "com.trainticket.entity: payment": {
     "id": "String",
     "orderId": "String",
     "price": "String",
     "userId": "String"
   },
-  "config.entity.Config": {
+  "config.entity: config": {
     "description": "String",
     "name": "String",
     "value": "String"
   },
-  "consign.entity.Consign": {
-    "accountId": "UUID",
-    "consignee": "String",
-    "from": "String",
-    "handleDate": "String",
-    "id": "UUID",
-    "isWithin": "boolean",
-    "orderId": "UUID",
-    "phone": "String",
-    "targetDate": "String",
-    "to": "String",
-    "weight": "double"
-  },
-  "consign.entity.ConsignRecord": {
+  "consign.entity: consign_record": {
     "accountId": "UUID",
     "consignee": "String",
     "from": "String",
@@ -233,15 +32,7 @@
     "to": "String",
     "weight": "double"
   },
-  "consign.entity.GetPriceDomain": {
-    "isWithinRegion": "boolean",
-    "weight": "double"
-  },
-  "consign.entity.InsertConsignRecordResult": {
-    "message": "String",
-    "status": "boolean"
-  },
-  "consignprice.entity.ConsignPrice": {
+  "consignprice.entity: consign_price": {
     "beyondPrice": "double",
     "id": "UUID",
     "index": "int",
@@ -249,7 +40,7 @@
     "initialWeight": "double",
     "withinPrice": "double"
   },
-  "contacts.entity.Contacts": {
+  "contacts.entity: contacts": {
     "accountId": "UUID",
     "documentNumber": "String",
     "documentType": "int",
@@ -257,83 +48,12 @@
     "name": "String",
     "phoneNumber": "String"
   },
-  "execute.entity.Order": {
-    "accountId": "UUID",
-    "boughtDate": "Date",
-    "coachNumber": "int",
-    "contactsDocumentNumber": "String",
-    "contactsName": "String",
-    "documentType": "int",
-    "from": "String",
-    "id": "UUID",
-    "price": "String",
-    "seatClass": "int",
-    "seatNumber": "String",
-    "status": "int",
-    "to": "String",
-    "trainNumber": "String",
-    "travelDate": "Date",
-    "travelTime": "Date"
-  },
-  "fdse.microservice.entity.Contacts": {
-    "accountId": "UUID",
-    "documentNumber": "String",
-    "documentType": "int",
-    "id": "UUID",
-    "name": "String",
-    "phoneNumber": "String"
-  },
-  "fdse.microservice.entity.PriceConfig": {
-    "basicPriceRate": "double",
-    "firstClassPriceRate": "double",
-    "id": "UUID",
-    "routeId": "String",
-    "trainType": "String"
-  },
-  "fdse.microservice.entity.Route": {
-    "distances": "List<Integer>",
+  "fdse.microservice.entity: station": {
     "id": "String",
-    "startStationId": "String",
-    "stations": "List<String>",
-    "terminalStationId": "String"
+    "name": "String",
+    "stayTime": "int"
   },
-  "fdse.microservice.entity.TrainType": {
-    "averageSpeed": "int",
-    "confortClass": "int",
-    "economyClass": "int",
-    "id": "String"
-  },
-  "fdse.microservice.entity.Travel": {
-    "departureTime": "Date",
-    "endPlace": "String",
-    "startingPlace": "String",
-    "trip": "Trip"
-  },
-  "fdse.microservice.entity.TravelResult": {
-    "percent": "double",
-    "prices": "Map<String,String>",
-    "status": "boolean",
-    "trainType": "TrainType"
-  },
-  "fdse.microservice.entity.Trip": {
-    "endTime": "Date",
-    "routeId": "String",
-    "startingStationId": "String",
-    "startingTime": "Date",
-    "stationsId": "String",
-    "terminalStationId": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "fdse.microservice.entity.TripId": {
-    "number": "String",
-    "type": "Type"
-  },
-  "food.entity.Food": {
-    "foodName": "String",
-    "price": "double"
-  },
-  "food.entity.FoodStore": {
+  "food.entity: stores": {
     "businessTime": "String",
     "deliveryFee": "double",
     "foodList": "List<Food>",
@@ -342,20 +62,12 @@
     "storeName": "String",
     "telephone": "String"
   },
-  "food.entity.TrainFood": {
+  "food.entity: trainfoods": {
     "foodList": "List<Food>",
     "id": "UUID",
     "tripId": "String"
   },
-  "foodsearch.entity.AllTripFood": {
-    "foodStoreListMap": "Map<String,List<FoodStore>>",
-    "trainFoodList": "List<TrainFood>"
-  },
-  "foodsearch.entity.Food": {
-    "foodName": "String",
-    "price": "double"
-  },
-  "foodsearch.entity.FoodOrder": {
+  "foodsearch.entity: foodorder": {
     "foodName": "String",
     "foodType": "int",
     "id": "UUID",
@@ -364,104 +76,27 @@
     "stationName": "String",
     "storeName": "String"
   },
-  "foodsearch.entity.FoodStore": {
-    "businessTime": "String",
-    "deliveryFee": "double",
-    "foodList": "List<Food>",
-    "id": "UUID",
-    "stationId": "String",
-    "storeName": "String",
-    "telephone": "String"
-  },
-  "foodsearch.entity.Route": {
+  "foodsearch.entity: routes": {
     "distances": "List<Integer>",
     "id": "String",
     "startStationId": "String",
     "stations": "List<String>",
     "terminalStationId": "String"
   },
-  "foodsearch.entity.TrainFood": {
-    "foodList": "List<Food>",
-    "id": "UUID",
-    "tripId": "String"
-  },
-  "inside_payment.entity.AccountInfo": {
-    "money": "String",
-    "userId": "String"
-  },
-  "inside_payment.entity.Balance": {
-    "balance": "String",
-    "userId": "String"
-  },
-  "inside_payment.entity.Money": {
+  "inside_payment.entity: addMoney": {
     "id": "String",
     "money": "String",
     "type": "MoneyType",
     "userId": "String"
   },
-  "inside_payment.entity.Order": {
-    "accountId": "UUID",
-    "boughtDate": "Date",
-    "coachNumber": "int",
-    "contactsDocumentNumber": "String",
-    "contactsName": "String",
-    "documentType": "int",
-    "from": "String",
-    "id": "UUID",
-    "price": "String",
-    "seatClass": "int",
-    "seatNumber": "String",
-    "status": "int",
-    "to": "String",
-    "trainNumber": "String",
-    "travelDate": "Date",
-    "travelTime": "Date"
-  },
-  "inside_payment.entity.OutsidePaymentInfo": {
-    "orderId": "String",
-    "price": "String",
-    "userId": "String"
-  },
-  "inside_payment.entity.Payment": {
+  "inside_payment.entity: payment": {
     "id": "String",
     "orderId": "String",
     "price": "String",
     "type": "PaymentType",
     "userId": "String"
   },
-  "inside_payment.entity.PaymentInfo": {
-    "orderId": "String",
-    "price": "String",
-    "tripId": "String",
-    "userId": "String"
-  },
-  "notification.entity.Mail": {
-    "attachments": "List<Object>",
-    "contentType": "String",
-    "mailBcc": "String",
-    "mailCc": "String",
-    "mailContent": "String",
-    "mailFrom": "String",
-    "mailSubject": "String",
-    "mailTo": "String",
-    "model": "Map<String,Object>"
-  },
-  "notification.entity.NotifyInfo": {
-    "date": "String",
-    "email": "String",
-    "endPlace": "String",
-    "orderNumber": "String",
-    "price": "String",
-    "seatClass": "String",
-    "seatNumber": "String",
-    "startingPlace": "String",
-    "startingTime": "String",
-    "username": "String"
-  },
-  "order.entity.LeftTicketInfo": {
-    "soldTickets": "Set<Ticket>"
-  },
-  "order.entity.Order": {
+  "order.entity: orders": {
     "accountId": "UUID",
     "boughtDate": "Date",
     "coachNumber": "int",
@@ -479,56 +114,7 @@
     "travelDate": "Date",
     "travelTime": "Date"
   },
-  "order.entity.OrderAlterInfo": {
-    "accountId": "UUID",
-    "loginToken": "String",
-    "newOrderInfo": "Order",
-    "previousOrderId": "UUID"
-  },
-  "order.entity.OrderInfo": {
-    "boughtDateEnd": "Date",
-    "boughtDateStart": "Date",
-    "enableBoughtDateQuery": "boolean",
-    "enableStateQuery": "boolean",
-    "enableTravelDateQuery": "boolean",
-    "loginId": "String",
-    "state": "int",
-    "travelDateEnd": "Date",
-    "travelDateStart": "Date"
-  },
-  "order.entity.OrderSecurity": {
-    "orderNumInLastOneHour": "int",
-    "orderNumOfValidOrder": "int"
-  },
-  "order.entity.Seat": {
-    "destStation": "String",
-    "seatType": "int",
-    "startStation": "String",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "order.entity.SoldTicket": {
-    "businessSeat": "int",
-    "firstClassSeat": "int",
-    "hardBed": "int",
-    "hardSeat": "int",
-    "highSoftBed": "int",
-    "noSeat": "int",
-    "secondClassSeat": "int",
-    "softBed": "int",
-    "softSeat": "int",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "order.entity.Ticket": {
-    "destStation": "String",
-    "seatNo": "int",
-    "startStation": "String"
-  },
-  "other.entity.LeftTicketInfo": {
-    "soldTickets": "Set<Ticket>"
-  },
-  "other.entity.Order": {
+  "other.entity: orders": {
     "accountId": "UUID",
     "boughtDate": "Date",
     "coachNumber": "int",
@@ -546,669 +132,39 @@
     "travelDate": "Date",
     "travelTime": "Date"
   },
-  "other.entity.OrderAlterInfo": {
-    "accountId": "UUID",
-    "loginToken": "String",
-    "newOrderInfo": "Order",
-    "previousOrderId": "UUID"
-  },
-  "other.entity.OrderSecurity": {
-    "orderNumInLastOneHour": "int",
-    "orderNumOfValidOrder": "int"
-  },
-  "other.entity.QueryInfo": {
-    "boughtDateEnd": "Date",
-    "boughtDateStart": "Date",
-    "enableBoughtDateQuery": "boolean",
-    "enableStateQuery": "boolean",
-    "enableTravelDateQuery": "boolean",
-    "loginId": "String",
-    "state": "int",
-    "travelDateEnd": "Date",
-    "travelDateStart": "Date"
-  },
-  "other.entity.Seat": {
-    "destStation": "String",
-    "seatType": "int",
-    "startStation": "String",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "other.entity.SoldTicket": {
-    "businessSeat": "int",
-    "firstClassSeat": "int",
-    "hardBed": "int",
-    "hardSeat": "int",
-    "highSoftBed": "int",
-    "noSeat": "int",
-    "secondClassSeat": "int",
-    "softBed": "int",
-    "softSeat": "int",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "other.entity.Ticket": {
-    "destStation": "String",
-    "seatNo": "int",
-    "startStation": "String"
-  },
-  "plan.entity.Route": {
-    "distances": "List<Integer>",
-    "id": "String",
-    "startStationId": "String",
-    "stations": "List<String>",
-    "terminalStationId": "String"
-  },
-  "plan.entity.RoutePlanInfo": {
-    "formStationName": "String",
-    "num": "int",
-    "toStationName": "String",
-    "travelDate": "Date"
-  },
-  "plan.entity.RoutePlanResultUnit": {
-    "endTime": "Date",
-    "fromStationName": "String",
-    "priceForFirstClassSeat": "String",
-    "priceForSecondClassSeat": "String",
-    "startingTime": "Date",
-    "stopStations": "List<String>",
-    "toStationName": "String",
-    "trainTypeId": "String",
-    "tripId": "String"
-  },
-  "plan.entity.Trip": {
-    "endTime": "Date",
-    "routeId": "String",
-    "startingStationId": "String",
-    "startingTime": "Date",
-    "stationsId": "String",
-    "terminalStationId": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "plan.entity.TripAllDetail": {
-    "message": "String",
-    "status": "boolean",
-    "trip": "Trip",
-    "tripResponse": "TripResponse"
-  },
-  "plan.entity.TripAllDetailInfo": {
-    "from": "String",
-    "to": "String",
-    "travelDate": "Date",
-    "tripId": "String"
-  },
-  "plan.entity.TripId": {
-    "number": "String",
-    "type": "Type"
-  },
-  "plan.entity.TripInfo": {
-    "departureTime": "Date",
-    "endPlace": "String",
-    "startingPlace": "String"
-  },
-  "plan.entity.TripResponse": {
-    "confortClass": "int",
-    "economyClass": "int",
-    "endTime": "Date",
-    "priceForConfortClass": "String",
-    "priceForEconomyClass": "String",
-    "startingStation": "String",
-    "startingTime": "Date",
-    "terminalStation": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "preserve.entity.Account": {
-    "documentNum": "String",
-    "documentType": "int",
-    "email": "String",
-    "gender": "int",
-    "id": "UUID",
-    "name": "String",
-    "password": "String"
-  },
-  "preserve.entity.Assurance": {
-    "id": "UUID",
-    "orderId": "UUID",
-    "type": "AssuranceType"
-  },
-  "preserve.entity.Consign": {
-    "accountId": "UUID",
-    "consignee": "String",
-    "from": "String",
-    "handleDate": "String",
-    "id": "UUID",
-    "isWithin": "boolean",
-    "orderId": "UUID",
-    "phone": "String",
-    "targetDate": "String",
-    "to": "String",
-    "weight": "double"
-  },
-  "preserve.entity.Contacts": {
-    "accountId": "UUID",
-    "documentNumber": "String",
-    "documentType": "int",
-    "id": "UUID",
-    "name": "String",
-    "phoneNumber": "String"
-  },
-  "preserve.entity.FoodOrder": {
-    "foodName": "String",
-    "foodType": "int",
-    "id": "UUID",
-    "orderId": "UUID",
-    "price": "double",
-    "stationName": "String",
-    "storeName": "String"
-  },
-  "preserve.entity.NotifyInfo": {
-    "date": "String",
-    "email": "String",
-    "endPlace": "String",
-    "orderNumber": "String",
-    "price": "String",
-    "seatClass": "String",
-    "seatNumber": "String",
-    "startingPlace": "String",
-    "startingTime": "String",
-    "username": "String"
-  },
-  "preserve.entity.Order": {
-    "accountId": "UUID",
-    "boughtDate": "Date",
-    "coachNumber": "int",
-    "contactsDocumentNumber": "String",
-    "contactsName": "String",
-    "documentType": "int",
-    "from": "String",
-    "id": "UUID",
-    "price": "String",
-    "seatClass": "int",
-    "seatNumber": "String",
-    "status": "int",
-    "to": "String",
-    "trainNumber": "String",
-    "travelDate": "Date",
-    "travelTime": "Date"
-  },
-  "preserve.entity.OrderTicketsInfo": {
-    "accountId": "String",
-    "assurance": "int",
-    "consigneeName": "String",
-    "consigneePhone": "String",
-    "consigneeWeight": "double",
-    "contactsId": "String",
-    "date": "Date",
-    "foodName": "String",
-    "foodPrice": "double",
-    "foodType": "int",
-    "from": "String",
-    "handleDate": "String",
-    "isWithin": "boolean",
-    "seatType": "int",
-    "stationName": "String",
-    "storeName": "String",
-    "to": "String",
-    "tripId": "String"
-  },
-  "preserve.entity.OrderTicketsResult": {
-    "message": "String",
-    "order": "Order",
-    "status": "boolean"
-  },
-  "preserve.entity.Seat": {
-    "destStation": "String",
-    "seatType": "int",
-    "startStation": "String",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "preserve.entity.Ticket": {
-    "destStation": "String",
-    "seatNo": "int",
-    "startStation": "String"
-  },
-  "preserve.entity.TrainType": {
-    "confortClass": "int",
-    "economyClass": "int",
-    "id": "String"
-  },
-  "preserve.entity.Travel": {
-    "departureTime": "Date",
-    "endPlace": "String",
-    "startingPlace": "String",
-    "trip": "Trip"
-  },
-  "preserve.entity.TravelResult": {
-    "percent": "double",
-    "prices": "Map<String,String>",
-    "status": "boolean",
-    "trainType": "TrainType"
-  },
-  "preserve.entity.Trip": {
-    "endTime": "Date",
-    "routeId": "String",
-    "startingStationId": "String",
-    "startingTime": "Date",
-    "stationsId": "String",
-    "terminalStationId": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "preserve.entity.TripAllDetail": {
-    "message": "String",
-    "status": "boolean",
-    "trip": "Trip",
-    "tripResponse": "TripResponse"
-  },
-  "preserve.entity.TripAllDetailInfo": {
-    "from": "String",
-    "to": "String",
-    "travelDate": "Date",
-    "tripId": "String"
-  },
-  "preserve.entity.TripId": {
-    "number": "String",
-    "type": "Type"
-  },
-  "preserve.entity.TripResponse": {
-    "confortClass": "int",
-    "economyClass": "int",
-    "endTime": "Date",
-    "startingStation": "String",
-    "startingTime": "Date",
-    "terminalStation": "String",
-    "tripId": "TripId"
-  },
-  "preserve.entity.User": {
-    "documentNum": "String",
-    "documentType": "int",
-    "email": "String",
-    "gender": "int",
-    "password": "String",
-    "userId": "UUID",
-    "userName": "String"
-  },
-  "preserveOther.entity.Account": {
-    "documentNum": "String",
-    "documentType": "int",
-    "email": "String",
-    "gender": "int",
-    "id": "UUID",
-    "name": "String",
-    "password": "String"
-  },
-  "preserveOther.entity.Assurance": {
-    "id": "UUID",
-    "orderId": "UUID",
-    "type": "AssuranceType"
-  },
-  "preserveOther.entity.Consign": {
-    "accountId": "UUID",
-    "consignee": "String",
-    "from": "String",
-    "handleDate": "String",
-    "id": "UUID",
-    "isWithin": "boolean",
-    "orderId": "UUID",
-    "phone": "String",
-    "targetDate": "String",
-    "to": "String",
-    "weight": "double"
-  },
-  "preserveOther.entity.Contacts": {
-    "accountId": "UUID",
-    "documentNumber": "String",
-    "documentType": "int",
-    "id": "UUID",
-    "name": "String",
-    "phoneNumber": "String"
-  },
-  "preserveOther.entity.FoodOrder": {
-    "foodName": "String",
-    "foodType": "int",
-    "id": "UUID",
-    "orderId": "UUID",
-    "price": "double",
-    "stationName": "String",
-    "storeName": "String"
-  },
-  "preserveOther.entity.NotifyInfo": {
-    "date": "String",
-    "email": "String",
-    "endPlace": "String",
-    "orderNumber": "String",
-    "price": "String",
-    "seatClass": "String",
-    "seatNumber": "String",
-    "startingPlace": "String",
-    "startingTime": "String",
-    "username": "String"
-  },
-  "preserveOther.entity.Order": {
-    "accountId": "UUID",
-    "boughtDate": "Date",
-    "coachNumber": "int",
-    "contactsDocumentNumber": "String",
-    "contactsName": "String",
-    "documentType": "int",
-    "from": "String",
-    "id": "UUID",
-    "price": "String",
-    "seatClass": "int",
-    "seatNumber": "String",
-    "status": "int",
-    "to": "String",
-    "trainNumber": "String",
-    "travelDate": "Date",
-    "travelTime": "Date"
-  },
-  "preserveOther.entity.OrderTicketsInfo": {
-    "accountId": "String",
-    "assurance": "int",
-    "consigneeName": "String",
-    "consigneePhone": "String",
-    "consigneeWeight": "double",
-    "contactsId": "String",
-    "date": "Date",
-    "foodName": "String",
-    "foodPrice": "double",
-    "foodType": "int",
-    "from": "String",
-    "handleDate": "String",
-    "isWithin": "boolean",
-    "seatType": "int",
-    "stationName": "String",
-    "storeName": "String",
-    "to": "String",
-    "tripId": "String"
-  },
-  "preserveOther.entity.Seat": {
-    "destStation": "String",
-    "seatType": "int",
-    "startStation": "String",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "preserveOther.entity.Ticket": {
-    "destStation": "String",
-    "seatNo": "int",
-    "startStation": "String"
-  },
-  "preserveOther.entity.TrainType": {
-    "confortClass": "int",
-    "economyClass": "int",
-    "id": "String"
-  },
-  "preserveOther.entity.Travel": {
-    "departureTime": "Date",
-    "endPlace": "String",
-    "startingPlace": "String",
-    "trip": "Trip"
-  },
-  "preserveOther.entity.TravelResult": {
-    "percent": "double",
-    "prices": "Map<String,String>",
-    "status": "boolean",
-    "trainType": "TrainType"
-  },
-  "preserveOther.entity.Trip": {
-    "endTime": "Date",
-    "routeId": "String",
-    "startingStationId": "String",
-    "startingTime": "Date",
-    "stationsId": "String",
-    "terminalStationId": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "preserveOther.entity.TripAllDetail": {
-    "message": "String",
-    "status": "boolean",
-    "trip": "Trip",
-    "tripResponse": "TripResponse"
-  },
-  "preserveOther.entity.TripAllDetailInfo": {
-    "from": "String",
-    "to": "String",
-    "travelDate": "Date",
-    "tripId": "String"
-  },
-  "preserveOther.entity.TripId": {
-    "number": "String",
-    "type": "Type"
-  },
-  "preserveOther.entity.TripResponse": {
-    "confortClass": "int",
-    "economyClass": "int",
-    "endTime": "Date",
-    "startingStation": "String",
-    "startingTime": "Date",
-    "terminalStation": "String",
-    "tripId": "TripId"
-  },
-  "preserveOther.entity.User": {
-    "documentNum": "String",
-    "documentType": "int",
-    "email": "String",
-    "gender": "int",
-    "password": "String",
-    "userId": "UUID",
-    "userName": "String"
-  },
-  "price.entity.PriceConfig": {
+  "price.entity: price_config": {
     "basicPriceRate": "double",
     "firstClassPriceRate": "double",
     "id": "UUID",
     "routeId": "String",
     "trainType": "String"
   },
-  "price.entity.TrainType": {
-    "averageSpeed": "int",
-    "confortClass": "int",
-    "economyClass": "int",
-    "id": "String"
-  },
-  "rebook.entity.Contacts": {
-    "accountId": "UUID",
-    "documentNumber": "String",
-    "documentType": "int",
-    "id": "UUID",
-    "name": "String",
-    "phoneNumber": "String"
-  },
-  "rebook.entity.Order": {
-    "accountId": "UUID",
-    "boughtDate": "Date",
-    "coachNumber": "int",
-    "contactsDocumentNumber": "String",
-    "contactsName": "String",
-    "differenceMoney": "String",
-    "documentType": "int",
-    "from": "String",
-    "id": "UUID",
-    "price": "String",
-    "seatClass": "int",
-    "seatNumber": "String",
-    "status": "int",
-    "to": "String",
-    "trainNumber": "String",
-    "travelDate": "Date",
-    "travelTime": "Date"
-  },
-  "rebook.entity.OrderTicketsInfo": {
-    "accountId": "String",
-    "contactsId": "String",
-    "date": "Date",
-    "from": "String",
-    "loginToken": "String",
-    "seatType": "int",
-    "to": "String",
-    "tripId": "String"
-  },
-  "rebook.entity.PaymentDifferenceInfo": {
-    "orderId": "String",
-    "price": "String",
-    "tripId": "String",
-    "userId": "String"
-  },
-  "rebook.entity.RebookInfo": {
-    "date": "Date",
-    "loginId": "String",
-    "oldTripId": "String",
-    "orderId": "String",
-    "seatType": "int",
-    "tripId": "String"
-  },
-  "rebook.entity.Seat": {
-    "destStation": "String",
-    "seatType": "int",
-    "startStation": "String",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "rebook.entity.Ticket": {
-    "destStation": "String",
-    "seatNo": "int",
-    "startStation": "String"
-  },
-  "rebook.entity.Trip": {
-    "endTime": "Date",
-    "routeId": "String",
-    "startingStationId": "String",
-    "startingTime": "Date",
-    "stationsId": "String",
-    "terminalStationId": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "rebook.entity.TripAllDetail": {
-    "trip": "Trip",
-    "tripResponse": "TripResponse"
-  },
-  "rebook.entity.TripAllDetailInfo": {
-    "from": "String",
-    "to": "String",
-    "travelDate": "Date",
-    "tripId": "String"
-  },
-  "rebook.entity.TripId": {
-    "number": "String",
-    "type": "Type"
-  },
-  "rebook.entity.TripResponse": {
-    "confortClass": "int",
-    "economyClass": "int",
-    "endTime": "Date",
-    "priceForConfortClass": "String",
-    "priceForEconomyClass": "String",
-    "startingStation": "String",
-    "startingTime": "Date",
-    "terminalStation": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "rebook.entity.VerifyResult": {
-    "message": "String",
-    "status": "boolean"
-  },
-  "route.entity.Route": {
+  "route.entity: routes": {
     "distances": "List<Integer>",
     "id": "String",
     "startStationId": "String",
     "stations": "List<String>",
     "terminalStationId": "String"
   },
-  "route.entity.RouteInfo": {
-    "distanceList": "String",
-    "endStation": "String",
-    "id": "String",
-    "startStation": "String",
-    "stationList": "String"
-  },
-  "seat.entity.Config": {
-    "description": "String",
-    "name": "String",
-    "value": "String"
-  },
-  "seat.entity.LeftTicketInfo": {
-    "soldTickets": "Set<Ticket>"
-  },
-  "seat.entity.Route": {
-    "distances": "List<Integer>",
-    "id": "String",
-    "startStationId": "String",
-    "stations": "List<String>",
-    "terminalStationId": "String"
-  },
-  "seat.entity.Seat": {
-    "destStation": "String",
-    "seatType": "int",
-    "startStation": "String",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "seat.entity.Ticket": {
-    "destStation": "String",
-    "seatNo": "int",
-    "startStation": "String"
-  },
-  "seat.entity.TrainType": {
-    "averageSpeed": "int",
-    "confortClass": "int",
-    "economyClass": "int",
-    "id": "String"
-  },
-  "security.entity.Order": {
-    "accountId": "UUID",
-    "boughtDate": "Date",
-    "coachNumber": "int",
-    "contactsDocumentNumber": "String",
-    "contactsName": "String",
-    "documentType": "int",
-    "from": "String",
-    "id": "UUID",
-    "price": "String",
-    "seatClass": "int",
-    "seatNumber": "String",
-    "status": "int",
-    "to": "String",
-    "trainNumber": "String",
-    "travelDate": "Date",
-    "travelTime": "Date"
-  },
-  "security.entity.OrderSecurity": {
-    "orderNumInLastOneHour": "int",
-    "orderNumOfValidOrder": "int"
-  },
-  "security.entity.SecurityConfig": {
+  "security.entity: security_config": {
     "description": "String",
     "id": "UUID",
     "name": "String",
     "value": "String"
   },
-  "ticketinfo.entity.TrainType": {
+  "train.entity: trainType": {
     "averageSpeed": "int",
     "confortClass": "int",
     "economyClass": "int",
     "id": "String"
   },
-  "ticketinfo.entity.Travel": {
-    "departureTime": "Date",
-    "endPlace": "String",
-    "startingPlace": "String",
-    "trip": "Trip"
+  "travel.entity: trainType": {
+    "averageSpeed": "int",
+    "confortClass": "int",
+    "economyClass": "int",
+    "id": "String"
   },
-  "ticketinfo.entity.TravelResult": {
-    "message": "String",
-    "percent": "double",
-    "prices": "Map<String,String>",
-    "status": "boolean",
-    "trainType": "TrainType"
-  },
-  "ticketinfo.entity.Trip": {
+  "travel.entity: trip": {
     "endTime": "Date",
     "routeId": "String",
     "startingStationId": "String",
@@ -1218,78 +174,20 @@
     "trainTypeId": "String",
     "tripId": "TripId"
   },
-  "ticketinfo.entity.TripId": {
-    "number": "String",
-    "type": "Type"
-  },
-  "train.entity.TrainType": {
-    "averageSpeed": "int",
-    "confortClass": "int",
-    "economyClass": "int",
-    "id": "String"
-  },
-  "travel.entity.AdminTrip": {
-    "route": "Route",
-    "trainType": "TrainType",
-    "trip": "Trip"
-  },
-  "travel.entity.Route": {
+  "travel2.entity: routes": {
     "distances": "List<Integer>",
     "id": "String",
     "startStationId": "String",
     "stations": "List<String>",
     "terminalStationId": "String"
   },
-  "travel.entity.Seat": {
-    "destStation": "String",
-    "seatType": "int",
-    "startStation": "String",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "travel.entity.SoldTicket": {
-    "businessSeat": "int",
-    "firstClassSeat": "int",
-    "hardBed": "int",
-    "hardSeat": "int",
-    "highSoftBed": "int",
-    "noSeat": "int",
-    "secondClassSeat": "int",
-    "softBed": "int",
-    "softSeat": "int",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "travel.entity.TrainType": {
+  "travel2.entity: trainType": {
     "averageSpeed": "int",
     "confortClass": "int",
     "economyClass": "int",
     "id": "String"
   },
-  "travel.entity.Travel": {
-    "departureTime": "Date",
-    "endPlace": "String",
-    "startingPlace": "String",
-    "trip": "Trip"
-  },
-  "travel.entity.TravelInfo": {
-    "endTime": "Date",
-    "routeId": "String",
-    "startingStationId": "String",
-    "startingTime": "Date",
-    "stationsId": "String",
-    "terminalStationId": "String",
-    "trainTypeId": "String",
-    "tripId": "String"
-  },
-  "travel.entity.TravelResult": {
-    "message": "String",
-    "percent": "double",
-    "prices": "Map<String,String>",
-    "status": "boolean",
-    "trainType": "TrainType"
-  },
-  "travel.entity.Trip": {
+  "travel2.entity: trip": {
     "endTime": "Date",
     "routeId": "String",
     "startingStationId": "String",
@@ -1298,227 +196,5 @@
     "terminalStationId": "String",
     "trainTypeId": "String",
     "tripId": "TripId"
-  },
-  "travel.entity.TripAllDetail": {
-    "trip": "Trip",
-    "tripResponse": "TripResponse"
-  },
-  "travel.entity.TripAllDetailInfo": {
-    "from": "String",
-    "to": "String",
-    "travelDate": "Date",
-    "tripId": "String"
-  },
-  "travel.entity.TripId": {
-    "number": "String",
-    "type": "Type"
-  },
-  "travel.entity.TripInfo": {
-    "departureTime": "Date",
-    "endPlace": "String",
-    "startingPlace": "String"
-  },
-  "travel.entity.TripResponse": {
-    "confortClass": "int",
-    "economyClass": "int",
-    "endTime": "Date",
-    "priceForConfortClass": "String",
-    "priceForEconomyClass": "String",
-    "startingStation": "String",
-    "startingTime": "Date",
-    "terminalStation": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "travel2.entity.AdminTrip": {
-    "route": "Route",
-    "trainType": "TrainType",
-    "trip": "Trip"
-  },
-  "travel2.entity.Route": {
-    "distances": "List<Integer>",
-    "id": "String",
-    "startStationId": "String",
-    "stations": "List<String>",
-    "terminalStationId": "String"
-  },
-  "travel2.entity.Seat": {
-    "destStation": "String",
-    "seatType": "int",
-    "startStation": "String",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "travel2.entity.SoldTicket": {
-    "businessSeat": "int",
-    "firstClassSeat": "int",
-    "hardBed": "int",
-    "hardSeat": "int",
-    "highSoftBed": "int",
-    "noSeat": "int",
-    "secondClassSeat": "int",
-    "softBed": "int",
-    "softSeat": "int",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "travel2.entity.TrainType": {
-    "averageSpeed": "int",
-    "confortClass": "int",
-    "economyClass": "int",
-    "id": "String"
-  },
-  "travel2.entity.Travel": {
-    "departureTime": "Date",
-    "endPlace": "String",
-    "startingPlace": "String",
-    "trip": "Trip"
-  },
-  "travel2.entity.TravelInfo": {
-    "endTime": "Date",
-    "routeId": "String",
-    "startingStationId": "String",
-    "startingTime": "Date",
-    "stationsId": "String",
-    "terminalStationId": "String",
-    "trainTypeId": "String",
-    "tripId": "String"
-  },
-  "travel2.entity.TravelResult": {
-    "percent": "double",
-    "prices": "Map<String,String>",
-    "status": "boolean",
-    "trainType": "TrainType"
-  },
-  "travel2.entity.Trip": {
-    "endTime": "Date",
-    "routeId": "String",
-    "startingStationId": "String",
-    "startingTime": "Date",
-    "stationsId": "String",
-    "terminalStationId": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "travel2.entity.TripAllDetail": {
-    "message": "String",
-    "status": "boolean",
-    "trip": "Trip",
-    "tripResponse": "TripResponse"
-  },
-  "travel2.entity.TripAllDetailInfo": {
-    "from": "String",
-    "to": "String",
-    "travelDate": "Date",
-    "tripId": "String"
-  },
-  "travel2.entity.TripId": {
-    "number": "String",
-    "type": "Type"
-  },
-  "travel2.entity.TripInfo": {
-    "departureTime": "Date",
-    "endPlace": "String",
-    "startingPlace": "String"
-  },
-  "travel2.entity.TripResponse": {
-    "confortClass": "int",
-    "economyClass": "int",
-    "endTime": "Date",
-    "priceForConfortClass": "String",
-    "priceForEconomyClass": "String",
-    "startingStation": "String",
-    "startingTime": "Date",
-    "terminalStation": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "travelplan.entity.RoutePlanInfo": {
-    "formStationName": "String",
-    "num": "int",
-    "toStationName": "String",
-    "travelDate": "Date"
-  },
-  "travelplan.entity.RoutePlanResultUnit": {
-    "endTime": "Date",
-    "fromStationName": "String",
-    "priceForFirstClassSeat": "String",
-    "priceForSecondClassSeat": "String",
-    "startingTime": "Date",
-    "stopStations": "ArrayList<String>",
-    "toStationName": "String",
-    "trainTypeId": "String",
-    "tripId": "String"
-  },
-  "travelplan.entity.Seat": {
-    "destStation": "String",
-    "seatType": "int",
-    "startStation": "String",
-    "trainNumber": "String",
-    "travelDate": "Date"
-  },
-  "travelplan.entity.TransferTravelInfo": {
-    "fromStationName": "String",
-    "toStationName": "String",
-    "trainType": "String",
-    "travelDate": "Date",
-    "viaStationName": "String"
-  },
-  "travelplan.entity.TransferTravelResult": {
-    "firstSectionResult": "List<TripResponse>",
-    "secondSectionResult": "List<TripResponse>"
-  },
-  "travelplan.entity.TravelAdvanceResultUnit": {
-    "endTime": "Date",
-    "fromStationName": "String",
-    "numberOfRestTicketFirstClass": "int",
-    "numberOfRestTicketSecondClass": "int",
-    "priceForFirstClassSeat": "String",
-    "priceForSecondClassSeat": "String",
-    "startingTime": "Date",
-    "stopStations": "List<String>",
-    "toStationName": "String",
-    "trainTypeId": "String",
-    "tripId": "String"
-  },
-  "travelplan.entity.Trip": {
-    "endTime": "Date",
-    "routeId": "String",
-    "startingStationId": "String",
-    "startingTime": "Date",
-    "stationsId": "String",
-    "terminalStationId": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "travelplan.entity.TripId": {
-    "number": "String",
-    "type": "TrainTypeEnum"
-  },
-  "travelplan.entity.TripInfo": {
-    "departureTime": "Date",
-    "endPlace": "String",
-    "startingPlace": "String"
-  },
-  "travelplan.entity.TripResponse": {
-    "confortClass": "int",
-    "economyClass": "int",
-    "endTime": "Date",
-    "priceForConfortClass": "String",
-    "priceForEconomyClass": "String",
-    "startingStation": "String",
-    "startingTime": "Date",
-    "terminalStation": "String",
-    "trainTypeId": "String",
-    "tripId": "TripId"
-  },
-  "user.entity.User": {
-    "documentNum": "String",
-    "documentType": "int",
-    "email": "String",
-    "gender": "int",
-    "password": "String",
-    "userId": "UUID",
-    "userName": "String"
   }
 }

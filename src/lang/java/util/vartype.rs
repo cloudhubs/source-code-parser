@@ -16,7 +16,7 @@ fn parse_type(ast: &AST) -> String {
             .expect("Cannot detect the type of a numeric primitive! The AST appears malformed!")
             .r#type
             .clone(),
-        "dimensions" => stringify_tree_children(ast),
+        "dimensions" | "wildcard" => stringify_tree_children(ast),
         "generic_type" => parse_type_args(ast),
         _ => NO_TYPE.into(),
     }

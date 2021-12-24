@@ -183,48 +183,51 @@ pub fn parse_directory_trees(dir: &Directory) -> std::io::Result<Vec<ParsedTree>
             }
         };
 
+        // Generate the sorted directory list
+        let mut unwrapped_dirs = vec![];
         for entry in read_dir {
             let entry = entry?;
             if !entry.path().is_dir() {
-                if dir
-                    .files
-                    .iter()
-                    .find(|path_buf| path_buf == &&entry.path())
-                    .is_none()
-                {
+                unwrapped_dirs.push(entry);
+            }
+        }
+        unwrapped_dirs.sort_by(|a, b| a.path().to_str().cmp(&b.path().to_str()));
+
+        // Handle directories
+        for entry in unwrapped_dirs {
+            if !dir.files.iter().any(|path_buf| path_buf == &entry.path()) {
+                continue;
+            }
+            let mut file = File::open(entry.path())?;
+            let mut code = String::new();
+            file.read_to_string(&mut code)?;
+
+            tracing::info!(
+                "Parsing file: {:?}",
+                entry.path().to_str().unwrap_or_default()
+            );
+            let result = parse_ast(AstPayload {
+                id: "".to_owned(),
+                file_name: entry.path().to_str().unwrap_or("").to_owned(),
+                code,
+                comment: false,
+                span: true,
+            });
+
+            let (ast, lang) = match result {
+                Some((ast, lang)) => (ast, lang),
+                None => {
+                    tracing::warn!("Could not parse AST {:?}", entry.path());
                     continue;
                 }
-                let mut file = File::open(entry.path())?;
-                let mut code = String::new();
-                file.read_to_string(&mut code)?;
+            };
 
-                tracing::info!(
-                    "Parsing file: {:?}",
-                    entry.path().to_str().unwrap_or_default()
-                );
-                let result = parse_ast(AstPayload {
-                    id: "".to_owned(),
-                    file_name: entry.path().to_str().unwrap_or("").to_owned(),
-                    code,
-                    comment: false,
-                    span: true,
-                });
-
-                let (ast, lang) = match result {
-                    Some((ast, lang)) => (ast, lang),
-                    None => {
-                        tracing::warn!("Could not parse AST {:?}", entry.path());
-                        continue;
-                    }
-                };
-
-                parsed_trees.push(ParsedTree::new(
-                    ast,
-                    lang,
-                    module_name.clone(),
-                    path.clone().into(),
-                ));
-            }
+            parsed_trees.push(ParsedTree::new(
+                ast,
+                lang,
+                module_name.clone(),
+                path.clone().into(),
+            ));
         }
     }
 
