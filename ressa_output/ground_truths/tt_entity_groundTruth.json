@@ -1,0 +1,209 @@
+{
+  "user.entity: User": {
+    "userId": "UUID",
+    "userName": "String",
+    "password": "String",
+    "gender": "int",
+    "documentType": "int",
+    "documentNum": "String",
+    "email": "String"
+  },
+  "auth.entity: User": {
+    "userId": "UUID",
+    "username": "String",
+    "password": "String",
+    "roles": "Set<String>"
+  },
+  "travel2.entity: trip": {
+    "tripId": "TripId",
+    "trainTypeId": "String",
+    "routeId": "String",
+    "startingStationId": "String",
+    "stationsId": "String",
+    "terminalStationId": "String",
+    "startingTime": "Date",
+    "endTime": "Date"
+  },
+  "travel.entity: trip": {
+    "tripId": "TripId",
+    "trainTypeId": "String",
+    "routeId": "String",
+    "startingTime": "Date",
+    "startingStationId": "String",
+    "stationsId": "String",
+    "terminalStationId": "String",
+    "endTime": "Date"
+  },
+  "train.entity: trainType": {
+    "id": "String",
+    "economyClass": "int",
+    "confortClass": "int",
+    "averageSpeed": "int"
+  },
+  "fdse.microservice.entity: station": {
+    "id": "String",
+    "name": "String",
+    "stayTime": "int"
+  },
+  "security.entity: security_config": {
+    "id": "UUID",
+    "name": "String",
+    "value": "String",
+    "description": "String"
+  },
+  "route.entity: routes": {
+    "id": "String",
+    "stations": "List<String>",
+    "distances": "List<Integer>",
+    "startStationId": "String",
+    "terminalStationId": "String"
+  },
+  "travel2.entity: routes": {
+    "id": "String",
+    "stations": "List<String>",
+    "distances": "List<Integer>",
+    "startStationId": "String",
+    "terminalStationId": "String"
+  },
+  "foodsearch.entity: routes": {
+    "id": "String",
+    "stations": "List<String>",
+    "distances": "List<Integer>",
+    "startStationId": "String",
+    "terminalStationId": "String"
+  },
+  "price.entity: price_config": {
+    "id": "UUID",
+    "trainType": "String",
+    "routeId": "String",
+    "basicPriceRate": "double",
+    "firstClassPriceRate": "double"
+  },
+  "com.trainticket.entity: payment": {
+    "id": "String",
+    "orderId": "String",
+    "userId": "String",
+    "price": "String"
+  },
+  "com.trainticket.entity: addMoney": {
+    "userId": "String",
+    "money": "String"
+  },
+  "order.entity: orders": {
+    "id": "UUID",
+    "boughtDate": "Date",
+    "travelDate": "Date",
+    "travelTime": "Date",
+    "accountId": "UUID",
+    "contactsName": "String",
+    "documentType": "int",
+    "contactsDocumentNumber": "String",
+    "trainNumber": "String",
+    "coachNumber": "int",
+    "seatClass": "int",
+    "seatNumber": "String",
+    "from": "String",
+    "to": "String",
+    "status": "int",
+    "price": "String"
+  },
+  "other.entity: orders": {
+    "id": "UUID",
+    "boughtDate": "Date",
+    "travelDate": "Date",
+    "travelTime": "Date",
+    "accountId": "UUID",
+    "contactsName": "String",
+    "documentType": "int",
+    "contactsDocumentNumber": "String",
+    "trainNumber": "String",
+    "coachNumber": "int",
+    "seatClass": "int",
+    "seatNumber": "String",
+    "from": "String",
+    "to": "String",
+    "status": "int",
+    "price": "String"
+  },
+  "inside_payment.entity: payment": {
+    "id": "String",
+    "orderId": "String",
+    "userId": "String",
+    "price": "String",
+    "type": "PaymentType"
+  },
+  "inside_payment.entity: addMoney": {
+    "id": "String",
+    "userId": "String",
+    "money": "String",
+    "type": "MoneyType"
+  },
+  "foodsearch.entity: foodorder": {
+    "id": "UUID",
+    "orderId": "UUID",
+    "foodType": "int",
+    "stationName": "String",
+    "storeName": "String",
+    "foodName": "String",
+    "price": "double"
+  },
+  "food.entity: trainfoods": {
+    "id": "UUID",
+    "tripId": "String",
+    "foodList": "List<Food>"
+  },
+  "food.entity: stores": {
+    "id": "UUID",
+    "stationId": "String",
+    "storeName": "String",
+    "telephone": "String",
+    "businessTime": "String",
+    "deliveryFee": "double",
+    "foodList": "List<Food>"
+  },
+  "contacts.entity: contacts": {
+    "id": "UUID",
+    "accountId": "UUID",
+    "name": "String",
+    "documentType": "int",
+    "documentNumber": "String",
+    "phoneNumber": "String"
+  },
+  "consign.entity: consign_record": {
+    "id": "UUID",
+    "orderId": "UUID",
+    "accountId": "UUID",
+    "handleDate": "String",
+    "targetDate": "String",
+    "from": "String",
+    "to": "String",
+    "consignee": "String",
+    "phone": "String",
+    "weight": "double",
+    "price": "double"
+  },
+  "consignprice.entity: consign_price": {
+    "id": "UUID",
+    "index": "int",
+    "initialWeight": "double",
+    "initialPrice": "double",
+    "withinPrice": "double",
+    "beyondPrice": "double"
+  },
+  "config.entity: config": {
+    "name": "String",
+    "value": "String",
+    "description": "String"
+  },
+  "assurance.entity: assurance": {
+    "id": "UUID",
+    "orderId": "UUID",
+    "type": "AssuranceType"
+  },
+  "travel.entity: trainType": {
+    "id": "String",
+    "economyClass": "int",
+    "confortClass": "int",
+    "averageSpeed": "int"
+  }
+}
