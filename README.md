@@ -25,10 +25,12 @@ These tests reproduce and verify the results of the initial ReSSA paper, "Advanc
 
 
 ### Run Benchmarks
-1. Install the `perf` Linux utility program
+1. Install the `perf` Linux utility program, `jemalloc` and `libc` on your machine
 1. Have the nightly toolchain installed: `rustup toolchain install nightly-x86_64-unknown-linux-gnu`
 1. Initialize the target folder so flamegraphs can get created appropriately by running `benches/init.sh`
 1. Run `cargo +nightly bench`.
+
+**Note that it may take a significant amount of time to run benchmarks as they go through many iterations**
 
 Criterion and Iai will generate output to stdout and additionally files in `target/criterion/**` for the various benchmarks, and each benchmark also has a `flamegraph.svg` in its output directory.
 
