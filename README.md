@@ -30,6 +30,8 @@ These tests reproduce and verify the results of the initial ReSSA paper, "Advanc
 1. Initialize the target folder so flamegraphs can get created appropriately by running `benches/init.sh`
 1. Run `cargo +nightly bench`.
 
+__As of December 2021 there appears to be issues building the `jemalloc` crate with recent installations of jemalloc, which may hinder your ability to run the benchmarks__
+
 **Note that it may take a significant amount of time to run benchmarks as they go through many iterations**
 
 Criterion and Iai will generate output to stdout and additionally files in `target/criterion/**` for the various benchmarks, and each benchmark also has a `flamegraph.svg` in its output directory.
