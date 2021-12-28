@@ -1968,8 +1968,24 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
 [
   {
     "identifier": "ClassOrInterface",
+    "pattern": ".*",
+    "auxiliary_pattern": "#{pkg}",
+    "subpatterns": [
+      {
+        "identifier": "Method",
+        "pattern": "^main$",
+        "auxiliary_pattern": "^void$",
+        "subpatterns": [],
+        "essential": true
+      }
+    ],
+    "callback": "let pkg = ctx.get_variable(\"pkg\").unwrap();let controller = `API - ${pkg}`;ctx.make_object(controller);ctx.make_tag(pkg, controller);ctx.make_transient(\"allServices\");let array = ctx.get_object(\"allServices\").unwrap();let i = 0;while array.contains_key(`${i}`) { i = i + 1; }ctx.make_attribute(`allServices`, `${i}`, Some(pkg));",
+    "essential": true
+  },
+  {
+    "identifier": "ClassOrInterface",
     "pattern": "#{controller}",
-    "auxiliary_pattern": "",
+    "auxiliary_pattern": "#{package}",
     "subpatterns": [
       {
         "identifier": "Annotation",
@@ -1994,7 +2010,6 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
                 "pattern": "path",
                 "auxiliary_pattern": "\"#{endpoint_url_part_path}\"",
                 "subpatterns": [],
-                "callback": "",
                 "essential": false
               },
               {
@@ -2002,7 +2017,6 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
                 "pattern": "value",
                 "auxiliary_pattern": "\"#{endpoint_url_part_path}\"",
                 "subpatterns": [],
-                "callback": "",
                 "essential": false
               }
             ],
@@ -2010,22 +2024,20 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
             "essential": true
           }
         ],
-        "callback": "let controller = ctx.get_variable(\"controller\").unwrap();let endpoint_method = ctx.get_variable(\"endpoint_method\").unwrap();let return_type = ctx.get_variable(\"return_type\").unwrap_or(\"\");let endpoint_url = ctx.get_variable(\"endpoint_url\").unwrap();if !endpoint_url.starts_with(\"/\") { endpoint_url = \"/\" + endpoint_url;}let method_type = ctx.get_variable(\"method_type\").unwrap_or(\"\");match method_type { \"Post\" => method_type = String::from_str(\"POST\"),\"Get\" => method_type = String::from_str(\"GET\"),\"Put\" => method_type = String::from_str(\"PUT\"),\"Delete\" => method_type = String::from_str(\"DELETE\"),\"Patch\" => method_type = String::from_str(\"PATCH\"),_ => method_type = method_type}let full_endpoint = method_type.clone();full_endpoint.push_str(\" \");full_endpoint.push_str(endpoint_url.clone());full_endpoint.push_str(\" \");let url_itr = endpoint_url.split(\"{\");let stripped_url = url_itr.next().unwrap();for arg_part in url_itr {    let arg_part_itr = arg_part.split(\"}\");    let arg_part2 = arg_part_itr.skip(1).next().unwrap();    stripped_url.push_str(\"{}\");    stripped_url.push_str(arg_part2.clone());}let full_path = method_type.clone() + \" \" + stripped_url.clone();ctx.make_transient(full_path);ctx.make_attribute(full_path, \"Controller\", Some(controller));ctx.make_attribute(full_path, \"Endpoint method\", Some(endpoint_method));full_endpoint.push_str(return_type.clone());controller = \"API - \" + controller;ctx.make_object(controller);ctx.make_attribute(controller, endpoint_method, Some(full_endpoint));",
+        "callback": "let package = ctx.get_variable(\"package\").unwrap();let allServices = ctx.get_object(\"allServices\").unwrap();let i = 0;let controller = ``;while allServices.contains_key(`${i}`) { controller = allServices.get(`${i}`).unwrap().unwrap(); if package == controller || package.starts_with(`${controller}.`) { break; } else { i = i + 1; }}if !allServices.contains_key(`${i}`) { panic(\"Unknown service matched\");}let endpoint_method = `${package}.${ctx.get_variable(\"controller\").unwrap()}#${ctx.get_variable(\"endpoint_method\").unwrap()}`;let return_type = ctx.get_variable(\"return_type\").unwrap_or(\"\");let endpoint_url = ctx.get_variable(\"endpoint_url\").unwrap();if !endpoint_url.starts_with(\"/\") { endpoint_url = \"/\" + endpoint_url;}let method_type = ctx.get_variable(\"method_type\").unwrap_or(\"\");match method_type { \"Post\" => method_type = String::from_str(\"POST\"),\"Get\" => method_type = String::from_str(\"GET\"),\"Put\" => method_type = String::from_str(\"PUT\"),\"Delete\" => method_type = String::from_str(\"DELETE\"),\"Patch\" => method_type = String::from_str(\"PATCH\"),_ => method_type = method_type}let full_endpoint = method_type.clone();full_endpoint.push_str(\" \");full_endpoint.push_str(endpoint_url.clone());full_endpoint.push_str(\" \");let url_itr = endpoint_url.split(\"{\");let stripped_url = url_itr.next().unwrap();for arg_part in url_itr { let arg_part_itr = arg_part.split(\"}\"); let arg_part2 = arg_part_itr.skip(1).next().unwrap(); stripped_url.push_str(\"{}\"); stripped_url.push_str(arg_part2.clone());}let full_path = method_type.clone() + \" \" + stripped_url.clone();ctx.make_transient(full_path);ctx.make_attribute(full_path, \"Controller\", Some(controller));ctx.make_attribute(full_path, \"Endpoint method\", Some(endpoint_method));full_endpoint.push_str(return_type.clone());controller = \"API - \" + controller;ctx.make_object(controller);ctx.make_attribute(controller, endpoint_method, Some(full_endpoint));ctx.make_variable(`endpoint_url_part_path`, ``);ctx.make_variable(`endpoint_url_part`, ``);",
         "essential": true
       }
     ],
-    "callback": "",
     "essential": true
   },
   {
     "identifier": "ClassOrInterface",
-    "pattern": "#{service}Impl",
-    "auxiliary_pattern": "",
+    "pattern": "#{service}",
+    "auxiliary_pattern": "#{package}",
     "subpatterns": [
       {
         "identifier": "Annotation",
         "pattern": "@Service",
-        "auxiliary_pattern": "",
         "subpatterns": [],
         "callback": "",
         "essential": true
@@ -2033,12 +2045,10 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
       {
         "identifier": "Field",
         "pattern": "#{path_var_name}",
-        "auxiliary_pattern": "",
         "subpatterns": [
           {
             "identifier": "Literal",
             "pattern": "(https?://.*):(\\d*)#{path_var_val}/?\"",
-            "auxiliary_pattern": "",
             "subpatterns": [],
             "callback": "let path_var_name = ctx.get_variable(\"path_var_name\").unwrap_or(\"\");let path_var_val = ctx.get_variable(\"path_var_val\").unwrap_or(\"\");if path_var_name.len() > 0 && path_var_val.len() > 0 { ctx.make_variable(path_var_name, path_var_val); ctx.make_variable(\"path_var_name\", \"\"); ctx.make_variable(\"path_var_val\", \"\"); }",
             "essential": false
@@ -2049,7 +2059,6 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
       {
         "identifier": "Method",
         "pattern": "#{calling_method}",
-        "auxiliary_pattern": "",
         "subpatterns": [
           {
             "identifier": "CallExpr",
@@ -2065,7 +2074,6 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
                   {
                     "identifier": "Literal",
                     "pattern": "(https?://.*):(\\d*)#{path_root}/?\"",
-                    "auxiliary_pattern": "",
                     "subpatterns": [],
                     "callback": "ctx.make_variable(\"found_path\", \"true\");ctx.make_variable(\"lit_is_path\", \"true\");let path_root = ctx.get_variable(\"path_root\").unwrap();ctx.make_variable(\"curr_path\", path_root);",
                     "essential": true
@@ -2073,7 +2081,6 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
                   {
                     "identifier": "Ident",
                     "pattern": "#{path_root_ident}",
-                    "auxiliary_pattern": "",
                     "subpatterns": [],
                     "callback": "let path_root_ident = ctx.get_variable(\"path_root_ident\").unwrap();let found_path = ctx.get_variable(\"found_path\").unwrap_or(\"\");let call_finished = ctx.get_variable(\"call_finished\").unwrap_or(\"\");if found_path.len() == 0 && call_finished.len() == 0 {let path_root_val = ctx.get_variable(path_root_ident.clone()).unwrap_or(\"\");if path_root_val.len() > 0 {ctx.make_variable(\"path_root\", path_root_val);ctx.make_variable(\"curr_path\", path_root_val);ctx.make_variable(\"found_path\", \"true\");ctx.make_variable(\"ident_is_path\", \"true\");}}",
                     "essential": true
@@ -2081,7 +2088,6 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
                   {
                     "identifier": "Ident",
                     "pattern": "#{path_ident}",
-                    "auxiliary_pattern": "",
                     "subpatterns": [],
                     "essential": false,
                     "callback": "let path_root = ctx.get_variable(\"path_root\").unwrap_or(\"\");let found_path = ctx.get_variable(\"found_path\").unwrap_or(\"\");let ident_is_path = ctx.get_variable(\"ident_is_path\").unwrap_or(\"\");let found_path_ident = ctx.get_variable(\"found_path_ident\").unwrap_or(\"\");if (path_root.len() > 0 && found_path.len() > 0 && ident_is_path.len() == 0 && found_path_ident.len() == 0) {    let curr_path = ctx.get_variable(\"curr_path\").unwrap();    let path_ident = ctx.get_variable(\"path_ident\").unwrap();    curr_path.push_str(\"{}\");    ctx.make_variable(\"curr_path\", curr_path);    ctx.make_variable(\"found_path_ident\", \"true\");}if(ident_is_path.len() > 0){ctx.make_variable(\"ident_is_path\", \"\");}"
@@ -2089,7 +2095,6 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
                   {
                     "identifier": "Literal",
                     "pattern": "\"#{path_lit}\"",
-                    "auxiliary_pattern": "",
                     "subpatterns": [],
                     "essential": false,
                     "callback": "let path_root = ctx.get_variable(\"path_root\").unwrap_or(\"\");let found_path = ctx.get_variable(\"found_path\").unwrap_or(\"\");let lit_is_path = ctx.get_variable(\"lit_is_path\").unwrap_or(\"\"); if (path_root.len() > 0 && found_path.len() > 0 && lit_is_path.len() == 0) {    let curr_path = ctx.get_variable(\"curr_path\").unwrap();    let path_lit = ctx.get_variable(\"path_lit\").unwrap_or(\"\");    if path_lit.len() > 0 {curr_path.push_str(path_lit);    ctx.make_variable(\"curr_path\", curr_path);ctx.make_variable(\"found_path_ident\", \"\");}    }ctx.make_variable(\"path_lit\", \"\");"
@@ -2099,33 +2104,20 @@ pub const ressa_json_endpoint_tt: &'static str = r##"
                 "callback": "ctx.make_variable(\"lit_is_path\", \"\");"
               },
               {
-                "identifier": "Literal",
-                "pattern": "",
-                "auxiliary_pattern": "",
-                "subpatterns": [
-                  {
-                    "identifier": "Ident",
-                    "pattern": "#{method_ident}(^[A-Z]+$)",
-                    "auxiliary_pattern": "",
-                    "subpatterns": [],
-                    "essential": true,
-                    "callback": "let path_root = ctx.get_variable(\"path_root\").unwrap_or(\"\");let found_path = ctx.get_variable(\"found_path\").unwrap_or(\"\");if (path_root.len() > 0 && found_path.len() > 0) {    let method_ident = ctx.get_variable(\"method_ident\").unwrap();    let curr_path = ctx.get_variable(\"curr_path\").unwrap();    let service = ctx.get_variable(\"service\").unwrap();    let service_calls = \"Calls - \" + service;    let full_call = method_ident + \" \" + curr_path;    let source_obj = ctx.get_object(full_call).unwrap();    let endpoint_method = source_obj.get(\"Endpoint method\").unwrap().unwrap();    let controller = source_obj.get(\"Controller\").unwrap().unwrap();    let call_info = controller.clone() + \".\" + endpoint_method.clone();    ctx.make_object(service_calls);    ctx.make_tag(service, service_calls);    ctx.make_attribute(service, full_call, Some(call_info));}ctx.make_variable(\"found_path\", \"\");ctx.make_variable(\"curr_path\", \"\");ctx.make_variable(\"path_root\", \"\");ctx.make_variable(\"ident_is_path\", \"\");ctx.make_variable(\"lit_is_path\", \"\");ctx.make_variable(\"found_path_ident\", \"\");ctx.make_variable(\"call_finished\", \"true\");"
-                  }
-                ],
-                "callback": "",
+                "identifier": "Ident",
+                "pattern": "#{method_ident}(^[A-Z]+$)",
+                "subpatterns": [],
                 "essential": true,
-                "transparent": true
+                "callback": "let path_root = ctx.get_variable(\"path_root\").unwrap_or(\"\"); let found_path = ctx.get_variable(\"found_path\").unwrap_or(\"\"); if (path_root.len() > 0 && found_path.len() > 0) { let pkg = ctx.get_variable(\"package\").unwrap(); let allServices = ctx.get_object(\"allServices\").unwrap(); let i = 0; let service = ``; while allServices.contains_key(`${i}`) { service = allServices.get(`${i}`).unwrap().unwrap(); if pkg == service || pkg.starts_with(`${service}.`) { break; } else { i = i + 1; } } if !allServices.contains_key(`${i}`) { panic(\"Unknown service matched\"); } let method_ident = ctx.get_variable(\"method_ident\").unwrap(); let curr_path = ctx.get_variable(\"curr_path\").unwrap(); let service_calls = \"Calls - \" + service; let full_call = method_ident + \" \" + curr_path; let source_obj = ctx.get_object(full_call).unwrap(); let call_info = source_obj.get(\"Endpoint method\").unwrap().unwrap(); ctx.make_object(service_calls); ctx.make_tag(service, service_calls); ctx.make_attribute(service, full_call, Some(call_info)); } ctx.make_variable(\"found_path\", \"\"); ctx.make_variable(\"found_path_ident\", \"\"); ctx.make_variable(\"path_root\", \"\"); ctx.make_variable(\"curr_path\", \"\"); ctx.make_variable(\"path_root_ident\", \"\"); ctx.make_variable(\"found_path\", \"\"); ctx.make_variable(\"call_finished\", \"\"); ctx.make_variable(\"ident_is_path\", \"\"); ctx.make_variable(\"path_ident\", \"\");"
               }
             ],
             "callback": "ctx.make_variable(\"call_finished\", \"\");",
-            "essential": true
+            "essential": false
           }
         ],
-        "callback": "",
-        "essential": true
+        "essential": false
       }
     ],
-    "callback": "",
     "essential": true
   }
 ]
@@ -2135,15 +2127,21 @@ pub const ressa_json_entity_tt: &'static str = r##"
 [
   {
     "identifier": "ClassOrInterface",
-    "pattern": "#{entity_name}",
-    "auxiliary_pattern": "",
+    "pattern": ".*",
+    "auxiliary_pattern": "#{package_name}",
     "subpatterns": [
       {
         "identifier": "Annotation",
-        "pattern": "@Data",
-        "auxiliary_pattern": "",
-        "subpatterns": [],
-        "callback": "",
+        "pattern": "@Document",
+        "subpatterns": [
+          {
+            "identifier": "AnnotationValuePair",
+            "pattern": "collection",
+            "auxiliary_pattern": "\"#{entity_name}\"",
+            "subpatterns": [],
+            "essential": true
+          }
+        ],
         "essential": true
       },
       {
@@ -2151,11 +2149,10 @@ pub const ressa_json_entity_tt: &'static str = r##"
         "pattern": "#{field_name}",
         "auxiliary_pattern": "#{field_type}",
         "subpatterns": [],
-        "callback": "let entity_name = ctx.get_variable(\"entity_name\").unwrap();ctx.make_object(entity_name);let field_name = ctx.get_variable(\"field_name\").unwrap();let field_type = ctx.get_variable(\"field_type\").unwrap();ctx.make_attribute(entity_name, field_name, Some(field_type));",
+        "callback": "let entity_name = ctx.get_variable(\"package_name\").unwrap() + \": \" + ctx.get_variable(\"entity_name\").unwrap();ctx.make_object(entity_name);let field_name = ctx.get_variable(\"field_name\").unwrap();let field_type = ctx.get_variable(\"field_type\").unwrap();ctx.make_attribute(entity_name, field_name, Some(field_type));",
         "essential": true
       }
     ],
-    "callback": "",
     "essential": true
   }
 ]
