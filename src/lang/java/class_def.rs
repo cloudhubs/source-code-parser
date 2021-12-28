@@ -28,7 +28,6 @@ pub(crate) fn parse_class(
         Some(identifier) => identifier.value.clone(),
         None => "".into(),
     };
-    println!("{}.{}", package, instance_name);
 
     let declaration_type = match instance_type {
         InstanceType::InterfaceComponent => ContainerType::Interface,
