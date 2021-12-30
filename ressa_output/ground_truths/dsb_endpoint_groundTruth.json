@@ -1,0 +1,57 @@
+{
+  "UniqueIdService": {
+    "UploadUniqueId": "<UNCALLED>"
+  },
+  "MovieIdService": {
+    "UploadMovieId": "<UNCALLED>",
+    "RegisterMovieId": "<UNCALLED>"
+  },
+  "TextService": {
+    "UploadText": "<UNCALLED>"
+  },
+  "RatingService": {
+    "UploadRating": "MovieIdHandler, "
+  },
+  "UserService": {
+    "RegisterUser": "<UNCALLED>",
+    "RegisterUserWithId": "<UNCALLED>",
+    "Login": "<UNCALLED>",
+    "UploadUserWithUserId": "<UNCALLED>",
+    "UploadUserWithUsername": "<UNCALLED>"
+  },
+  "ComposeReviewService": {
+    "UploadText": "TextHandler, ",
+    "UploadRating": "RatingHandler, ",
+    "UploadMovieId": "MovieIdHandler, ",
+    "UploadUniqueId": "UniqueIdHandler, ",
+    "UploadUserId": "UserServie, UserHandler, "
+  },
+  "ReviewStorageService": {
+    "StoreReview": "ComposeReviewHandler, ",
+    "ReadReviews": "UserReviewHandler, MovieReviewHandler, "
+  },
+  "MovieReviewService": {
+    "UploadMovieReview": "ComposeReviewHandler, ",
+    "ReadMovieReviews": "PageHandler, "
+  },
+  "UserReviewService": {
+    "UploadUserReview": "ComposeReviewHandler, ",
+    "ReadUserReviews": "<UNCALLED>"
+  },
+  "CastInfoService": {
+    "WriteCastInfo": "<UNCALLED>",
+    "ReadCastInfo": "PageHandler, "
+  },
+  "PlotService": {
+    "WritePlot": "<UNCALLED>",
+    "ReadPlot": "PageHandler, "
+  },
+  "MovieInfoService": {
+    "WriteMovieInfo": "<UNCALLED>",
+    "ReadMovieInfo": "PageHandler, ",
+    "UpdateRating": "<UNCALLED>"
+  },
+  "PageService": {
+    "ReadPage": "<UNCALLED>"
+  }
+}

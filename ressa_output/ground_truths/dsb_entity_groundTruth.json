@@ -1,0 +1,28 @@
+{
+  "social-graph": {
+    "avg_rating": "DOUBLE",
+    "num_rating": "INT32"
+  },
+  "movie-review": {
+    "movie_id": "UTF8",
+    "reviews": "[]"
+  },
+  "movie-review.reviews": {
+    "review_id": "INT64",
+    "timestamp": "INT64"
+  },
+  "user-review": {
+    "user_id": "INT64",
+    "reviews": "[]"
+  },
+  "user-review.reviews": {
+    "review_id": "INT64",
+    "timestamp": "INT64"
+  },
+  "cast-info": {},
+  "movie-id": {},
+  "movie-info": {},
+  "plot": {},
+  "review": {},
+  "user": {}
+}
