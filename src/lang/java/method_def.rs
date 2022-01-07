@@ -44,7 +44,7 @@ pub(crate) fn parse_method(ast: &AST, component: &ComponentInfo) -> MethodCompon
             "constructor_body" | "block" => {
                 body = Some(parse_block(member, &component));
             }
-            unknown => tracing::info!("{} unknown", unknown),
+            _unknown => {} //tracing::info!("{} unknown", unknown),
         }
     }
 
