@@ -88,14 +88,14 @@ fn do_parse_package_node(ast: &AST) -> String {
     }
 }
 
-/// Take the AST node containing an import statement, and return back the String describing the package imported
-fn parse_import(ast: &AST) -> String {
-    let mut buffer = String::new();
-    for child in ast.children.iter() {
-        match &*child.r#type {
-            "identifier" | "." | "*" => buffer.push_str(&*child.value),
-            _ => buffer.push_str(&*parse_import(child)),
-        };
-    }
-    buffer
-}
+// /// Take the AST node containing an import statement, and return back the String describing the package imported
+// fn parse_import(ast: &AST) -> String {
+//     let mut buffer = String::new();
+//     for child in ast.children.iter() {
+//         match &*child.r#type {
+//             "identifier" | "." | "*" => buffer.push_str(&*child.value),
+//             _ => buffer.push_str(&*parse_import(child)),
+//         };
+//     }
+//     buffer
+// }
