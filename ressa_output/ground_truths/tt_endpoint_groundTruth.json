@@ -1,0 +1,543 @@
+{
+  "API - adminbasic": {
+    "adminbasic.controller.AdminBasicInfoController#home": "GET /api/v1/adminbasicservice/welcome String",
+    "adminbasic.controller.AdminBasicInfoController#getAllContacts": "GET /api/v1/adminbasicservice/adminbasic/contacts HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#deleteContacts": "DELETE /api/v1/adminbasicservice/adminbasic/contacts/{contactsId} HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#modifyContacts": "PUT /api/v1/adminbasicservice/adminbasic/contacts HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#addContacts": "POST /api/v1/adminbasicservice/adminbasic/contacts HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#getAllStations": "GET /api/v1/adminbasicservice/adminbasic/stations HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#deleteStation": "DELETE /api/v1/adminbasicservice/adminbasic/stations HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#modifyStation": "PUT /api/v1/adminbasicservice/adminbasic/stations HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#addStation": "POST /api/v1/adminbasicservice/adminbasic/stations HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#getAllTrains": "GET /api/v1/adminbasicservice/adminbasic/trains HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#deleteTrain": "DELETE /api/v1/adminbasicservice/adminbasic/trains/{id} HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#modifyTrain": "PUT /api/v1/adminbasicservice/adminbasic/trains HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#addTrain": "POST /api/v1/adminbasicservice/adminbasic/trains HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#getAllConfigs": "GET /api/v1/adminbasicservice/adminbasic/configs HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#deleteConfig": "DELETE /api/v1/adminbasicservice/adminbasic/configs/{name} HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#modifyConfig": "PUT /api/v1/adminbasicservice/adminbasic/configs HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#addConfig": "POST /api/v1/adminbasicservice/adminbasic/configs HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#getAllPrices": "GET /api/v1/adminbasicservice/adminbasic/prices HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#deletePrice": "DELETE /api/v1/adminbasicservice/adminbasic/prices HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#modifyPrice": "PUT /api/v1/adminbasicservice/adminbasic/prices HttpEntity",
+    "adminbasic.controller.AdminBasicInfoController#addPrice": "POST /api/v1/adminbasicservice/adminbasic/prices HttpEntity"
+  },
+  "API - adminorder": {
+    "adminorder.controller.AdminOrderController#home": "GET /api/v1/adminorderservice/welcome String",
+    "adminorder.controller.AdminOrderController#getAllOrders": "GET /api/v1/adminorderservice/adminorder HttpEntity",
+    "adminorder.controller.AdminOrderController#addOrder": "POST /api/v1/adminorderservice/adminorder HttpEntity",
+    "adminorder.controller.AdminOrderController#updateOrder": "PUT /api/v1/adminorderservice/adminorder HttpEntity",
+    "adminorder.controller.AdminOrderController#deleteOrder": "DELETE /api/v1/adminorderservice/adminorder/{orderId}/{trainNumber} HttpEntity"
+  },
+  "API - adminroute": {
+    "adminroute.controller.AdminRouteController#home": "GET /api/v1/adminrouteservice/welcome String",
+    "adminroute.controller.AdminRouteController#getAllRoutes": "GET /api/v1/adminrouteservice/adminroute HttpEntity",
+    "adminroute.controller.AdminRouteController#addRoute": "POST /api/v1/adminrouteservice/adminroute HttpEntity",
+    "adminroute.controller.AdminRouteController#deleteRoute": "DELETE /api/v1/adminrouteservice/adminroute/{routeId} HttpEntity"
+  },
+  "API - admintravel": {
+    "admintravel.controller.AdminTravelController#home": "GET /api/v1/admintravelservice/welcome String",
+    "admintravel.controller.AdminTravelController#getAllTravels": "GET /api/v1/admintravelservice/admintravel HttpEntity",
+    "admintravel.controller.AdminTravelController#addTravel": "POST /api/v1/admintravelservice/admintravel HttpEntity",
+    "admintravel.controller.AdminTravelController#updateTravel": "PUT /api/v1/admintravelservice/admintravel HttpEntity",
+    "admintravel.controller.AdminTravelController#deleteTravel": "DELETE /api/v1/admintravelservice/admintravel/{tripId} HttpEntity"
+  },
+  "API - adminuser": {
+    "adminuser.controller.AdminUserController#home": "GET /api/v1/adminuserservice/users/welcome String",
+    "adminuser.controller.AdminUserController#getAllUsers": "GET /api/v1/adminuserservice/users HttpEntity",
+    "adminuser.controller.AdminUserController#updateUser": "PUT /api/v1/adminuserservice/users HttpEntity",
+    "adminuser.controller.AdminUserController#addUser": "POST /api/v1/adminuserservice/users HttpEntity",
+    "adminuser.controller.AdminUserController#deleteUser": "DELETE /api/v1/adminuserservice/users/{userId} HttpEntity"
+  },
+  "API - assurance": {
+    "assurance.controller.AssuranceController#home": "GET /api/v1/assuranceservice/welcome String",
+    "assurance.controller.AssuranceController#getAllAssurances": "GET /api/v1/assuranceservice/assurances HttpEntity",
+    "assurance.controller.AssuranceController#getAllAssuranceType": "GET /api/v1/assuranceservice/assurances/types HttpEntity",
+    "assurance.controller.AssuranceController#deleteAssurance": "DELETE /api/v1/assuranceservice/assurances/assuranceid/{assuranceId} HttpEntity",
+    "assurance.controller.AssuranceController#deleteAssuranceByOrderId": "DELETE /api/v1/assuranceservice/assurances/orderid/{orderId} HttpEntity",
+    "assurance.controller.AssuranceController#modifyAssurance": "PATCH /api/v1/assuranceservice/assurances/{assuranceId}/{orderId}/{typeIndex} HttpEntity",
+    "assurance.controller.AssuranceController#createNewAssurance": "GET /api/v1/assuranceservice/assurances/{typeIndex}/{orderId} HttpEntity",
+    "assurance.controller.AssuranceController#getAssuranceById": "GET /api/v1/assuranceservice/assurances/assuranceid/{assuranceId} HttpEntity",
+    "assurance.controller.AssuranceController#findAssuranceByOrderId": "GET /api/v1/assuranceservice/assurance/orderid/{orderId} HttpEntity"
+  },
+  "API - auth": {
+    "auth.controller.AuthController#getHello": "GET /api/v1/auth/hello String",
+    "auth.controller.AuthController#createDefaultUser": "POST /api/v1/auth HttpEntity<Response>",
+    "auth.controller.UserController#getHello": "GET /api/v1/users/hello Object",
+    "auth.controller.UserController#getToken": "POST /api/v1/users/login ResponseEntity<Response>",
+    "auth.controller.UserController#getAllUser": "GET /api/v1/users ResponseEntity<List<User>>",
+    "auth.controller.UserController#deleteUserById": "DELETE /api/v1/users/{userId} ResponseEntity<Response>"
+  },
+  "API - fdse.microservice": {
+    "fdse.microservice.controller.BasicController#home": "GET /api/v1/basicservice/welcome String",
+    "fdse.microservice.controller.BasicController#queryForTravel": "POST /api/v1/basicservice/basic/travel HttpEntity",
+    "fdse.microservice.controller.BasicController#queryForStationId": "GET /api/v1/basicservice/basic/{stationName} HttpEntity"
+  },
+  "API - fdse.microservice": {
+    "fdse.microservice.controller.StationController#home": "GET /api/v1/stationservice/welcome String",
+    "fdse.microservice.controller.StationController#query": "GET /api/v1/stationservice/stations HttpEntity",
+    "fdse.microservice.controller.StationController#create": "POST /api/v1/stationservice/stations ResponseEntity<Response>",
+    "fdse.microservice.controller.StationController#update": "PUT /api/v1/stationservice/stations HttpEntity",
+    "fdse.microservice.controller.StationController#delete": "DELETE /api/v1/stationservice/stations ResponseEntity<Response>",
+    "fdse.microservice.controller.StationController#queryForStationId": "GET /api/v1/stationservice/stations/id/{stationNameForId} HttpEntity",
+    "fdse.microservice.controller.StationController#queryForIdBatch": "POST /api/v1/stationservice/stations/idlist HttpEntity",
+    "fdse.microservice.controller.StationController#queryById": "GET /api/v1/stationservice/stations/name/{stationIdForName} HttpEntity",
+    "fdse.microservice.controller.StationController#queryForNameBatch": "POST /api/v1/stationservice/stations/namelist HttpEntity"
+  },
+  "API - cancel": {
+    "cancel.controller.CancelController#home": "GET /api/v1/cancelservice/welcome String",
+    "cancel.controller.CancelController#calculate": "GET /api/v1/cancelservice/cancel/refound/{orderId} HttpEntity",
+    "cancel.controller.CancelController#cancelTicket": "GET /api/v1/cancelservice/cancel/{orderId}/{loginId} HttpEntity"
+  },
+  "API - config": {
+    "config.controller.ConfigController#home": "GET /api/v1/configservice/welcome String",
+    "config.controller.ConfigController#queryAll": "GET /api/v1/configservice/configs HttpEntity",
+    "config.controller.ConfigController#createConfig": "POST /api/v1/configservice/configs HttpEntity<?>",
+    "config.controller.ConfigController#updateConfig": "PUT /api/v1/configservice/configs HttpEntity",
+    "config.controller.ConfigController#deleteConfig": "DELETE /api/v1/configservice/configs/{configName} HttpEntity",
+    "config.controller.ConfigController#retrieve": "GET /api/v1/configservice/configs/{configName} HttpEntity"
+  },
+  "API - consignprice": {
+    "consignprice.controller.ConsignPriceController#home": "GET /api/v1/consignpriceservice/welcome String",
+    "consignprice.controller.ConsignPriceController#getPriceByWeightAndRegion": "GET /api/v1/consignpriceservice/consignprice/{weight}/{isWithinRegion} HttpEntity",
+    "consignprice.controller.ConsignPriceController#getPriceInfo": "GET /api/v1/consignpriceservice/consignprice/price HttpEntity",
+    "consignprice.controller.ConsignPriceController#getPriceConfig": "GET /api/v1/consignpriceservice/consignprice/config HttpEntity",
+    "consignprice.controller.ConsignPriceController#modifyPriceConfig": "POST /api/v1/consignpriceservice/consignprice HttpEntity"
+  },
+  "API - consign": {
+    "consign.controller.ConsignController#home": "GET /api/v1/consignservice/welcome String",
+    "consign.controller.ConsignController#insertConsign": "POST /api/v1/consignservice/consigns HttpEntity",
+    "consign.controller.ConsignController#updateConsign": "PUT /api/v1/consignservice/consigns HttpEntity",
+    "consign.controller.ConsignController#findByAccountId": "GET /api/v1/consignservice/consigns/account/{id} HttpEntity",
+    "consign.controller.ConsignController#findByOrderId": "GET /api/v1/consignservice/consigns/order/{id} HttpEntity",
+    "consign.controller.ConsignController#findByConsignee": "GET /api/v1/consignservice/consigns/{consignee} HttpEntity"
+  },
+  "API - contacts": {
+    "contacts.controller.ContactsController#home": "GET /api/v1/contactservice/contacts/welcome String",
+    "contacts.controller.ContactsController#getAllContacts": "GET /api/v1/contactservice/contacts HttpEntity",
+    "contacts.controller.ContactsController#createNewContacts": "POST /api/v1/contactservice/contacts ResponseEntity<Response>",
+    "contacts.controller.ContactsController#createNewContactsAdmin": "POST /api/v1/contactservice/contacts/admin HttpEntity<?>",
+    "contacts.controller.ContactsController#deleteContacts": "DELETE /api/v1/contactservice/contacts/{contactsId} HttpEntity",
+    "contacts.controller.ContactsController#modifyContacts": "PUT /api/v1/contactservice/contacts HttpEntity",
+    "contacts.controller.ContactsController#findContactsByAccountId": "GET /api/v1/contactservice/contacts/account/{accountId} HttpEntity",
+    "contacts.controller.ContactsController#getContactsByContactsId": "GET /api/v1/contactservice/contacts/{id} HttpEntity"
+  },
+  "API - execute": {
+    "execute.controller.ExecuteControlller#home": "GET /api/v1/executeservice/welcome String",
+    "execute.controller.ExecuteControlller#executeTicket": "GET /api/v1/executeservice/execute/execute/{orderId} HttpEntity",
+    "execute.controller.ExecuteControlller#collectTicket": "GET /api/v1/executeservice/execute/collected/{orderId} HttpEntity"
+  },
+  "API - food": {
+    "food.controller.FoodStoreController#home": "GET /api/v1/foodmapservice/foodstores/welcome String",
+    "food.controller.FoodStoreController#getAllFoodStores": "GET /api/v1/foodmapservice/foodstores HttpEntity",
+    "food.controller.FoodStoreController#getFoodStoresOfStation": "GET /api/v1/foodmapservice/foodstores/{stationId} HttpEntity",
+    "food.controller.FoodStoreController#getFoodStoresByStationIds": "POST /api/v1/foodmapservice/foodstores HttpEntity",
+    "food.controller.TrainFoodController#home": "GET /api/v1/foodmapservice/trainfoods/welcome String",
+    "food.controller.TrainFoodController#getAllTrainFood": "GET /api/v1/foodmapservice/trainfoods HttpEntity",
+    "food.controller.TrainFoodController#getTrainFoodOfTrip": "GET /api/v1/foodmapservice/trainfoods/{tripId} HttpEntity"
+  },
+  "API - foodsearch": {
+    "foodsearch.controller.FoodController#home": "GET /api/v1/foodservice/welcome String",
+    "foodsearch.controller.FoodController#findAllFoodOrder": "GET /api/v1/foodservice/orders HttpEntity",
+    "foodsearch.controller.FoodController#createFoodOrder": "POST /api/v1/foodservice/orders HttpEntity",
+    "foodsearch.controller.FoodController#updateFoodOrder": "PUT /api/v1/foodservice/orders HttpEntity",
+    "foodsearch.controller.FoodController#deleteFoodOrder": "DELETE /api/v1/foodservice/orders/{orderId} HttpEntity",
+    "foodsearch.controller.FoodController#findFoodOrderByOrderId": "GET /api/v1/foodservice/orders/{orderId} HttpEntity",
+    "foodsearch.controller.FoodController#getAllFood": "GET /api/v1/foodservice/foods/{date}/{startStation}/{endStation}/{tripId} HttpEntity"
+  },
+  "API - inside_payment": {
+    "inside_payment.controller.InsidePaymentController#home": "GET /api/v1/inside_pay_service/welcome String",
+    "inside_payment.controller.InsidePaymentController#pay": "POST /api/v1/inside_pay_service/inside_payment HttpEntity",
+    "inside_payment.controller.InsidePaymentController#createAccount": "POST /api/v1/inside_pay_service/inside_payment/account HttpEntity",
+    "inside_payment.controller.InsidePaymentController#addMoney": "GET /api/v1/inside_pay_service/inside_payment/{userId}/{money} HttpEntity",
+    "inside_payment.controller.InsidePaymentController#queryPayment": "GET /api/v1/inside_pay_service/inside_payment/payment HttpEntity",
+    "inside_payment.controller.InsidePaymentController#queryAccount": "GET /api/v1/inside_pay_service/inside_payment/account HttpEntity",
+    "inside_payment.controller.InsidePaymentController#drawBack": "GET /api/v1/inside_pay_service/inside_payment/drawback/{userId}/{money} HttpEntity",
+    "inside_payment.controller.InsidePaymentController#payDifference": "POST /api/v1/inside_pay_service/inside_payment/difference HttpEntity",
+    "inside_payment.controller.InsidePaymentController#queryAddMoney": "GET /api/v1/inside_pay_service/inside_payment/money HttpEntity"
+  },
+  "API - notification": {
+    "notification.controller.NotificationController#home": "GET /api/v1/notifyservice/welcome String",
+    "notification.controller.NotificationController#preserve_success": "POST /api/v1/notifyservice/notification/preserve_success boolean",
+    "notification.controller.NotificationController#order_create_success": "POST /api/v1/notifyservice/notification/order_create_success boolean",
+    "notification.controller.NotificationController#order_changed_success": "POST /api/v1/notifyservice/notification/order_changed_success boolean",
+    "notification.controller.NotificationController#order_cancel_success": "POST /api/v1/notifyservice/notification/order_cancel_success boolean"
+  },
+  "API - other": {
+    "other.controller.OrderOtherController#home": "GET /api/v1/orderOtherService/welcome String",
+    "other.controller.OrderOtherController#getTicketListByDateAndTripId": "POST /api/v1/orderOtherService/orderOther/tickets HttpEntity",
+    "other.controller.OrderOtherController#createNewOrder": "POST /api/v1/orderOtherService/orderOther HttpEntity",
+    "other.controller.OrderOtherController#addcreateNewOrder": "POST /api/v1/orderOtherService/orderOther/admin HttpEntity",
+    "other.controller.OrderOtherController#queryOrders": "POST /api/v1/orderOtherService/orderOther/query HttpEntity",
+    "other.controller.OrderOtherController#queryOrdersForRefresh": "POST /api/v1/orderOtherService/orderOther/refresh HttpEntity",
+    "other.controller.OrderOtherController#calculateSoldTicket": "GET /api/v1/orderOtherService/orderOther/{travelDate}/{trainNumber} HttpEntity",
+    "other.controller.OrderOtherController#getOrderPrice": "GET /api/v1/orderOtherService/orderOther/price/{orderId} HttpEntity",
+    "other.controller.OrderOtherController#payOrder": "GET /api/v1/orderOtherService/orderOther/orderPay/{orderId} HttpEntity",
+    "other.controller.OrderOtherController#getOrderById": "GET /api/v1/orderOtherService/orderOther/{orderId} HttpEntity",
+    "other.controller.OrderOtherController#modifyOrder": "GET /api/v1/orderOtherService/orderOther/status/{orderId}/{status} HttpEntity",
+    "other.controller.OrderOtherController#securityInfoCheck": "GET /api/v1/orderOtherService/orderOther/security/{checkDate}/{accountId} HttpEntity",
+    "other.controller.OrderOtherController#saveOrderInfo": "PUT /api/v1/orderOtherService/orderOther HttpEntity",
+    "other.controller.OrderOtherController#updateOrder": "PUT /api/v1/orderOtherService/orderOther/admin HttpEntity",
+    "other.controller.OrderOtherController#deleteOrder": "DELETE /api/v1/orderOtherService/orderOther/{orderId} HttpEntity",
+    "other.controller.OrderOtherController#findAllOrder": "GET /api/v1/orderOtherService/orderOther HttpEntity"
+  },
+  "API - order": {
+    "order.controller.OrderController#home": "GET /api/v1/orderservice/welcome String",
+    "order.controller.OrderController#getTicketListByDateAndTripId": "POST /api/v1/orderservice/order/tickets HttpEntity",
+    "order.controller.OrderController#createNewOrder": "POST /api/v1/orderservice/order HttpEntity",
+    "order.controller.OrderController#addcreateNewOrder": "POST /api/v1/orderservice/order/admin HttpEntity",
+    "order.controller.OrderController#queryOrders": "POST /api/v1/orderservice/order/query HttpEntity",
+    "order.controller.OrderController#queryOrdersForRefresh": "POST /api/v1/orderservice/order/refresh HttpEntity",
+    "order.controller.OrderController#calculateSoldTicket": "GET /api/v1/orderservice/order/{travelDate}/{trainNumber} HttpEntity",
+    "order.controller.OrderController#getOrderPrice": "GET /api/v1/orderservice/order/price/{orderId} HttpEntity",
+    "order.controller.OrderController#payOrder": "GET /api/v1/orderservice/order/orderPay/{orderId} HttpEntity",
+    "order.controller.OrderController#getOrderById": "GET /api/v1/orderservice/order/{orderId} HttpEntity",
+    "order.controller.OrderController#modifyOrder": "GET /api/v1/orderservice/order/status/{orderId}/{status} HttpEntity",
+    "order.controller.OrderController#securityInfoCheck": "GET /api/v1/orderservice/order/security/{checkDate}/{accountId} HttpEntity",
+    "order.controller.OrderController#saveOrderInfo": "PUT /api/v1/orderservice/order HttpEntity",
+    "order.controller.OrderController#updateOrder": "PUT /api/v1/orderservice/order/admin HttpEntity",
+    "order.controller.OrderController#deleteOrder": "DELETE /api/v1/orderservice/order/{orderId} HttpEntity",
+    "order.controller.OrderController#findAllOrder": "GET /api/v1/orderservice/order HttpEntity"
+  },
+  "API - com.trainticket": {
+    "com.trainticket.controller.PaymentController#home": "GET /api/v1/paymentservice/welcome String",
+    "com.trainticket.controller.PaymentController#pay": "POST /api/v1/paymentservice/payment HttpEntity",
+    "com.trainticket.controller.PaymentController#addMoney": "POST /api/v1/paymentservice/payment/money HttpEntity",
+    "com.trainticket.controller.PaymentController#query": "GET /api/v1/paymentservice/payment HttpEntity"
+  },
+  "API - preserveOther": {
+    "preserveOther.controller.PreserveOtherController#home": "GET /api/v1/preserveotherservice/welcome String",
+    "preserveOther.controller.PreserveOtherController#preserve": "POST /api/v1/preserveotherservice/preserveOther HttpEntity"
+  },
+  "API - preserve": {
+    "preserve.controller.PreserveController#home": "GET /api/v1/preserveservice/welcome String",
+    "preserve.controller.PreserveController#preserve": "POST /api/v1/preserveservice/preserve HttpEntity"
+  },
+  "API - price": {
+    "price.controller.PriceController#home": "GET /api/v1/priceservice/prices/welcome String",
+    "price.controller.PriceController#query": "GET /api/v1/priceservice/prices/{routeId}/{trainType} HttpEntity",
+    "price.controller.PriceController#queryAll": "GET /api/v1/priceservice/prices HttpEntity",
+    "price.controller.PriceController#create": "POST /api/v1/priceservice/prices HttpEntity<?>",
+    "price.controller.PriceController#delete": "DELETE /api/v1/priceservice/prices HttpEntity",
+    "price.controller.PriceController#update": "PUT /api/v1/priceservice/prices HttpEntity"
+  },
+  "API - rebook": {
+    "rebook.controller.RebookController#home": "GET /api/v1/rebookservice/welcome String",
+    "rebook.controller.RebookController#payDifference": "POST /api/v1/rebookservice/rebook/difference HttpEntity",
+    "rebook.controller.RebookController#rebook": "POST /api/v1/rebookservice/rebook HttpEntity"
+  },
+  "API - plan": {
+    "plan.controller.RoutePlanController#home": "GET /api/v1/routeplanservice/welcome String",
+    "plan.controller.RoutePlanController#getCheapestRoutes": "POST /api/v1/routeplanservice/routePlan/cheapestRoute HttpEntity",
+    "plan.controller.RoutePlanController#getQuickestRoutes": "POST /api/v1/routeplanservice/routePlan/quickestRoute HttpEntity",
+    "plan.controller.RoutePlanController#getMinStopStations": "POST /api/v1/routeplanservice/routePlan/minStopStations HttpEntity"
+  },
+  "API - route": {
+    "route.controller.RouteController#home": "GET /api/v1/routeservice/welcome String",
+    "route.controller.RouteController#createAndModifyRoute": "POST /api/v1/routeservice/routes ResponseEntity<Response>",
+    "route.controller.RouteController#deleteRoute": "DELETE /api/v1/routeservice/routes/{routeId} HttpEntity",
+    "route.controller.RouteController#queryById": "GET /api/v1/routeservice/routes/{routeId} HttpEntity",
+    "route.controller.RouteController#queryAll": "GET /api/v1/routeservice/routes HttpEntity",
+    "route.controller.RouteController#queryByStartAndTerminal": "GET /api/v1/routeservice/routes/{startId}/{terminalId} HttpEntity"
+  },
+  "API - seat": {
+    "seat.controller.SeatController#home": "GET /api/v1/seatservice/welcome String",
+    "seat.controller.SeatController#create": "POST /api/v1/seatservice/seats HttpEntity",
+    "seat.controller.SeatController#getLeftTicketOfInterval": "POST /api/v1/seatservice/seats/left_tickets HttpEntity"
+  },
+  "API - security": {
+    "security.controller.SecurityController#home": "GET /api/v1/securityservice/welcome String",
+    "security.controller.SecurityController#findAllSecurityConfig": "GET /api/v1/securityservice/securityConfigs HttpEntity",
+    "security.controller.SecurityController#create": "POST /api/v1/securityservice/securityConfigs HttpEntity",
+    "security.controller.SecurityController#update": "PUT /api/v1/securityservice/securityConfigs HttpEntity",
+    "security.controller.SecurityController#delete": "DELETE /api/v1/securityservice/securityConfigs/{id} HttpEntity",
+    "security.controller.SecurityController#check": "GET /api/v1/securityservice/securityConfigs/{accountId} HttpEntity"
+  },
+  "API - ticketinfo": {
+    "ticketinfo.controller.TicketInfoController#home": "GET /api/v1/ticketinfoservice/welcome String",
+    "ticketinfo.controller.TicketInfoController#queryForTravel": "POST /api/v1/ticketinfoservice/ticketinfo HttpEntity",
+    "ticketinfo.controller.TicketInfoController#queryForStationId": "GET /api/v1/ticketinfoservice/ticketinfo/{name} HttpEntity"
+  },
+  "API - train": {
+    "train.controller.TrainController#home": "GET /api/v1/trainservice/trains/welcome String",
+    "train.controller.TrainController#create": "POST /api/v1/trainservice/trains HttpEntity",
+    "train.controller.TrainController#retrieve": "GET /api/v1/trainservice/trains/{id} HttpEntity",
+    "train.controller.TrainController#update": "PUT /api/v1/trainservice/trains HttpEntity",
+    "train.controller.TrainController#delete": "DELETE /api/v1/trainservice/trains/{id} HttpEntity",
+    "train.controller.TrainController#query": "GET /api/v1/trainservice/trains HttpEntity"
+  },
+  "API - travelplan": {
+    "travelplan.controller.TravelPlanController#home": "GET /api/v1/travelplanservice/welcome String",
+    "travelplan.controller.TravelPlanController#getTransferResult": "POST /api/v1/travelplanservice/travelPlan/transferResult HttpEntity",
+    "travelplan.controller.TravelPlanController#getByCheapest": "POST /api/v1/travelplanservice/travelPlan/cheapest HttpEntity",
+    "travelplan.controller.TravelPlanController#getByQuickest": "POST /api/v1/travelplanservice/travelPlan/quickest HttpEntity",
+    "travelplan.controller.TravelPlanController#getByMinStation": "POST /api/v1/travelplanservice/travelPlan/minStation HttpEntity"
+  },
+  "API - travel": {
+    "travel.controller.TravelController#home": "GET /api/v1/travelservice/welcome String",
+    "travel.controller.TravelController#getTrainTypeByTripId": "GET /api/v1/travelservice/train_types/{tripId} HttpEntity",
+    "travel.controller.TravelController#getRouteByTripId": "GET /api/v1/travelservice/routes/{tripId} HttpEntity",
+    "travel.controller.TravelController#getTripsByRouteId": "POST /api/v1/travelservice/trips/routes HttpEntity",
+    "travel.controller.TravelController#createTrip": "POST /api/v1/travelservice/trips HttpEntity<?>",
+    "travel.controller.TravelController#retrieve": "GET /api/v1/travelservice/trips/{tripId} HttpEntity",
+    "travel.controller.TravelController#updateTrip": "PUT /api/v1/travelservice/trips HttpEntity",
+    "travel.controller.TravelController#deleteTrip": "DELETE /api/v1/travelservice/trips/{tripId} HttpEntity",
+    "travel.controller.TravelController#queryInfo": "POST /api/v1/travelservice/trips/left HttpEntity",
+    "travel.controller.TravelController#getTripAllDetailInfo": "POST /api/v1/travelservice/trip_detail HttpEntity",
+    "travel.controller.TravelController#queryAll": "GET /api/v1/travelservice/trips HttpEntity",
+    "travel.controller.TravelController#adminQueryAll": "GET /api/v1/travelservice/admin_trip HttpEntity"
+  },
+  "API - travel2": {
+    "travel2.controller.Travel2Controller#home": "GET /api/v1/travel2service/welcome String",
+    "travel2.controller.Travel2Controller#getTrainTypeByTripId": "GET /api/v1/travel2service/train_types/{tripId} HttpEntity",
+    "travel2.controller.Travel2Controller#getRouteByTripId": "GET /api/v1/travel2service/routes/{tripId} HttpEntity",
+    "travel2.controller.Travel2Controller#getTripsByRouteId": "POST /api/v1/travel2service/trips/routes HttpEntity",
+    "travel2.controller.Travel2Controller#createTrip": "POST /api/v1/travel2service/trips HttpEntity<?>",
+    "travel2.controller.Travel2Controller#retrieve": "GET /api/v1/travel2service/trips/{tripId} HttpEntity",
+    "travel2.controller.Travel2Controller#updateTrip": "PUT /api/v1/travel2service/trips HttpEntity",
+    "travel2.controller.Travel2Controller#deleteTrip": "DELETE /api/v1/travel2service/trips/{tripId} HttpEntity",
+    "travel2.controller.Travel2Controller#queryInfo": "POST /api/v1/travel2service/trips/left HttpEntity",
+    "travel2.controller.Travel2Controller#getTripAllDetailInfo": "POST /api/v1/travel2service/trip_detail HttpEntity",
+    "travel2.controller.Travel2Controller#queryAll": "GET /api/v1/travel2service/trips HttpEntity",
+    "travel2.controller.Travel2Controller#adminQueryAll": "GET /api/v1/travel2service/admin_trip HttpEntity"
+  },
+  "API - user": {
+    "user.controller.UserController#testHello": "GET /api/v1/userservice/users/hello String",
+    "user.controller.UserController#getAllUser": "GET /api/v1/userservice/users ResponseEntity<Response>",
+    "user.controller.UserController#getUserByUserName": "GET /api/v1/userservice/users/{userName} ResponseEntity<Response>",
+    "user.controller.UserController#getUserByUserId": "GET /api/v1/userservice/users/id/{userId} ResponseEntity<Response>",
+    "user.controller.UserController#registerUser": "POST /api/v1/userservice/users/register ResponseEntity<Response>",
+    "user.controller.UserController#deleteUserById": "DELETE /api/v1/userservice/users/{userId} ResponseEntity<Response>",
+    "user.controller.UserController#updateUser": "PUT /api/v1/userservice/users ResponseEntity<Response>"
+  },
+  "API - verifycode": {
+    "verifycode.controller.VerifyCodeController#imageCode": "GET /api/v1/verifycode/generate void",
+    "verifycode.controller.VerifyCodeController#verifyCode": "GET /api/v1/verifycode/verify/{verifyCode} boolean"
+  },
+
+  "Calls - adminbasic": {
+    "GET /api/v1/contactservice/contacts": "contacts.controller.ContactsController#getAllContacts",
+    "DELETE /api/v1/contactservice/contacts/{}": "contacts.controller.ContactsController#deleteContacts",
+    "PUT /api/v1/contactservice/contacts": "contacts.controller.ContactsController#modifyContacts",
+    "POST /api/v1/contactservice/contacts/admin": "contacts.controller.ContactsController#createNewContactsAdmin",
+    "GET /api/v1/stationservice/stations": "fdse.microservice.controller.StationController#query",
+    "POST /api/v1/stationservice/stations": "fdse.microservice.controller.StationController#create",
+    "DELETE /api/v1/stationservice/stations": "fdse.microservice.controller.StationController#delete",
+    "PUT /api/v1/stationservice/stations": "fdse.microservice.controller.StationController#update",
+    "GET /api/v1/trainservice/trains": "train.controller.TrainController#query",
+    "POST /api/v1/trainservice/trains": "train.controller.TrainController#create",
+    "DELETE /api/v1/trainservice/trains/{}": "train.controller.TrainController#delete",
+    "PUT /api/v1/trainservice/trains": "train.controller.TrainController#update",
+    "GET /api/v1/configservice/configs": "config.controller.ConfigController#queryAll",
+    "POST /api/v1/configservice/configs": "config.controller.ConfigController#createConfig",
+    "DELETE /api/v1/configservice/configs/{}": "config.controller.ConfigController#deleteConfig",
+    "PUT /api/v1/configservice/configs": "config.controller.ConfigController#updateConfig",
+    "GET /api/v1/priceservice/prices": "price.controller.PriceController#queryAll",
+    "POST /api/v1/priceservice/prices": "price.controller.PriceController#create",
+    "DELETE /api/v1/priceservice/prices": "price.controller.PriceController#delete",
+    "PUT /api/v1/priceservice/prices": "price.controller.PriceController#update"
+  },
+
+  "Calls - adminroute": {
+    "GET /api/v1/routeservice/routes": "route.controller.RouteController#queryAll",
+    "POST /api/v1/routeservice/routes": "route.controller.RouteController#createAndModifyRoute",
+    "DELETE /api/v1/routeservice/routes/{}": "route.controller.RouteController#deleteRoute"
+  },
+
+  "Calls - adminorder": {
+    "GET /api/v1/orderservice/order": "order.controller.OrderController#findAllOrder",
+    "GET /api/v1/orderOtherService/orderOther": "other.controller.OrderOtherController#findAllOrder",
+    "DELETE /api/v1/orderservice/order/{}": "order.controller.OrderController#deleteOrder",
+    "DELETE /api/v1/orderOtherService/orderOther/{}": "other.controller.OrderOtherController#deleteOrder",
+    "PUT /api/v1/orderservice/order/admin": "order.controller.OrderController#updateOrder",
+    "PUT /api/v1/orderOtherService/orderOther/admin": "other.controller.OrderOtherController#updateOrder",
+    "POST /api/v1/orderservice/order/admin": "order.controller.OrderController#addcreateNewOrder",
+    "POST /api/v1/orderOtherService/orderOther/admin": "other.controller.OrderOtherController#addcreateNewOrder"
+  },
+
+  "Calls - adminuser": {
+    "GET /api/v1/userservice/users": "user.controller.UserController#getAllUser",
+    "DELETE /api/v1/userservice/users/{}": "user.controller.UserController#deleteUserById",
+    "PUT /api/v1/userservice/users": "user.controller.UserController#updateUser",
+    "POST /api/v1/userservice/users/register": "user.controller.UserController#registerUser"
+  },
+
+  "Calls - admintravel": {
+    "GET /api/v1/travelservice/admin_trip": "travel.controller.TravelController#adminQueryAll",
+    "GET /api/v1/travel2service/admin_trip": "travel2.controller.Travel2Controller#adminQueryAll",
+    "PUT /api/v1/travelservice/trips": "travel.controller.TravelController#updateTrip",
+    "PUT /api/v1/travel2service/trips": "travel2.controller.Travel2Controller#updateTrip",
+    "DELETE /api/v1/travelservice/trips/{}": "travel.controller.TravelController#deleteTrip",
+    "DELETE /api/v1/travel2service/trips/{}": "travel2.controller.Travel2Controller#deleteTrip"
+  },
+
+  "Calls - auth": {
+    "GET /api/v1/verifycode/verify/{}": "verifycode.controller.VerifyCodeController#verifyCode"
+  },
+
+  "Calls - fdse.microservice": {
+    "GET /api/v1/stationservice/stations/id/{}": "fdse.microservice.controller.StationController#queryForStationId",
+    "GET /api/v1/trainservice/trains/{}": "train.controller.TrainController#retrieve",
+    "GET /api/v1/routeservice/routes/{}": "route.controller.RouteController#queryById",
+    "GET /api/v1/priceservice/prices/{}/{}": "price.controller.PriceController#query"
+  },
+
+  "Calls - cancel": {
+    "POST /api/v1/notifyservice/notification/order_cancel_success": "notification.controller.NotificationController#order_cancel_success",
+    "PUT /api/v1/orderservice/order": "order.controller.OrderController#saveOrderInfo",
+    "PUT /api/v1/orderOtherService/orderOther": "other.controller.OrderOtherController#saveOrderInfo",
+    "GET /api/v1/inside_pay_service/inside_payment/drawback/{}/{}": "inside_payment.controller.InsidePaymentController#drawBack",
+    "GET /api/v1/userservice/users/id/{}": "user.controller.UserController#getUserByUserId",
+    "GET /api/v1/orderservice/order/{}": "order.controller.OrderController#getOrderById",
+    "GET /api/v1/orderOtherService/orderOther/{}": "other.controller.OrderOtherController#getOrderById"
+  },
+
+  "Calls - consign": {
+    "GET /api/v1/consignpriceservice/consignprice/{}/{}": "consignprice.controller.ConsignPriceController#getPriceByWeightAndRegion"
+  },
+
+  "Calls - execute": {
+    "GET /api/v1/orderservice/order/status/{}/{}": "order.controller.OrderController#modifyOrder",
+    "GET /api/v1/orderOtherService/orderOther/status/{}/{}": "other.controller.OrderOtherController#modifyOrder",
+    "GET /api/v1/orderservice/order/{}": "order.controller.OrderController#getOrderById",
+    "GET /api/v1/orderOtherService/orderOther/{}": "other.controller.OrderOtherController#getOrderById"
+  },
+
+  "Calls - foodsearch": {
+    "GET /api/v1/foodmapservice/trainfoods/{}": "food.controller.TrainFoodController#getTrainFoodOfTrip",
+    "GET /api/v1/travelservice/routes/{}": "travel.controller.TravelController#getRouteByTripId",
+    "GET /api/v1/stationservice/stations/id/{}": "fdse.microservice.controller.StationController#queryForStationId",
+    "POST /api/v1/foodmapservice/foodstores": "food.controller.FoodStoreController#getFoodStoresByStationIds"
+  },
+
+  "Calls - inside_payment": {
+    "GET /api/v1/orderservice/order/{}": "order.controller.OrderController#getOrderById",
+    "GET /api/v1/orderOtherService/orderOther/{}": "other.controller.OrderOtherController#getOrderById",
+    "POST /api/v1/paymentservice/payment": "com.trainticket.controller.PaymentController#pay",
+    "GET /api/v1/orderservice/order/status/{}/{}": "order.controller.OrderController#modifyOrder",
+    "GET /api/v1/orderOtherService/orderOther/status/{}/{}": "other.controller.OrderOtherController#modifyOrder"
+  },
+
+  "Calls - other": {
+    "POST /api/v1/stationservice/stations/namelist": "fdse.microservice.controller.StationController#queryForNameBatch"
+  },
+
+  "Calls - order": {
+    "POST /api/v1/stationservice/stations/namelist": "fdse.microservice.controller.StationController#queryForNameBatch"
+  },
+
+  "Calls - preserveOther": {
+    "POST /api/v1/ticketinfoservice/ticketinfo": "ticketinfo.controller.TicketInfoController#queryForTravel",
+    "POST /api/v1/seatservice/seats": "seat.controller.SeatController#create",
+    "POST /api/v1/notifyservice/notification/preserve_success": "notification.controller.NotificationController#preserve_success",
+    "GET /api/v1/userservice/users/id/{}": "user.controller.UserController#getUserByUserId",
+    "GET /api/v1/assuranceservice/assurances/{}/{}": "assurance.controller.AssuranceController#createNewAssurance",
+    "GET /api/v1/stationservice/stations/id/{}": "fdse.microservice.controller.StationController#queryForStationId",
+    "GET /api/v1/securityservice/securityConfigs/{}": "security.controller.SecurityController#check",
+    "POST /api/v1/travel2service/trip_detail": "travel2.controller.Travel2Controller#getTripAllDetailInfo",
+    "GET /api/v1/contactservice/contacts/{}": "contacts.controller.ContactsController#getContactsByContactsId",
+    "POST /api/v1/orderOtherService/orderOther": "other.controller.OrderOtherController#createNewOrder",
+    "POST /api/v1/foodservice/orders": "foodsearch.controller.FoodController#createFoodOrder",
+    "POST /api/v1/consignservice/consigns": "consign.controller.ConsignController#insertConsign"
+  },
+
+  "Calls - preserve": {
+    "POST /api/v1/ticketinfoservice/ticketinfo": "ticketinfo.controller.TicketInfoController#queryForTravel",
+    "POST /api/v1/seatservice/seats": "seat.controller.SeatController#create",
+    "POST /api/v1/notifyservice/notification/preserve_success": "notification.controller.NotificationController#preserve_success",
+    "GET /api/v1/userservice/users/id/{}": "user.controller.UserController#getUserByUserId",
+    "GET /api/v1/assuranceservice/assurances/{}/{}": "assurance.controller.AssuranceController#createNewAssurance",
+    "GET /api/v1/stationservice/stations/id/{}": "fdse.microservice.controller.StationController#queryForStationId",
+    "GET /api/v1/securityservice/securityConfigs/{}": "security.controller.SecurityController#check",
+    "POST /api/v1/travelservice/trip_detail": "travel.controller.TravelController#getTripAllDetailInfo",
+    "GET /api/v1/contactservice/contacts/{}": "contacts.controller.ContactsController#getContactsByContactsId",
+    "POST /api/v1/orderservice/order": "order.controller.OrderController#createNewOrder",
+    "POST /api/v1/foodservice/orders": "foodsearch.controller.FoodController#createFoodOrder",
+    "POST /api/v1/consignservice/consigns": "consign.controller.ConsignController#insertConsign"
+  },
+
+  "Calls - rebook": {
+    "POST /api/v1/seatservice/seats": "seat.controller.SeatController#create",
+    "POST /api/v1/travelservice/trip_detail": "travel.controller.TravelController#getTripAllDetailInfo",
+    "POST /api/v1/travel2service/trip_detail": "travel2.controller.Travel2Controller#getTripAllDetailInfo",
+    "POST /api/v1/orderservice/order": "order.controller.OrderController#createNewOrder",
+    "POST /api/v1/orderOtherService/orderOther": "other.controller.OrderOtherController#createNewOrder",
+    "PUT /api/v1/orderservice/order": "order.controller.OrderController#saveOrderInfo",
+    "PUT /api/v1/orderOtherService/orderOther": "other.controller.OrderOtherController#saveOrderInfo",
+    "POST /api/v1/orderservice/order/{}": "NO MATCH",
+    "POST /api/v1/orderOtherService/orderOther/{}": "NO MATCH",
+    "GET /api/v1/orderservice/order/{}": "order.controller.OrderController#getOrderById",
+    "GET /api/v1/orderOtherService/orderOther/{}": "other.controller.OrderOtherController#getOrderById",
+    "GET /api/v1/stationservice/stations/name/{}": "fdse.microservice.controller.StationController#queryById",
+    "POST /api/v1/inside_pay_service/inside_payment/difference": "inside_payment.controller.InsidePaymentController#payDifference",
+    "GET /api/v1/inside_pay_service/inside_payment/drawback/{}/{}": "inside_payment.controller.InsidePaymentController#drawBack"
+  },
+
+  "Calls - plan": {
+    "GET /api/v1/routeservice/routes/{}/{}": "route.controller.RouteController#queryByStartAndTerminal",
+    "POST /api/v1/travelservice/trips/routes": "travel.controller.TravelController#getTripsByRouteId",
+    "POST /api/v1/travel2service/trips/routes": "travel2.controller.Travel2Controller#getTripsByRouteId",
+    "POST /api/v1/travelservice/trip_detail": "travel.controller.TravelController#getTripAllDetailInfo",
+    "POST /api/v1/travel2service/trip_detail": "travel2.controller.Travel2Controller#getTripAllDetailInfo",
+    "GET /api/v1/stationservice/stations/id/{}": "fdse.microservice.controller.StationController#queryForStationId",
+    "GET /api/v1/routeservice/routes/{}": "route.controller.RouteController#queryById",
+    "POST /api/v1/travelservice/trips/left": "travel.controller.TravelController#queryInfo",
+    "POST /api/v1/travel2service/trips/left": "travel2.controller.Travel2Controller#queryInfo",
+    "GET /api/v1/travelservice/routes/{}": "travel.controller.TravelController#getRouteByTripId",
+    "GET /api/v1/travel2service/routes/{}": "travel2.controller.Travel2Controller#getRouteByTripId"
+  },
+
+  "Calls - seat": {
+    "GET /api/v1/travelservice/routes/{}": "travel.controller.TravelController#getRouteByTripId",
+    "POST /api/v1/orderservice/order/tickets": "order.controller.OrderController#getTicketListByDateAndTripId",
+    "GET /api/v1/travelservice/train_types/{}": "travel.controller.TravelController#getTrainTypeByTripId",
+    "GET /api/v1/travel2service/routes/{}": "travel2.controller.Travel2Controller#getRouteByTripId",
+    "POST /api/v1/orderOtherService/orderOther/tickets": "other.controller.OrderOtherController#getTicketListByDateAndTripId",
+    "GET /api/v1/travel2service/train_types/{}": "travel2.controller.Travel2Controller#getTrainTypeByTripId",
+    "GET /api/v1/configservice/configs/{}": "config.controller.ConfigController#retrieve"
+  },
+
+  "Calls - security": {
+    "GET /api/v1/orderservice/order/security/{}/{}": "order.controller.OrderController#securityInfoCheck",
+    "GET /api/v1/orderOtherService/orderOther/security/{}/{}": "other.controller.OrderOtherController#securityInfoCheck"
+  },
+
+  "Calls - ticketinfo": {
+    "POST /api/v1/basicservice/basic/travel": "fdse.microservice.controller.BasicController#queryForTravel",
+    "GET /api/v1/basicservice/basic/{}": "fdse.microservice.controller.BasicController#queryForStationId"
+  },
+
+  "Calls - travelplan": {
+    "POST /api/v1/seatservice/seats/left_tickets": "seat.controller.SeatController#getLeftTicketOfInterval",
+    "POST /api/v1/routeplanservice/routePlan/cheapestRoute": "plan.controller.RoutePlanController#getCheapestRoutes",
+    "POST /api/v1/routeplanservice/routePlan/quickestRoute": "plan.controller.RoutePlanController#getQuickestRoutes",
+    "POST /api/v1/routeplanservice/routePlan/minStopStations": "plan.controller.RoutePlanController#getMinStopStations",
+    "POST /api/v1/travelservice/trips/left": "travel.controller.TravelController#queryInfo",
+    "POST /api/v1/travel2service/trips/left": "travel2.controller.Travel2Controller#queryInfo",
+    "GET /api/v1/ticketinfoservice/ticketinfo/{}": "ticketinfo.controller.TicketInfoController#queryForStationId",
+    "POST /api/v1/stationservice/stations/namelist": "fdse.microservice.controller.StationController#queryForNameBatch"
+  },
+
+  "Calls - travel": {
+    "POST /api/v1/ticketinfoservice/ticketinfo": "ticketinfo.controller.TicketInfoController#queryForTravel",
+    "GET /api/v1/orderservice/order/{}/{}": "order.controller.OrderController#calculateSoldTicket",
+    "GET /api/v1/trainservice/trains/{}": "train.controller.TrainController#retrieve",
+    "GET /api/v1/ticketinfoservice/ticketinfo/{}": "ticketinfo.controller.TicketInfoController#queryForStationId",
+    "GET /api/v1/routeservice/routes/{}": "route.controller.RouteController#queryById",
+    "POST /api/v1/seatservice/seats/left_tickets": "seat.controller.SeatController#getLeftTicketOfInterval"
+  },
+
+  "Calls - travel2": {
+    "POST /api/v1/ticketinfoservice/ticketinfo": "ticketinfo.controller.TicketInfoController#queryForTravel",
+    "GET /api/v1/orderOtherService/orderOther/{}/{}": "other.controller.OrderOtherController#calculateSoldTicket",
+    "GET /api/v1/trainservice/trains/{}": "train.controller.TrainController#retrieve",
+    "GET /api/v1/ticketinfoservice/ticketinfo/{}": "ticketinfo.controller.TicketInfoController#queryForStationId",
+    "GET /api/v1/routeservice/routes/{}": "route.controller.RouteController#queryById",
+    "POST /api/v1/seatservice/seats/left_tickets": "seat.controller.SeatController#getLeftTicketOfInterval"
+  },
+
+  "Calls - user": {
+    "POST /api/v1/auth": "auth.controller.AuthController#createDefaultUser",
+    "DELETE /api/v1/users/{}": "auth.controller.UserController#deleteUserById"
+  }
+}

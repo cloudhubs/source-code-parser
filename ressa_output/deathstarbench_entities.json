@@ -1,0 +1,33 @@
+{
+  "cast-info": {},
+  "movie-id": {},
+  "movie-info": {},
+  "movie-review": {
+    "UTF8": "reviews",
+    "movie_id": "UTF8",
+    "reviews": "[]"
+  },
+  "movie-review.[": {
+    "review_id": "INT64",
+    "timestamp": "INT64"
+  },
+  "movie-review.reviews": {
+    "review_id": "INT64",
+    "timestamp": "INT64"
+  },
+  "plot": {},
+  "review": {},
+  "social-graph": {
+    "avg_rating": "DOUBLE",
+    "num_rating": "INT32"
+  },
+  "user": {},
+  "user-review": {
+    "reviews": "[]",
+    "user_id": "INT64"
+  },
+  "user-review.reviews": {
+    "review_id": "INT64",
+    "timestamp": "INT64"
+  }
+}
