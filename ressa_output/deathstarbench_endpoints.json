@@ -1,0 +1,32 @@
+{
+  "CastInfo": {
+    "ReadCastInfo": "PageHandler, "
+  },
+  "ComposeReview": {
+    "UploadMovieId": "MovieIdHandler, ",
+    "UploadRating": "RatingHandler, ",
+    "UploadText": "TextHandler, ",
+    "UploadUniqueId": "UniqueIdHandler, ",
+    "UploadUserId": "UserHandler, UserHandler, "
+  },
+  "MovieInfo": {
+    "ReadMovieInfo": "PageHandler, "
+  },
+  "MovieReview": {
+    "ReadMovieReviews": "PageHandler, ",
+    "UploadMovieReview": "ComposeReviewHandler, "
+  },
+  "Plot": {
+    "ReadPlot": "PageHandler, "
+  },
+  "Rating": {
+    "UploadRating": "MovieIdHandler, "
+  },
+  "ReviewStorage": {
+    "ReadReviews": "UserReviewHandler, MovieReviewHandler, ",
+    "StoreReview": "ComposeReviewHandler, "
+  },
+  "UserReview": {
+    "UploadUserReview": "ComposeReviewHandler, "
+  }
+}
