@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use runestick::{Object, Shared, Value};
 
 /// Output type from the library
-pub type RessaResult = HashMap<String, BTreeMap<String, Value>>;
+pub type RessaResult = HashMap<String, Value>; //HashMap<String, BTreeMap<String, Value>>;
 
 /// Errors encounterable accessing Rune data
 pub enum Error {

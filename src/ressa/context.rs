@@ -9,10 +9,22 @@ const RESOLVES_TO: &str = "???";
 /// Special attribute indicating an object is transient
 const TRANSIENT: &str = "";
 
+#[derive(thiserror::Error, Debug, Any)]
+pub enum Error {
+    #[error("Unexpected value type: {0:?}")]
+    UnexpectedType(Value),
+    #[error("Requested value not present")]
+    NotFound,
+    #[error("Runestick VM error: {0:?}")]
+    RuneError(#[from] runestick::VmError),
+    #[error("Runestick access error: {0:?}")]
+    AccessError(#[from] runestick::AccessError),
+}
+
 /// Context used by the Parser, storing local variables (#{varname}) and objects/tags
 #[derive(Default, Debug, Clone, Any)]
 pub struct ParserContext {
-    objectlike_data: HashMap<String, Object>,
+    objectlike_data: HashMap<String, Value>, //Object>,
     variables: HashMap<String, String>,
     pub frame_number: i32,
 }
@@ -22,9 +34,38 @@ impl From<ParserContext> for RessaResult {
     fn from(ctx: ParserContext) -> Self {
         ctx.objectlike_data
             .into_iter()
-            .filter(|(_, val)| !val.contains_key(RESOLVES_TO) && !val.contains_key(TRANSIENT))
-            .map(|(name, value)| (name, value.into_inner()))
+            .filter_map(|(name, val)| {
+                if let Some(val) = filter_map_value(val) {
+                    Some((name, val))
+                } else {
+                    None
+                }
+            })
             .collect()
+    }
+}
+
+fn filter_map_value(val: Value) -> Option<Value> {
+    match val {
+        val @ Value::Vec(vec) => {
+            let filtered = vec
+                .borrow_ref()
+                .ok()?
+                .into_iter()
+                .filter_map(filter_map_value)
+                .collect::<Vec<_>>();
+            *vec.borrow_mut().ok()? = filtered.into();
+            Some(val)
+        }
+        val @ Value::Object(obj) => {
+            let obj = obj.borrow_ref().ok()?;
+            if !obj.contains_key(RESOLVES_TO) && !obj.contains_key(TRANSIENT) {
+                Some(val)
+            } else {
+                None
+            }
+        }
+        val => Some(val),
     }
 }
 
@@ -36,7 +77,7 @@ pub trait ContextObjectActions {
     /// Makes an existing object transient, or initializes a new object as transient
     fn make_transient(&mut self, name: &str);
     /// Gets an object by name. Modify this object as you see fit, then persist with ContextObjectActions::save_object
-    fn get_object(&self, name: &str) -> Option<Object>;
+    fn get_object(&self, name: &str) -> Result<Object, Error>;
     /// Shorthand for `ctx.make_object(name); let x = ctx.get_object(name);`
     fn get_or_create_object(&mut self, name: &str) -> Object;
     fn resolve_tag(&self, name: &str) -> String;
@@ -62,10 +103,13 @@ impl ParserContext {
 
         // Insert
         let vars = self.objectlike_data.get_mut(obj_name).unwrap();
-        if let Some(attr_type) = attr_type {
-            vars.insert(attr_name.into(), Value::from(attr_type));
-        } else {
-            vars.insert(attr_name.into(), Value::from(Shared::new(None)));
+        if let Value::Object(ref mut vars) = vars {
+            let vars = vars.borrow_mut().unwrap();
+            if let Some(attr_type) = attr_type {
+                vars.insert(attr_name.into(), Value::from(attr_type));
+            } else {
+                vars.insert(attr_name.into(), Value::from(Shared::new(None)));
+            }
         }
     }
 }
@@ -75,14 +119,14 @@ impl ContextObjectActions for ParserContext {
         let obj_name: String = name.into();
         if !self.objectlike_data.contains_key(&obj_name) {
             // tracing::info!("Making: {}", obj_name);
-            (&mut self.objectlike_data).insert(obj_name, Object::new());
+            (&mut self.objectlike_data).insert(obj_name, Object::new().into());
         }
     }
 
     fn save_object(&mut self, name: &str, new_obj: &Object) {
         // tracing::info!("Saving {}: {:?}", name, new_obj);
         self.objectlike_data
-            .insert(self.resolve_tag(name), new_obj.clone());
+            .insert(self.resolve_tag(name), new_obj.clone().into());
     }
 
     fn make_tag(&mut self, name: &str, resolves_to: &str) {
@@ -96,11 +140,20 @@ impl ContextObjectActions for ParserContext {
         self.do_make_attribute(self.resolve_tag(name).as_str(), TRANSIENT, None);
     }
 
-    fn get_object(&self, name: &str) -> Option<Object> {
+    fn get_object(&self, name: &str) -> Result<Object, Error> {
         // tracing::info!("Looking for {}...", name);
         let name = self.resolve_tag(name);
 
-        self.objectlike_data.get(&name).cloned()
+        match self.objectlike_data.get(&name) {
+            Some(Value::Object(obj)) => {
+                let o = obj.take()?;
+                let cloned = o.clone();
+                *obj.borrow_mut()? = o;
+                Ok(cloned)
+            }
+            Some(val) => Err(Error::UnexpectedType(val.to_owned())),
+            None => Err(Error::NotFound),
+        }
         // tracing::info!("Retrieved {} Found {:?}", name, obj);
     }
 
@@ -111,9 +164,9 @@ impl ContextObjectActions for ParserContext {
 
     fn resolve_tag(&self, name: &str) -> String {
         // Check that the object exists
-        if let Some(map) = self.objectlike_data.get(name) {
+        if let Some(Value::Object(map)) = self.objectlike_data.get(name) {
             // Check that the tag is not self-referential, and return resolving it
-            if let Some(Value::String(tag)) = map.get(RESOLVES_TO) {
+            if let Some(Value::String(tag)) = map.borrow_ref().unwrap().get(RESOLVES_TO) {
                 if let Ok(tag) = tag.borrow_ref() {
                     let tag = tag.as_str();
                     assert!(tag != name, "{}", name);

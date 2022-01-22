@@ -21,6 +21,7 @@ impl Executor {
 
         // Register context type and methods
         module.ty::<ParserContext>()?;
+        module.ty::<super::context::Error>()?;
         module.inst_fn("make_object", ParserContext::make_object)?;
         module.inst_fn("save_object", ParserContext::save_object)?;
         module.inst_fn("make_tag", ParserContext::make_tag)?;

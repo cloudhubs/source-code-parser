@@ -24,6 +24,7 @@ tracing = "0.1.26"
 source-code-parser-macro = { path = "source-code-parser-macro" }
 bitmaps = "3.1.0"
 enum-ordinalize = "3.1.10"
+thiserror = "1.0.30"
 
 [target.'cfg(unix)'.dev-dependencies]
 iai = "0.1.1"
