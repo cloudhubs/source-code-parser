@@ -1,6 +1,5 @@
-use actix_web::{middleware::Logger, web, App, FromRequest, HttpServer};
+use actix_web::{middleware::Logger, web, App, HttpServer};
 use clap::Parser;
-use source_code_parser::Directory;
 
 mod routes;
 use routes::*;
@@ -8,16 +7,16 @@ use routes::*;
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Opt {
-    #[clap(long, short, default_value_t = "127.0.0.1")]
+    #[clap(long, short, default_value = "127.0.0.1")]
     host: String,
-    #[clap(long, short, default_value_t = "8080")]
+    #[clap(long, short, default_value = "8080")]
     port: i32,
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
     let addr = format!("{}:{}", opt.host, opt.port);
     HttpServer::new(|| {
         App::new()
@@ -25,9 +24,7 @@ async fn main() -> std::io::Result<()> {
             .service(ctx)
             .service(ressa)
             .wrap(Logger::default())
-            .app_data(web::Json::<Directory>::configure(|cfg| {
-                cfg.limit(1024 * 1024 * 4)
-            }))
+            .app_data(web::JsonConfig::default().limit(1024 * 1024 * 4))
     })
     .bind(addr)?
     .run()
