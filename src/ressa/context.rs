@@ -12,6 +12,7 @@ const RESOLVES_TO: &str = "???";
 /// Special attribute indicating an object is transient
 const TRANSIENT: &str = "";
 
+#[allow(clippy::enum_variant_names)] // Certain errors are forwarding errors from Rune, named accordingly
 #[derive(thiserror::Error, Debug, Any)]
 pub enum Error {
     #[error("Unexpected value type: {0:?}")]
@@ -37,13 +38,7 @@ impl From<ParserContext> for RessaResult {
     fn from(ctx: ParserContext) -> Self {
         ctx.objectlike_data
             .into_iter()
-            .filter_map(|(name, val)| {
-                if let Some(val) = filter_map_value(val) {
-                    Some((name, val))
-                } else {
-                    None
-                }
-            })
+            .filter_map(|(name, val)| filter_map_value(val).map(|val| (name, val)))
             .collect()
     }
 }
@@ -152,7 +147,7 @@ impl ContextObjectActions for ParserContext {
                 let cloned = obj.take()?;
                 Ok(cloned)
             }
-            Some(val) => Err(Error::UnexpectedType(val.to_owned())),
+            Some(val) => Err(Error::UnexpectedType(val)),
             None => Err(Error::NotFound),
         }
         // tracing::info!("Retrieved {} Found {:?}", name, obj);
