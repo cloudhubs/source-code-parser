@@ -102,12 +102,14 @@ impl ParserContext {
         // Insert
         let vars = self.objectlike_data.get_mut(obj_name).unwrap();
         if let Value::Object(ref mut vars) = vars {
+            tracing::info!("Borrowing mutably");
             let mut vars = vars.borrow_mut().unwrap();
             if let Some(attr_type) = attr_type {
                 vars.insert(attr_name.into(), Value::from(attr_type));
             } else {
                 vars.insert(attr_name.into(), Value::from(Shared::new(None)));
             }
+            tracing::info!("Dropping mutable");
         }
     }
 }
@@ -142,12 +144,12 @@ impl ContextObjectActions for ParserContext {
         // tracing::info!("Looking for {}...", name);
         let name = self.resolve_tag(name);
 
-        match self.objectlike_data.get(&name).cloned() {
+        match self.objectlike_data.get(&name) {
             Some(Value::Object(obj)) => {
-                let cloned = obj.take()?;
-                Ok(cloned)
+                let borrowed = obj.borrow_ref()?;
+                Ok(borrowed.clone())
             }
-            Some(val) => Err(Error::UnexpectedType(val)),
+            Some(val) => Err(Error::UnexpectedType(val.clone())),
             None => Err(Error::NotFound),
         }
         // tracing::info!("Retrieved {} Found {:?}", name, obj);
