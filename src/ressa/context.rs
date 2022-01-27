@@ -1,4 +1,7 @@
-use runestick::{Any, Object, Shared, Value};
+use rune::{
+    runtime::{Object, Shared, Value},
+    Any,
+};
 use std::collections::HashMap;
 
 use super::RessaResult;
@@ -15,16 +18,16 @@ pub enum Error {
     UnexpectedType(Value),
     #[error("Requested value not present")]
     NotFound,
-    #[error("Runestick VM error: {0:?}")]
-    RuneError(#[from] runestick::VmError),
-    #[error("Runestick access error: {0:?}")]
-    AccessError(#[from] runestick::AccessError),
+    #[error("Rune VM error: {0:?}")]
+    RuneError(#[from] rune::runtime::VmError),
+    #[error("Rune access error: {0:?}")]
+    AccessError(#[from] rune::runtime::AccessError),
 }
 
 /// Context used by the Parser, storing local variables (#{varname}) and objects/tags
 #[derive(Default, Debug, Clone, Any)]
 pub struct ParserContext {
-    objectlike_data: HashMap<String, Value>, //Object>,
+    objectlike_data: HashMap<String, Value>,
     variables: HashMap<String, String>,
     pub frame_number: i32,
 }
@@ -46,21 +49,21 @@ impl From<ParserContext> for RessaResult {
 }
 
 fn filter_map_value(val: Value) -> Option<Value> {
+    // This would be some much cleaner if Shared implemented Deref
     match val {
-        val @ Value::Vec(vec) => {
+        Value::Vec(vec) => {
             let filtered = vec
-                .borrow_ref()
+                .take()
                 .ok()?
                 .into_iter()
                 .filter_map(filter_map_value)
                 .collect::<Vec<_>>();
-            *vec.borrow_mut().ok()? = filtered.into();
-            Some(val)
+            Some(Value::Vec(Shared::new(filtered.into())))
         }
-        val @ Value::Object(obj) => {
-            let obj = obj.borrow_ref().ok()?;
+        Value::Object(obj) => {
+            let obj = obj.take().ok()?;
             if !obj.contains_key(RESOLVES_TO) && !obj.contains_key(TRANSIENT) {
-                Some(val)
+                Some(Value::Object(Shared::new(obj)))
             } else {
                 None
             }
@@ -104,7 +107,7 @@ impl ParserContext {
         // Insert
         let vars = self.objectlike_data.get_mut(obj_name).unwrap();
         if let Value::Object(ref mut vars) = vars {
-            let vars = vars.borrow_mut().unwrap();
+            let mut vars = vars.borrow_mut().unwrap();
             if let Some(attr_type) = attr_type {
                 vars.insert(attr_name.into(), Value::from(attr_type));
             } else {
@@ -144,11 +147,9 @@ impl ContextObjectActions for ParserContext {
         // tracing::info!("Looking for {}...", name);
         let name = self.resolve_tag(name);
 
-        match self.objectlike_data.get(&name) {
+        match self.objectlike_data.get(&name).cloned() {
             Some(Value::Object(obj)) => {
-                let o = obj.take()?;
-                let cloned = o.clone();
-                *obj.borrow_mut()? = o;
+                let cloned = obj.take()?;
                 Ok(cloned)
             }
             Some(val) => Err(Error::UnexpectedType(val.to_owned())),

@@ -1,15 +1,16 @@
 use actix_web::{middleware::Logger, web, App, FromRequest, HttpServer};
+use clap::Parser;
 use source_code_parser::Directory;
-use structopt::StructOpt;
 
 mod routes;
 use routes::*;
 
-#[derive(StructOpt)]
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
 struct Opt {
-    #[structopt(long, short, default_value = "127.0.0.1")]
+    #[clap(long, short, default_value_t = "127.0.0.1")]
     host: String,
-    #[structopt(long, short, default_value = "8080")]
+    #[clap(long, short, default_value_t = "8080")]
     port: i32,
 }
 
