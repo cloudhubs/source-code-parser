@@ -102,14 +102,12 @@ impl ParserContext {
         // Insert
         let vars = self.objectlike_data.get_mut(obj_name).unwrap();
         if let Value::Object(ref mut vars) = vars {
-            tracing::info!("Borrowing mutably");
             let mut vars = vars.borrow_mut().unwrap();
             if let Some(attr_type) = attr_type {
                 vars.insert(attr_name.into(), Value::from(attr_type));
             } else {
                 vars.insert(attr_name.into(), Value::from(Shared::new(None)));
             }
-            tracing::info!("Dropping mutable");
         }
     }
 }
