@@ -1,26 +1,40 @@
 use once_cell::sync::OnceCell;
-use rune::{Diagnostics, Options, Sources};
-use runestick::{FromValue, Source, Value, Vm};
+use rune::{runtime::Value, Diagnostics, FromValue, Source, Sources, Vm};
 use std::sync::Arc;
 
-use super::{ContextLocalVariableActions, ContextObjectActions, NodePattern, ParserContext};
+use super::{
+    context, ContextLocalVariableActions, ContextObjectActions, NodePattern, ParserContext,
+};
 
 static EXEC: OnceCell<Executor> = OnceCell::new();
 
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Rune build error: {0:?}")]
+    Build(#[from] rune::BuildError),
+    #[error("Rune VM error: {0:?}")]
+    Vm(#[from] rune::runtime::VmError),
+    #[error("Rune module loading error: {0:?}")]
+    ModuleLoad(#[from] rune::ContextError),
+    #[error("Context error: {0:?}")]
+    Context(#[from] context::Error),
+}
+
 #[derive(Default)]
 pub struct Executor {
-    executor_ctx: runestick::Context,
+    executor_ctx: rune::Context,
 }
 
 impl Executor {
-    pub fn new() -> runestick::Result<Executor> {
+    pub fn new() -> Result<Executor, Error> {
         // Create an empty Context. If we need more default functions, etc we can use
         // runestick::Context::default()
-        let mut executor_ctx = runestick::Context::with_default_modules()?;
-        let mut module = runestick::Module::default();
+        let mut executor_ctx = rune::Context::with_default_modules()?;
+        let mut module = rune::Module::default();
 
         // Register context type and methods
         module.ty::<ParserContext>()?;
+        module.ty::<context::Error>()?;
         module.inst_fn("make_object", ParserContext::make_object)?;
         module.inst_fn("save_object", ParserContext::save_object)?;
         module.inst_fn("make_tag", ParserContext::make_tag)?;
@@ -44,32 +58,34 @@ impl Executor {
         &self,
         pattern: &NodePattern,
         ctx: ParserContext,
-    ) -> runestick::Result<ParserContext> {
+    ) -> Result<ParserContext, Error> {
         match &pattern.callback {
             Some(callback) => {
                 if callback.trim().is_empty() {
                     return Ok(ctx);
                 }
                 let mut sources = Sources::new();
-                let source = format!("pub fn main(ctx) {{ {} ctx }}", callback);
+                let source = format!("pub fn main(ctx) {{ {} Ok(ctx) }}", callback);
                 sources.insert(Source::new("callback", source));
 
                 let mut diagnostics = Diagnostics::new();
 
                 let runtime = Arc::new(self.executor_ctx.runtime());
-                let unit = Arc::new(rune::load_sources(
-                    &self.executor_ctx,
-                    &Options::default(),
-                    &mut sources,
-                    &mut diagnostics,
-                )?);
 
-                let vm = Vm::new(runtime, unit);
+                let unit = Arc::new(
+                    rune::prepare(&mut sources)
+                        .with_context(&self.executor_ctx)
+                        .with_diagnostics(&mut diagnostics)
+                        .build()?,
+                );
+
+                let mut vm = Vm::new(runtime, unit);
                 // For some reason we have to pass ownership of the context and retrieve it back from a return value...
                 // This is being done with a wrapper "main" function that calls the callback and returns the context again.
                 let ret_val = vm.execute(&["main"], (ctx,))?.complete()?;
-                let ctx = FromValue::from_value(ret_val)?;
-                Ok(ctx)
+                let ctx: Result<ParserContext, context::Error> = FromValue::from_value(ret_val)?;
+
+                Ok(ctx?)
             }
             None => Ok(ctx),
         }

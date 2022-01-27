@@ -1,9 +1,9 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
-use runestick::{Object, Shared, Value};
+use rune::runtime::{Object, Shared, Value};
 
 /// Output type from the library
-pub type RessaResult = HashMap<String, BTreeMap<String, Value>>;
+pub type RessaResult = BTreeMap<String, Value>;
 
 /// Errors encounterable accessing Rune data
 pub enum Error {
@@ -11,7 +11,7 @@ pub enum Error {
     InvalidKey(String),
     InvalidType(String),
     RuneAcquisition,
-    RuneAccess(runestick::AccessError),
+    RuneAccess(rune::runtime::AccessError),
 }
 
 /// Coerces a `runestick::Value` into a `T`
@@ -84,15 +84,4 @@ where
 
     // Coerce results out of the vec
     Ok(converted.flatten().collect())
-}
-
-/// Retrieve an object from the map, returning it or an error indicating a missing key
-pub fn get_object<'a>(
-    result: &'a RessaResult,
-    key: &str,
-) -> Result<&'a BTreeMap<String, Value>, Error> {
-    return match result.get(key) {
-        Some(obj) => Ok(obj),
-        None => Err(Error::MissingKey(key.to_string())),
-    };
 }

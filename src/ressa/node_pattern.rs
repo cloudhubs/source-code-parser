@@ -314,7 +314,7 @@ impl CompiledPattern {
                                 .expect("Reference variable name not found in regex!")
                                 .as_str(),
                         )
-                        .is_none()
+                        .is_err()
                     {
                         tracing::info!(
                             "Failed to find {}={:?}",
@@ -343,7 +343,7 @@ impl CompiledPattern {
                                 .expect("Reference variable name not found in regex!")
                                 .as_str(),
                         )
-                        .is_none()
+                        .is_err()
                     {
                         return false;
                     }
