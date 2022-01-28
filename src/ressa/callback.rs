@@ -35,16 +35,15 @@ impl Executor {
         // Register context type and methods
         module.ty::<ParserContext>()?;
         module.ty::<context::Error>()?;
-        module.inst_fn("make_object", ParserContext::make_object)?;
-        module.inst_fn("save_object", ParserContext::save_object)?;
+        module.inst_fn("save", ParserContext::save)?;
+        module.inst_fn("get", ParserContext::get)?;
+        module.inst_fn("get_or_save", ParserContext::get_or_save)?;
         module.inst_fn("make_tag", ParserContext::make_tag)?;
-        module.inst_fn("make_variable", ParserContext::make_variable)?;
+        module.inst_fn("resolve_tag", ParserContext::resolve_tag)?;
         module.inst_fn("make_transient", ParserContext::make_transient)?;
+        module.inst_fn("make_variable", ParserContext::make_variable)?;
         module.inst_fn("get_variable", ParserContext::get_variable)?;
         module.inst_fn("clear_variables", ParserContext::clear_variables)?;
-        module.inst_fn("get_object", ParserContext::get_object)?;
-        module.inst_fn("get_or_create_object", ParserContext::get_or_create_object)?;
-        module.inst_fn("resolve_tag", ParserContext::resolve_tag)?;
 
         // Add more option methods
         module.inst_fn("as_ref", Option::<Value>::as_ref)?;
