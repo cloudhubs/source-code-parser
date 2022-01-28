@@ -50,10 +50,9 @@
   - Full Rune default library. This includes NO file i/o or network connectivity, so there should be no danger running arbitrary Rune scripts.
   - `ctx`: The parser context
 - `ctx` offers the following methods:
-  - `make_object(name: &str)`: Defines an object with a given name in the context; if the name is already defined, does nothing.
-  - `get_object(name: &str)`: Retrieves an object with the given name from the context. Edits to this object are not guaranteed to propogate to the context unless persisted using `save_object`.
-  - `save_object(name: &str, new_obj: &Object)`: Saves a given object into the context under the given name. If the object exists in the context, it will be overwritten. Also used to persist changes to an object retrieved by `get_object`
-  - `get_or_create_object(name: &str)`: Shorthand for `ctx.make_object(name); let x = ctx.get_object(name);`
+  - `save(name: &str, val: Value) -> &Value`: Save the given object under the given name. Will overwrite the object if it already exists. Returns the saved value, for ease of use. Edits to the returned value are reflected in the context.
+  - `get(name: &str) -> Option<&Value>`: Retrieves an object with the given name from the context. Edits to the returned value are reflected in the context.
+  - `get_or_save(name: &str, val: Value)`: Either retrieve the object with the given name, or save the default value and return it.
   - `make_tag(name: &str, resolves_to: &str)`: Defines a Tag in the context.
   - `make_transient(name: &str)`: Defines a transient object, or marks an existing object as transient; if the object exists and is a transient Object, does nothing.
   - `get_object(name: &str) -> Option<HashMap<String, Option<String>>>`: Retrieves a copy of the object in the context with the given name. Automatically flattens `Tag`s, so it always returns a true Object, or `None` if the name was invalid.

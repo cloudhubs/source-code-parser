@@ -308,13 +308,13 @@ impl CompiledPattern {
             Some(matches) => {
                 for reference in self.reference_vars.iter() {
                     if ctx
-                        .get_object(
+                        .get(
                             matches
                                 .name(reference)
                                 .expect("Reference variable name not found in regex!")
                                 .as_str(),
                         )
-                        .is_err()
+                        .is_none()
                     {
                         tracing::info!(
                             "Failed to find {}={:?}",
@@ -337,13 +337,13 @@ impl CompiledPattern {
                 // Verify all references
                 for reference in self.reference_vars.iter() {
                     if ctx
-                        .get_object(
+                        .get(
                             matches
                                 .name(reference)
                                 .expect("Reference variable name not found in regex!")
                                 .as_str(),
                         )
-                        .is_err()
+                        .is_none()
                     {
                         return false;
                     }

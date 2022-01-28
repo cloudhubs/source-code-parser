@@ -18,7 +18,6 @@ fn handle_attribute(parent, tokens, ndx, ctx, name, isCollection) {
 
 fn handle_dollar(parent, tokens, ndx, ctx) {
     if !valid_ndx(tokens, ndx + 1) { return (parent, ndx); }
-    println(`dollar-${ndx} (${tokens[ndx]})`);
     match tokens[ndx] {
         "$pull" => handle_attribute(parent, tokens, ndx + 2, ctx, tokens[ndx + 2], true),
         "$push" => handle_attribute(parent, tokens, ndx + 2, ctx, tokens[ndx + 2], true),
@@ -32,7 +31,6 @@ fn handle_dollar(parent, tokens, ndx, ctx) {
 
 fn handle_name(parent, tokens, ndx, ctx) {
     if !valid_ndx(tokens, ndx + 1) { return (parent, ndx); }
-    println(`name-${ndx} (${tokens[ndx]})`);
     let name = tokens[ndx];
     if name == "}" { return (parent, ndx); }
     else if name == "projection" { return (parent, tokens.len() + 1) }
@@ -54,7 +52,6 @@ fn handle_name(parent, tokens, ndx, ctx) {
 
 fn choose_action(parent, tokens, ndx, ctx) {
     if !valid_ndx(tokens, ndx) { return parent; }
-    println(`act-${ndx} (${tokens[ndx]})`);
     match tokens[ndx] {
         "{" => choose_action(parent, tokens, ndx + 1, ctx),
         "[" => choose_action(parent, tokens, ndx + 1, ctx),
@@ -81,17 +78,16 @@ fn start(parent, tokens, ctx) {
 }
 
 fn cleanup(ctx) {
-    ctx.save_object("tokens", #{ "vec": [] });
+    ctx.save("tokens", #{ "vec": [] });
 }
 
-let tokens = ctx.get_object("tokens").unwrap().vec;
-let coll = ctx.get_variable("collection_name").unwrap();
-ctx.make_object(coll);
-let collectionObj = ctx.get_object(coll).unwrap();
+let tokens = ctx.get("tokens")?.vec;
+let coll = ctx.get_variable("collection_name")?;
+let collectionObj = ctx.get_or_save(coll, #{});
 match tokens.get(0) {
     Some(token) => {
         let result = start(collectionObj, tokens, ctx);
-        ctx.save_object(coll, result);
+        ctx.save(coll, result);
         tokens.clear();
     }
     _ => {

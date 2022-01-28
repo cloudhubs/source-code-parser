@@ -69,15 +69,24 @@ fn filter_map_value(val: Value) -> Option<Value> {
 
 /// Interface of the Context, offering ability to create, read, and update objects/tags
 pub trait ContextObjectActions {
-    fn make_object(&mut self, name: &str);
-    fn save_object(&mut self, name: &str, new_obj: &Object);
+    /// Save to the context under the given name; returns the input, for ease of use
+    fn save(&mut self, name: &str, val: Value) -> &Value;
+
+    /// Retrieve from the context
+    fn get(&self, name: &str) -> Option<&Value>;
+
+    /// Either retrieve the named value from the context, or save the provided value and
+    /// return it. You should ensure the created object is not too expensive to make, given
+    /// there's a good chance it will be discarded.
+    fn get_or_save(&mut self, name: &str, val: Value) -> &Value;
+
+    /// Create a tag for the given data in the context
     fn make_tag(&mut self, name: &str, resolves_to: &str);
-    /// Makes an existing object transient, or initializes a new object as transient
+
+    /// Denote an object as transient, or initializes a new object as transient
     fn make_transient(&mut self, name: &str);
-    /// Gets an object by name. Modify this object as you see fit, then persist with ContextObjectActions::save_object
-    fn get_object(&self, name: &str) -> Result<Object, Error>;
-    /// Shorthand for `ctx.make_object(name); let x = ctx.get_object(name);`
-    fn get_or_create_object(&mut self, name: &str) -> Object;
+
+    /// Resolve a name to the name of the real object it refers to
     fn resolve_tag(&self, name: &str) -> String;
 }
 
@@ -110,9 +119,7 @@ impl ParserContext {
             }
         }
     }
-}
 
-impl ContextObjectActions for ParserContext {
     fn make_object(&mut self, name: &str) {
         let obj_name: String = name.into();
         if !self.objectlike_data.contains_key(&obj_name) {
@@ -120,11 +127,25 @@ impl ContextObjectActions for ParserContext {
             (&mut self.objectlike_data).insert(obj_name, Object::new().into());
         }
     }
+}
 
-    fn save_object(&mut self, name: &str, new_obj: &Object) {
+impl ContextObjectActions for ParserContext {
+    fn save(&mut self, name: &str, value: Value) -> &Value {
         // tracing::info!("Saving {}: {:?}", name, new_obj);
-        self.objectlike_data
-            .insert(self.resolve_tag(name), new_obj.clone().into());
+        self.objectlike_data.insert(self.resolve_tag(name), value);
+        self.get(name).unwrap()
+    }
+
+    fn get(&self, name: &str) -> Option<&Value> {
+        self.objectlike_data.get(&self.resolve_tag(name))
+    }
+
+    fn get_or_save(&mut self, name: &str, val: Value) -> &Value {
+        if !self.objectlike_data.contains_key(name) {
+            self.save(name, val)
+        } else {
+            self.get(name).unwrap()
+        }
     }
 
     fn make_tag(&mut self, name: &str, resolves_to: &str) {
@@ -136,26 +157,6 @@ impl ContextObjectActions for ParserContext {
         // tracing::info!("Making transient {}", name);
         self.make_object(name);
         self.do_make_attribute(self.resolve_tag(name).as_str(), TRANSIENT, None);
-    }
-
-    fn get_object(&self, name: &str) -> Result<Object, Error> {
-        // tracing::info!("Looking for {}...", name);
-        let name = self.resolve_tag(name);
-
-        match self.objectlike_data.get(&name) {
-            Some(Value::Object(obj)) => {
-                let borrowed = obj.borrow_ref()?;
-                Ok(borrowed.clone())
-            }
-            Some(val) => Err(Error::UnexpectedType(val.clone())),
-            None => Err(Error::NotFound),
-        }
-        // tracing::info!("Retrieved {} Found {:?}", name, obj);
-    }
-
-    fn get_or_create_object(&mut self, name: &str) -> Object {
-        self.make_object(name);
-        self.get_object(name).unwrap() // Guaranteed safe, just made
     }
 
     fn resolve_tag(&self, name: &str) -> String {
