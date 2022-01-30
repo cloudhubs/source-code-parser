@@ -2,43 +2,40 @@ use rune::{
     runtime::{Object, Shared, Value},
     Any,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::RessaResult;
 
 /// Special attribute that's value is the name that a tag should resolve to
 const RESOLVES_TO: &str = "???";
 
-/// Special attribute indicating an object is transient
-const TRANSIENT: &str = "";
-
-#[allow(clippy::enum_variant_names)] // Certain errors are forwarding errors from Rune, named accordingly
-#[derive(thiserror::Error, Debug, Any)]
-pub enum Error {
-    #[error("Unexpected value type: {0:?}")]
-    UnexpectedType(Value),
-    #[error("Requested value not present")]
-    NotFound,
-    #[error("Rune VM error: {0:?}")]
-    RuneError(#[from] rune::runtime::VmError),
-    #[error("Rune access error: {0:?}")]
-    AccessError(#[from] rune::runtime::AccessError),
-}
-
 /// Context used by the Parser, storing local variables (#{varname}) and objects/tags
 #[derive(Default, Debug, Clone, Any)]
 pub struct ParserContext {
     objectlike_data: HashMap<String, Value>,
     variables: HashMap<String, String>,
+    transients: HashSet<String>,
     pub frame_number: i32,
 }
 
 /// Convert the context into the result format
 impl From<ParserContext> for RessaResult {
     fn from(ctx: ParserContext) -> Self {
-        ctx.objectlike_data
+        let ParserContext {
+            objectlike_data,
+            transients,
+            ..
+        } = ctx;
+        objectlike_data
             .into_iter()
-            .filter_map(|(name, val)| filter_map_value(val).map(|val| (name, val)))
+            .filter_map(|(name, val)| {
+                if transients.contains(&name) {
+                    // Filter out transient objects in the result
+                    None
+                } else {
+                    filter_map_value(val).map(|val| (name, val))
+                }
+            })
             .collect()
     }
 }
@@ -57,7 +54,7 @@ fn filter_map_value(val: Value) -> Option<Value> {
         }
         Value::Object(obj) => {
             let obj = obj.take().ok()?;
-            if !obj.contains_key(RESOLVES_TO) && !obj.contains_key(TRANSIENT) {
+            if !obj.contains_key(RESOLVES_TO) {
                 Some(Value::Object(Shared::new(obj)))
             } else {
                 None
@@ -156,7 +153,7 @@ impl ContextObjectActions for ParserContext {
     fn make_transient(&mut self, name: &str) {
         // tracing::info!("Making transient {}", name);
         self.make_object(name);
-        self.do_make_attribute(self.resolve_tag(name).as_str(), TRANSIENT, None);
+        self.transients.insert(self.resolve_tag(name));
     }
 
     fn resolve_tag(&self, name: &str) -> String {

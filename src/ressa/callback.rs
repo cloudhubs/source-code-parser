@@ -2,9 +2,7 @@ use once_cell::sync::OnceCell;
 use rune::{runtime::Value, Diagnostics, FromValue, Source, Sources, Vm};
 use std::sync::Arc;
 
-use super::{
-    context, ContextLocalVariableActions, ContextObjectActions, NodePattern, ParserContext,
-};
+use super::{ContextLocalVariableActions, ContextObjectActions, NodePattern, ParserContext};
 
 static EXEC: OnceCell<Executor> = OnceCell::new();
 
@@ -16,8 +14,8 @@ pub enum Error {
     Vm(#[from] rune::runtime::VmError),
     #[error("Rune module loading error: {0:?}")]
     ModuleLoad(#[from] rune::ContextError),
-    #[error("Context error: {0:?}")]
-    Context(#[from] context::Error),
+    #[error("Requested object not found")]
+    MissingObject,
 }
 
 #[derive(Default)]
@@ -34,7 +32,6 @@ impl Executor {
 
         // Register context type and methods
         module.ty::<ParserContext>()?;
-        module.ty::<context::Error>()?;
         module.inst_fn("save", ParserContext::save)?;
         module.inst_fn("get", ParserContext::get)?;
         module.inst_fn("get_or_save", ParserContext::get_or_save)?;
@@ -64,7 +61,7 @@ impl Executor {
                     return Ok(ctx);
                 }
                 let mut sources = Sources::new();
-                let source = format!("pub fn main(ctx) {{ {} Ok(ctx) }}", callback);
+                let source = format!("pub fn main(ctx) {{ {} Some(ctx) }}", callback);
                 sources.insert(Source::new("callback", source));
 
                 let mut diagnostics = Diagnostics::new();
@@ -82,9 +79,10 @@ impl Executor {
                 // For some reason we have to pass ownership of the context and retrieve it back from a return value...
                 // This is being done with a wrapper "main" function that calls the callback and returns the context again.
                 let ret_val = vm.execute(&["main"], (ctx,))?.complete()?;
-                let ctx: Result<ParserContext, context::Error> = FromValue::from_value(ret_val)?;
+                let ctx: Option<ParserContext> = FromValue::from_value(ret_val)?;
+                let ctx = ctx.ok_or_else(|| Error::MissingObject)?;
 
-                Ok(ctx?)
+                Ok(ctx)
             }
             None => Ok(ctx),
         }
