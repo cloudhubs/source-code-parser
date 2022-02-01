@@ -248,7 +248,7 @@
       "pattern": "#{pool_name}",
       "auxiliary_pattern": "ClientPool<ThriftClient<#{service_name}ServiceClient>>",
       "subpatterns": [],
-      "callback": "let service_name = ctx.get_variable(\"service_name\")?;let service_tag = ctx.get_variable(\"pool_name\")?;ctx.save(service_name, #{});ctx.make_tag(service_tag, service_name);",
+      "callback": "let service_name = ctx.get_variable(\"service_name\")?;let service_tag = ctx.get_variable(\"pool_name\")?;if !ctx.get(service_name).is_some() { let services = ctx.get_or_save(\"services\", []); ctx.save(service_name, #{ ndx: services.len() }); ctx.make_transient(service_name); services.push(#{ name: service_name, calls: [], endpoints: [] });}ctx.make_tag(service_tag, service_name);",
       "essential": true
     },
     {
@@ -266,7 +266,7 @@
           "pattern": "Pop",
           "auxiliary_pattern": "#&{pool_name}(.*_client_pool)",
           "subpatterns": [],
-          "essential": false
+          "essential": true
         }
       ],
       "callback": "let wrapper_name = ctx.get_variable(\"wrapper_name\")?;let pool_name = ctx.get_variable(\"pool_name\")?;ctx.make_tag(wrapper_name, pool_name);",
@@ -298,12 +298,12 @@
       "pattern": "#{endpoint_name}",
       "auxiliary_pattern": "#&{client_name}(.*_client$)",
       "subpatterns": [],
-      "callback": "let client_name = ctx.get_variable(\"client_name\")?;let endpoint = ctx.get_variable(\"endpoint_name\")?;let svc = ctx.get(client_name)?;svc[endpoint] = [];ctx.save(client_name, svc);ctx.make_transient(endpoint);",
+      "callback": "let client_name = ctx.get_variable(\"client_name\")?;let endpoint = ctx.get_variable(\"endpoint_name\")?;let svc_desc = ctx.get(client_name)?;if !svc_desc.contains_key(endpoint) { let svc = ctx.get(\"services\")?[svc_desc.ndx]; svc_desc[endpoint] = svc.endpoints.len(); svc.endpoints.push(#{ name: endpoint, type: \"RPC\" }); ctx.make_transient(endpoint);}",
       "essential": true
     },
     {
       "identifier": "ClassOrInterface",
-      "pattern": "#{callee_name}",
+      "pattern": "#{callee_name}Handler",
       "subpatterns": [
         {
           "identifier": "CallExpr",
@@ -311,7 +311,7 @@
           "auxiliary_pattern": "#&{client_name}(.*_client$)",
           "subpatterns": [],
           "essential": true,
-          "callback": "let client_name = ctx.get_variable(\"client_name\")?;let endpoint_name = ctx.get_variable(\"endpoint_name\")?;let callee = ctx.get_variable(\"callee_name\")?;let endpoint = ctx.get(client_name)?;endpoint[endpoint_name].push(callee);ctx.save(client_name, endpoint);"
+          "callback": "let services = ctx.get(\"services\")?;let endpoint_name = ctx.get_variable(\"endpoint_name\")?;let callee = ctx.get_variable(\"callee_name\")?;let client_name = ctx.get_variable(\"client_name\")?;client_name = services[ctx.get(client_name)?.ndx].name;let calling_service = ctx.get(callee).unwrap_or_else(|| { let ndx = services.len(); ctx.save(callee, ndx); ctx.make_transient(callee); services.push(#{ name: callee, calls: [], endpoints: [] }); ctx.save(callee, #{ ndx: ndx })});calling_service = services[calling_service.ndx];calling_service.calls.push(#{ service: client_name, endpoint: endpoint_name, type: \"RPC\" });"
         }
       ],
       "essential": true
