@@ -23,7 +23,7 @@
         "pattern": "#{field_name}",
         "auxiliary_pattern": "#{field_type}",
         "subpatterns": [],
-        "callback": "let entity_name = ctx.get_variable(\"package_name\").unwrap() + \": \" + ctx.get_variable(\"entity_name\").unwrap();ctx.make_object(entity_name);let field_name = ctx.get_variable(\"field_name\").unwrap();let field_type = ctx.get_variable(\"field_type\").unwrap();ctx.make_attribute(entity_name, field_name, Some(field_type));",
+        "callback": "let entity_name = `${ctx.get_variable(\"package_name\")?}: ${ctx.get_variable(\"entity_name\")?}`;let field_name = ctx.get_variable(\"field_name\")?;let field_type = ctx.get_variable(\"field_type\")?;let entities = ctx.get_or_save(\"entities\", []);let result = ctx.get_or_save(entity_name, entities.len());if (result >= entities.len()) { ctx.make_transient(entity_name); entities.push(#{ name: entity_name, fields: [], type: \"MongoDB\" });}entities[result].fields.push(#{ name: field_name, type: field_type, is_collection: false });",
         "essential": true
       }
     ],
