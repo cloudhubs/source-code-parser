@@ -18,7 +18,7 @@ pub struct AstRequest {
 }
 
 #[post("/ctx")]
-pub fn ctx(payload: web::Json<Directory>) -> HttpResponse {
+pub async fn ctx(payload: web::Json<Directory>) -> HttpResponse {
     match parse_project_context_compat(&payload) {
         Ok(ctx) => ok(ctx),
         Err(err) => internal_server_error(err),
@@ -32,7 +32,7 @@ pub struct RessaInput {
 }
 
 #[post("/ressa")]
-pub fn ressa(payload: web::Json<RessaInput>) -> HttpResponse {
+pub async fn ressa(payload: web::Json<RessaInput>) -> HttpResponse {
     match parse_project_context(&payload.project_dir) {
         Ok(mut context) => ok(run_ressa_parse(
             &mut context.modules,
@@ -43,7 +43,7 @@ pub fn ressa(payload: web::Json<RessaInput>) -> HttpResponse {
 }
 
 #[post("/ast")]
-pub fn ast(payload: web::Json<AstRequest>) -> HttpResponse {
+pub async fn ast(payload: web::Json<AstRequest>) -> HttpResponse {
     let mut code = String::new();
     let path = PathBuf::from(&payload.file_path);
     let mut file = match File::open(path) {
