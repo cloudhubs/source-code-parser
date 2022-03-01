@@ -4,90 +4,120 @@ fn valid_ndx(tokens, ndx) {
     0 <= ndx && ndx < tokens.len()
 }
 
-fn handle_attribute(parent, tokens, ndx, ctx, name, isCollection) {
-    let newParent = if parent.contains_key(name) { parent[name] } else { #{} };
-    if newParent.contains_key("") {
-        newParent[""].isCollection = isCollection || newParent[""].isCollection;
-    } else {
-        newParent[""] = #{ "isCollection": isCollection };
-    }
-    let tuple = choose_action(newParent, tokens, ndx + 2, ctx);
-    parent[name] = tuple.0;
+fn make_field(parent, ctx, name_mappings, name, isCollection) {
+    let ndx = parent.fields.len();
+    name_mappings[name] = ndx;
+    parent.fields.push(#{ name, isCollection });
+    ndx
+}
+
+fn handle_attribute(parent, tokens, ndx, ctx, name_mappings, name, isCollection) {
+    if !valid_ndx(tokens, ndx) { return (parent, ndx); }
+
+    let fieldNdx = match name_mappings.get(name) {
+        Some(fieldNdx) => fieldNdx,
+        None => make_field(parent, ctx, name_mappings, name, isCollection)
+    };
+
+    let newParent = parent.fields[fieldNdx];
+    let tuple = choose_action(newParent, tokens, ndx + 2, ctx, name_mappings);
     (parent, tuple.1)
 }
 
-fn handle_dollar(parent, tokens, ndx, ctx) {
+fn handle_dollar(parent, tokens, ndx, ctx, name_mappings) {
     if !valid_ndx(tokens, ndx + 1) { return (parent, ndx); }
+
     match tokens[ndx] {
-        "$pull" => handle_attribute(parent, tokens, ndx + 2, ctx, tokens[ndx + 2], true),
-        "$push" => handle_attribute(parent, tokens, ndx + 2, ctx, tokens[ndx + 2], true),
+        "$pull" => handle_attribute(parent, tokens, ndx + 2, ctx, name_mappings, tokens[ndx + 2], true),
+        "$push" => handle_attribute(parent, tokens, ndx + 2, ctx, name_mappings, tokens[ndx + 2], true),
         "$elemMatch" => {
-            parent[""].isCollection = true;
-            choose_action(parent, tokens, ndx + 1, ctx)
+            parent.is_collection = true;
+            choose_action(parent, tokens, ndx + 1, ctx, name_mappings)
         }
-        _ => choose_action(parent, tokens, ndx + 1, ctx)
+        _ => choose_action(parent, tokens, ndx + 1, ctx, name_mappings)
     }
 }
 
-fn handle_name(parent, tokens, ndx, ctx) {
+fn handle_name(parent, tokens, ndx, ctx, name_mappings) {
     if !valid_ndx(tokens, ndx + 1) { return (parent, ndx); }
+
     let name = tokens[ndx];
-    if name == "}" { return (parent, ndx); }
-    else if name == "projection" { return (parent, tokens.len() + 1) }
+    if name == "}" {
+        return (parent, ndx);
+    } else if name == "projection" {
+        return (parent, tokens.len() + 1)
+    }
     match tokens[ndx + 1] {
-        "{" => handle_attribute(parent, tokens, ndx, ctx, name, false),
-        "[" => handle_attribute(parent, tokens, ndx, ctx, name, true),
+        "{" => handle_attribute(parent, tokens, ndx, ctx, name_mappings, name, false),
+        "[" => handle_attribute(parent, tokens, ndx, ctx, name_mappings, name, true),
         "}" => (parent, ndx + 1),
         "]" => (parent, ndx + 1),
         literal => {
             if literal.starts_with("$") {
-                handle_dollar(parent, tokens, ndx, ctx)
+                handle_dollar(parent, tokens, ndx, ctx, name_mappings)
             } else {
-                parent[name] = tokens[ndx + 1];
-                handle_name(parent, tokens, ndx + 2, ctx)
+                if parent.get("fields").is_none() {
+                    parent.fields = [];
+                    parent.type = "Object";
+                }
+
+                let field = match name_mappings.get(name) {
+                    Some(ndx) => ndx,
+                    _ => make_field(parent, ctx, name_mappings, name, false)
+                };
+        
+                field = parent.fields[field];
+                field.type = literal;
+                handle_name(parent, tokens, ndx + 2, ctx, name_mappings)
             }
         }
     }
 }
 
-fn choose_action(parent, tokens, ndx, ctx) {
+fn choose_action(parent, tokens, ndx, ctx, name_mappings) {
     if !valid_ndx(tokens, ndx) { return parent; }
+
     match tokens[ndx] {
-        "{" => choose_action(parent, tokens, ndx + 1, ctx),
-        "[" => choose_action(parent, tokens, ndx + 1, ctx),
+        "{" => choose_action(parent, tokens, ndx + 1, ctx, name_mappings),
+        "[" => choose_action(parent, tokens, ndx + 1, ctx, name_mappings),
         "}" => (parent, ndx + 1),
         "]" => (parent, ndx + 1),
         token => {
             if token.starts_with("$") {
-                handle_dollar(parent, tokens, ndx, ctx)
+                handle_dollar(parent, tokens, ndx, ctx, name_mappings)
             } else {
-                handle_name(parent, tokens, ndx, ctx)
+                handle_name(parent, tokens, ndx, ctx, name_mappings)
             }
         }
     }
 }
 
-fn start(parent, tokens, ctx) {
+fn start(parent, tokens, ctx, name_mappings) {
     let ndx = 0;
+
     while valid_ndx(tokens, ndx) {
-        let tuple = choose_action(parent, tokens, ndx, ctx);
+        let tuple = choose_action(parent, tokens, ndx, ctx, name_mappings);
         parent = tuple.0;
         ndx = tuple.1;
     }
     parent
 }
 
-fn cleanup(ctx) {
-    ctx.save("tokens", #{ "vec": [] });
-}
-
-let tokens = ctx.get("tokens")?.vec;
+let mpsv = ctx.get_or_save("mongo_parsing_script_vars", #{});
+ctx.make_transient("mongo_parsing_script_vars");
 let coll = ctx.get_variable("collection_name")?;
-let collectionObj = ctx.get_or_save(coll, #{});
+if mpsv.get(coll).is_none() { mpsv[coll] = #{}; };
+let name_mappings = mpsv[coll];
+
+let tokens = ctx.get("tokens")?;
+let entities = ctx.get("entities")?;
+let collNdx = ctx.get(coll)?;
+let collectionObj = entities[collNdx];
 match tokens.get(0) {
     Some(token) => {
-        let result = start(collectionObj, tokens, ctx);
-        ctx.save(coll, result);
+        collectionObj["isCollection"] = false;
+        let result = start(collectionObj, tokens, ctx, name_mappings);
+        entities[collNdx] = result;
         tokens.clear();
     }
     _ => {
