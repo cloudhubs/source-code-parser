@@ -71,17 +71,22 @@ pub fn extract_vec<I, T, E>(
 where
     I: Fn(Value) -> Result<Shared<T>, E> + Copy,
 {
-    let converted = extract(obj, name, Value::into_vec)?
+    let (result, err): (Vec<Option<T>>, Vec<Option<Error>>) = extract(obj, name, Value::into_vec)?
         .into_iter()
         // `into` has the Copy trait bound so it can be called multiple times when
         // captured by map's `FnMut` argument
-        .map(|elem| coerce(&elem, into));
+        .map(|elem| coerce(&elem, into))
+        .map(|obj| match obj {
+            Ok(obj) => (Some(obj), None),
+            Err(err) => (None, Some(err)),
+        })
+        .unzip();
 
     // Short-circuit any errors that occurred
-    if let Some(bad_result) = converted.clone().find(Result::is_err) {
-        bad_result?;
+    if let Some(Some(bad_result)) = err.into_iter().find(|err| err.is_some()) {
+        Err(bad_result)?;
     }
 
     // Coerce results out of the vec
-    Ok(converted.flatten().collect())
+    Ok(result.into_iter().flatten().collect())
 }
