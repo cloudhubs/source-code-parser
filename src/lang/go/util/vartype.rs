@@ -9,7 +9,7 @@ pub(crate) fn find_type(ast: &AST) -> String {
     let mut is_ptr = false;
 
     match my_node.find_child_by_type(&["*"]) {
-        Some(node) => {is_ptr = true;},
+        Some(_node) => {is_ptr = true;},
         None => {}
     }
 
@@ -34,9 +34,6 @@ pub(crate) fn find_type(ast: &AST) -> String {
 }
 
 pub(crate) fn find_return(ast: &AST) -> String {
-    let mut mul_rets = false;
-    let mut param_lists = 0;
-    let mut type_identifier = 0;
     let mut i = 0;
     let mut ret = "".to_string();
     
@@ -45,10 +42,10 @@ pub(crate) fn find_return(ast: &AST) -> String {
             "parameter_list" => {
                 //if it has multiple return values
                 if i == 4 {
-                    for subNode in node.children.iter() {
-                        match &*subNode.r#type {
+                    for sub_node in node.children.iter() {
+                        match &*sub_node.r#type {
                             "parameter_declaration" => {
-                                ret += &find_type(unwrap_pointer_type(subNode));
+                                ret += &find_type(unwrap_pointer_type(sub_node));
                                 ret += ", "
                             },
                             _ => {}
@@ -76,18 +73,18 @@ pub(crate) fn find_return(ast: &AST) -> String {
 }
 
 pub(crate) fn unwrap_pointer_type(ast: &AST) -> &AST {
-    let mut myNode = ast;
+    let mut my_node = ast;
 
     for node in ast.children.iter() {
         match &*node.r#type {
             "pointer_type" => {
-                myNode = node;
+                my_node = node;
             },
             _ => {}
         }
     }
 
-    myNode
+    my_node
 }
 
 fn parse_type(ast: &AST) -> String {

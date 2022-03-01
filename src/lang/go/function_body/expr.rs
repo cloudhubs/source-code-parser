@@ -24,7 +24,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "call_expression" => parse_function(ast, component),
         "selector_expression" => Some(parse_dot_expr(ast, component)?.into()),
 
-        unknown => None,
+        _ => None,
     }
 }
 
@@ -39,7 +39,7 @@ pub(crate) fn parse_expr_stmt(ast: &AST, component: &ComponentInfo) -> Option<Ex
     expr
 }
 
-fn parse_ident(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
+fn parse_ident(ast: &AST, _component: &ComponentInfo) -> Option<Expr> {
     let ident: Expr = Ident::new(ast.value.clone(), Language::Go).into();
     Some(ident.into())
 }

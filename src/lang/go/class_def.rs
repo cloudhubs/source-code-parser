@@ -1,6 +1,5 @@
 use crate::go::util::identifier::parse_identifier;
 use crate::go::util::vartype::find_type;
-use crate::go::util::vartype::unwrap_pointer_type;
 use crate::parse::AST;
 use crate::prophet::*;
 
@@ -69,7 +68,7 @@ pub(crate) fn parse_type_internal(
     // Define default values
     let stereotype = ContainerStereotype::Entity; // TODO determine properly
     let mut fields = vec![];
-    let mut constructors = vec![];
+    let constructors = vec![];
     let mut methods = vec![];
     //let mut modifier = Modifier::new();
 
@@ -101,7 +100,7 @@ pub(crate) fn parse_type_internal(
 fn parse_struct_body(
     ast: &AST,
     component: &ComponentInfo,
-    methods: &mut Vec<MethodComponent>,
+    _methods: &mut Vec<MethodComponent>,
     fields: &mut Vec<FieldComponent>,
 ) {
     for node in ast.children.iter() {

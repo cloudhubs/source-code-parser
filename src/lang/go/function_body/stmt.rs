@@ -62,8 +62,8 @@ pub(crate) fn parse_decl(ast: &AST, component: &ComponentInfo) -> DeclStmt {
 }
 
 pub(crate) fn parse_short_decl(ast: &AST, component: &ComponentInfo) -> Option<DeclStmt> {
-    let mut r#type = "N/A".to_string();
-    let mut i = 0;
+    //let mut r#type = "N/A".to_string();
+    //let mut i = 0;
     
     /*
     for expr in ast.find_all_children_by_type(&["expression_list"]).get_or_insert(vec![]).iter() {
@@ -190,8 +190,8 @@ pub(crate) fn parse_if(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             }
         }
     }
-    let retNode = Some(Node::Stmt(IfStmt::new(guard?, if_stmt?, else_stmt, Language::Go).into()));
-    retNode
+    let ret_node = Some(Node::Stmt(IfStmt::new(guard?, if_stmt?, else_stmt, Language::Go).into()));
+    ret_node
 }
 
 
@@ -291,7 +291,7 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     Some(Stmt::ForStmt(for_stmt).into())
 }
 
-
+/*
 fn determine_var_type(node: &AST) -> String {
     let mut toRet = String::from("N/A");
 
@@ -306,4 +306,4 @@ fn determine_var_type(node: &AST) -> String {
     
     toRet
 }
-
+*/
