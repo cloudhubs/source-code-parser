@@ -80,7 +80,7 @@ impl Executor {
                 // This is being done with a wrapper "main" function that calls the callback and returns the context again.
                 let ret_val = vm.execute(&["main"], (ctx,))?.complete()?;
                 let ctx: Option<ParserContext> = FromValue::from_value(ret_val)?;
-                let ctx = ctx.ok_or_else(|| Error::MissingObject)?;
+                let ctx = ctx.ok_or(Error::MissingObject)?;
 
                 Ok(ctx)
             }
