@@ -262,6 +262,30 @@ pub struct CompiledPattern {
 impl CompiledPattern {
     /// Create a compiled pattern from a ReSSA pattern and the context.
     pub fn from_pattern(pattern: &str) -> Result<CompiledPattern, regex::Error> {
+        /*
+         * Expanding and explaining the following Regex for posterity:
+         *
+         * #(&)?              - Variable declared with #, maybe as a reference (&)
+         * \{                 1 Followed by literal curly braces
+         *   ([a-zA-Z_-]+)    - Wrapping a capture of the variable's name
+         * \}                 1
+         * (                  1 Optionally capture
+         *   \(               2 Something wrapped in parenthesis literals
+         *     (              3 Containing the desired RegEx pattern consisting of
+         *       (            4 Any number of
+         *         [^(]       - Characters other than opening parentheses
+         *         |\\\(      - Or escaped opening parenthesis
+         *         |\(        5 Or a clause wrapped in literal open/close parenthesis
+         *           (        6 Containing any number of
+         *             [^)]   - characters other than closing parentheses
+         *             |\\\)  - Or escaped closing parenthesis
+         *           )*       6
+         *         \)         5
+         *       )*           4
+         *     )              3
+         *   \)               2
+         * )?                 1
+         */
         let tag_regex =
             Regex::new(r#"#(&)?\{([a-zA-Z_-]+)\}(\((([^(]|\\\(|\(([^)]|\\\))*\))*)\))?"#)?;
 
