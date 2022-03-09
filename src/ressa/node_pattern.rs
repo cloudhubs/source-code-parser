@@ -303,7 +303,7 @@ impl CompiledPattern {
                 .as_str();
 
             // Find a user-defined capture definition
-            let mut regex_pattern = ".*?";
+            let mut regex_pattern = ".*";
             if let Some(group) = &captures.get(4) {
                 regex_pattern = group.as_str();
             }
@@ -399,7 +399,7 @@ mod tests {
     #[test]
     fn test_bson() {
         assert_eq!(
-            "BSON_APPEND_(?P<type>.*?)_(?P<another_one>.*?)",
+            "BSON_APPEND_(?P<type>.*)_(?P<another_one>.*)",
             CompiledPattern::from_pattern("BSON_APPEND_#{type}_#&{another_one}")
                 .expect("Failed to construct regex from pattern input")
                 .pattern
