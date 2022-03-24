@@ -22,6 +22,15 @@ pub use result::*;
 
 use crate::{ast::NodeLanguage, Language, ModuleComponent};
 
+/// Visitor context; aggregates all information ReSSA needs, allowing data to be added
+/// without needing to update all related methods every time
+#[derive(Default, Debug, Clone)]
+pub struct ExplorerContext {
+    pub parser: ParserContext,
+    pub constraint_stack: i32, // TODO implement
+    pub frame_number: i32,
+}
+
 /// Run the user-defined parsers, in the order they were defined, on our AST
 pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>) -> RessaResult {
     // Add all inferred languages (ReSSA languages which are not specified and assumed to be the same as the parent's)
@@ -40,7 +49,7 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
     );
 
     // Explore
-    let mut ctx = ParserContext::default();
+    let mut ctx = ExplorerContext::default();
     for mut ressa in ressas.into_iter() {
         match ressa.language {
             // Wildcard language (apply to any language)
@@ -65,5 +74,5 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
     }
 
     // Clean and return context
-    ctx.into()
+    ctx.parser.into()
 }

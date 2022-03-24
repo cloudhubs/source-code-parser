@@ -15,7 +15,6 @@ pub struct ParserContext {
     objectlike_data: HashMap<String, Value>,
     variables: HashMap<String, String>,
     transients: HashSet<String>,
-    pub frame_number: i32,
 }
 
 /// Convert the context into the result format

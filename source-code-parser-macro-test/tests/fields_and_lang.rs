@@ -1,6 +1,6 @@
+use source_code_parser::ressa::ExplorerContext;
 use source_code_parser::ressa::LaastIndex;
 use source_code_parser::ressa::NodePattern;
-use source_code_parser::ressa::ParserContext;
 use source_code_parser::ressa::RessaNodeExplorer;
 use source_code_parser::Language;
 use source_code_parser_macro::ChildFields;
@@ -10,7 +10,7 @@ macro_rules! fake_ressa_explore_impl {
     ( $( $struct_name:ty ),+ ) => {
         $(
             impl RessaNodeExplorer for $struct_name {
-                fn explore(&self, _pattern: &mut NodePattern, _ctx: &mut ParserContext, _index: &LaastIndex) -> Option<()> {
+                fn explore(&self, _pattern: &mut NodePattern, _ctx: &mut ExplorerContext, _index: &LaastIndex) -> Option<()> {
                     None
                 }
             }

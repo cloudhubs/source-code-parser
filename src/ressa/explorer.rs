@@ -1,5 +1,5 @@
 /// WARNING: HERE THERE BE MACROS
-use super::{ressa_node_parse, IntoRessaNode, NodePattern, NodePatternParser, ParserContext};
+use super::{ressa_node_parse, ExplorerContext, IntoRessaNode, NodePattern, NodePatternParser};
 use super::{Indexable, LaastIndex};
 use crate::ast::*;
 use crate::prophet::*;
@@ -13,7 +13,7 @@ pub trait RessaNodeExplorer {
     fn explore(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()>;
 }
@@ -26,7 +26,7 @@ macro_rules! ressa_dispatch_delegate_impl {
                 fn explore(
                     &self,
                     pattern: &mut NodePattern,
-                    ctx: &mut ParserContext,
+                    ctx: &mut ExplorerContext,
                     index: &LaastIndex
                 ) -> Option<()> {
                     crate::ressa::explorer::explore(self, pattern, ctx, index)
@@ -44,7 +44,7 @@ macro_rules! ressa_dispatch_match_impl {
                 fn explore(
                     &self,
                     pattern: &mut NodePattern,
-                    ctx: &mut ParserContext,
+                    ctx: &mut ExplorerContext,
                     index: &LaastIndex
                 ) -> Option<()> {
                     crate::ressa::explorer::explore_match(self, pattern, ctx, index)
@@ -114,7 +114,7 @@ ressa_dispatch_match_impl!(
 pub fn explore<T>(
     source: &T,
     pattern: &mut NodePattern,
-    ctx: &mut ParserContext,
+    ctx: &mut ExplorerContext,
     index: &LaastIndex,
 ) -> Option<()>
 where
@@ -132,7 +132,7 @@ where
 pub fn explore_match<T>(
     source: &T,
     pattern: &mut NodePattern,
-    ctx: &mut ParserContext,
+    ctx: &mut ExplorerContext,
     index: &LaastIndex,
 ) -> Option<()>
 where
@@ -186,6 +186,6 @@ mod tests {
         );
         let index = LaastIndex::new(HashMap::new(), HashMap::new());
         tracing::warn!("hello?");
-        c.explore(&mut np, &mut ParserContext::default(), &index);
+        c.explore(&mut np, &mut ExplorerContext::default(), &index);
     }
 }

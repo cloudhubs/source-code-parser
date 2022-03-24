@@ -1,4 +1,4 @@
-use super::{CompiledPattern, NodePattern, ParserContext, RessaNodeExplorer};
+use super::{CompiledPattern, ExplorerContext, NodePattern, ParserContext, RessaNodeExplorer};
 use super::{LaastIndex, NodeType};
 use crate::ast::*;
 use crate::{prophet::*, ressa::choose_exit};
@@ -9,7 +9,7 @@ pub trait NodePatternParser {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()>;
 }
@@ -30,7 +30,7 @@ fn write_to_context(
 fn match_subsequence<T: RessaNodeExplorer>(
     params: &mut Vec<&mut NodePattern>,
     explorable: &[T],
-    ctx: &mut ParserContext,
+    ctx: &mut ExplorerContext,
     index: &LaastIndex,
 ) -> Option<()> {
     let (mut start, mut end) = (0_usize, params.len());
@@ -133,7 +133,7 @@ impl NodePatternParser for ClassOrInterfaceComponent {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         // If all subpatterns matched, extract context
@@ -141,13 +141,13 @@ impl NodePatternParser for ClassOrInterfaceComponent {
             &self.component.container_name,
             pattern.essential,
             &mut pattern.compiled_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
         write_to_context(
             &self.component.component.package_name,
             pattern.essential,
             &mut pattern.compiled_auxiliary_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
 
         // Check subpatterns
@@ -168,21 +168,21 @@ impl NodePatternParser for MethodComponent {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         write_to_context(
             &self.component.instance_name,
             pattern.essential,
             &mut pattern.compiled_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
 
         write_to_context(
             &self.return_type,
             pattern.essential,
             &mut pattern.compiled_auxiliary_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
 
         // Match method parameters
@@ -224,7 +224,7 @@ impl NodePatternParser for MethodParamComponent {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         // Verify
@@ -233,20 +233,20 @@ impl NodePatternParser for MethodParamComponent {
         verify_match!(
             &*self.parameter_name,
             &pattern.compiled_pattern,
-            ctx,
+            &ctx.parser,
             pattern.essential
         );
         write_to_context(
             &self.r#type,
             pattern.essential,
             &mut pattern.compiled_auxiliary_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
         write_to_context(
             &self.parameter_name,
             pattern.essential,
             &mut pattern.compiled_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
 
         // If there are annotation subnodes, check if they match the subpatterns--then exit
@@ -264,27 +264,27 @@ impl NodePatternParser for FieldComponent {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         // Verify
         verify_match!(
             &*self.field_name,
             &pattern.compiled_pattern,
-            ctx,
+            &ctx.parser,
             pattern.essential
         );
         write_to_context(
             &self.r#type,
             pattern.essential,
             &mut pattern.compiled_auxiliary_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
         write_to_context(
             &self.field_name,
             pattern.essential,
             &mut pattern.compiled_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
         let mut expr_vec = Vec::new();
         if let Some(expr) = &self.expression {
@@ -311,7 +311,7 @@ impl NodePatternParser for DeclStmt {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         let mut decl_patterns: Vec<usize> = vec![];
@@ -388,14 +388,14 @@ impl NodePatternParser for VarDecl {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         // Verify
         verify_match!(
             &*self.ident.name,
             &pattern.compiled_pattern,
-            ctx,
+            &ctx.parser,
             pattern.essential
         );
         if pattern.auxiliary_pattern.is_some() {
@@ -403,7 +403,7 @@ impl NodePatternParser for VarDecl {
                 verify_match!(
                     &*var_type,
                     &pattern.compiled_auxiliary_pattern,
-                    ctx,
+                    &ctx.parser,
                     pattern.essential
                 );
             } else {
@@ -419,14 +419,14 @@ impl NodePatternParser for VarDecl {
             &self.ident.name,
             pattern.essential,
             &mut pattern.compiled_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
         if let Some(var_type) = &self.var_type {
             write_to_context(
                 var_type,
                 pattern.essential,
                 &mut pattern.compiled_auxiliary_pattern,
-                ctx,
+                &mut ctx.parser,
             )
         } else {
             Some(())
@@ -438,7 +438,7 @@ impl NodePatternParser for CallExpr {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         // Extract the function name, and the lefthand side's name (if needed)
@@ -489,14 +489,14 @@ impl NodePatternParser for CallExpr {
             raw_name,
             pattern.essential,
             &mut pattern.compiled_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
         if let Some(lhs) = auxiliary_name {
             write_to_context(
                 lhs,
                 pattern.essential,
                 &mut pattern.compiled_auxiliary_pattern,
-                ctx,
+                &mut ctx.parser,
             )?;
         } else if pattern.auxiliary_pattern.is_some() {
             quit!(pattern.essential);
@@ -528,20 +528,20 @@ impl NodePatternParser for AnnotationComponent {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         // Verify
         verify_match!(
             &*self.name,
             &pattern.compiled_pattern,
-            ctx,
+            &ctx.parser,
             pattern.essential
         );
         verify_match!(
             &*self.value,
             &pattern.compiled_auxiliary_pattern,
-            ctx,
+            &ctx.parser,
             pattern.essential
         );
 
@@ -553,13 +553,13 @@ impl NodePatternParser for AnnotationComponent {
             &self.name,
             pattern.essential,
             &mut pattern.compiled_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
         write_to_context(
             &self.value,
             pattern.essential,
             &mut pattern.compiled_auxiliary_pattern,
-            ctx,
+            &mut ctx.parser,
         )
     }
 }
@@ -568,27 +568,32 @@ impl NodePatternParser for AnnotationValuePair {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         _index: &LaastIndex,
     ) -> Option<()> {
-        verify_match!(&self.key, &pattern.compiled_pattern, ctx, pattern.essential);
+        verify_match!(
+            &self.key,
+            &pattern.compiled_pattern,
+            &ctx.parser,
+            pattern.essential
+        );
         verify_match!(
             &self.value,
             &pattern.compiled_auxiliary_pattern,
-            ctx,
+            &ctx.parser,
             pattern.essential
         );
         write_to_context(
             &self.value,
             pattern.essential,
             &mut pattern.compiled_auxiliary_pattern,
-            ctx,
+            &mut ctx.parser,
         )?;
         write_to_context(
             &self.key,
             pattern.essential,
             &mut pattern.compiled_pattern,
-            ctx,
+            &mut ctx.parser,
         )
     }
 }
@@ -597,14 +602,14 @@ impl NodePatternParser for Ident {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         _index: &LaastIndex,
     ) -> Option<()> {
         write_to_context(
             &self.name,
             pattern.essential,
             &mut pattern.compiled_pattern,
-            ctx,
+            &mut ctx.parser,
         )
     }
 }
@@ -613,20 +618,20 @@ impl NodePatternParser for Literal {
     fn parse(
         &self,
         pattern: &mut NodePattern,
-        ctx: &mut ParserContext,
+        ctx: &mut ExplorerContext,
         _index: &LaastIndex,
     ) -> Option<()> {
         verify_match!(
             &self.value,
             &pattern.compiled_pattern,
-            ctx,
+            &ctx.parser,
             pattern.essential
         );
         write_to_context(
             &self.value,
             pattern.essential,
             &mut pattern.compiled_pattern,
-            ctx,
+            &mut ctx.parser,
         )
     }
 }
