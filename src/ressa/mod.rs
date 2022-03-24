@@ -40,7 +40,7 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
     );
 
     // Explore
-    let mut ctx = ParserContext::default();
+    let mut ctx = ExplorerContext::default();
     for mut ressa in ressas.into_iter() {
         match ressa.language {
             // Wildcard language (apply to any language)
@@ -65,5 +65,5 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
     }
 
     // Clean and return context
-    ctx.into()
+    ctx.parser.into()
 }

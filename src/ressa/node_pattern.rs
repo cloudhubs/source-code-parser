@@ -1,4 +1,4 @@
-use super::{LaastIndex, RessaNodeExplorer};
+use super::{ExplorerContext, LaastIndex, RessaNodeExplorer};
 // use super::ressaDispatch;
 use super::{pattern_parser::NodePatternParser, Executor};
 use crate::ast::*;
@@ -128,7 +128,7 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
 fn parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
     node: &N,
-    ctx: &mut ParserContext,
+    ctx: &mut ExplorerContext,
     index: &LaastIndex,
 ) -> bool {
     if !pattern.transparent {
@@ -148,7 +148,7 @@ fn parse<N: NodePatternParser + RessaNodeExplorer>(
 pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     pattern: &mut NodePattern,
     node: &N,
-    ctx: &mut ParserContext,
+    ctx: &mut ExplorerContext,
     index: &LaastIndex,
 ) -> Option<()> {
     // Lazily compile patterns
@@ -161,9 +161,9 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     let passed = if parse(pattern, node, &mut transaction, index) {
         if pattern.callback.is_some() {
             // let tmp = transaction.clone();
-            match Executor::get().execute(pattern, transaction) {
+            match Executor::get().execute(pattern, transaction.parser) {
                 Ok(new_ctx) => {
-                    *ctx = new_ctx;
+                    ctx.parser = new_ctx;
                     true
                 }
                 Err(err) => {
@@ -185,7 +185,7 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
 
     ctx.frame_number -= 1;
     if ctx.frame_number == 0 {
-        ctx.clear_variables();
+        ctx.parser.clear_variables();
     }
 
     // Resume the search where we left off, or pass on an error indicating a required subpattern
