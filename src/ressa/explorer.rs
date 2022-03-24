@@ -1,18 +1,9 @@
 /// WARNING: HERE THERE BE MACROS
-use super::{ressa_node_parse, IntoRessaNode, NodePattern, NodePatternParser, ParserContext};
+use super::{ressa_node_parse, ExplorerContext, IntoRessaNode, NodePattern, NodePatternParser};
 use super::{Indexable, LaastIndex};
 use crate::ast::*;
 use crate::prophet::*;
 use enum_dispatch::enum_dispatch;
-
-/// Visitor context; aggregates all information ReSSA needs, allowing data to be added
-/// without needing to update all related methods every time
-#[derive(Default, Debug, Clone)]
-pub struct ExplorerContext {
-    pub parser: ParserContext,
-    pub constraint_stack: i32, // TODO implement
-    pub frame_number: i32,
-}
 
 /// Describes how to visit the nodes in the AST to find nodes of interest
 #[enum_dispatch(Node)]
