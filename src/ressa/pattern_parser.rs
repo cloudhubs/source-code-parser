@@ -8,7 +8,7 @@ use itertools::Itertools;
 pub trait NodePatternParser {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()>;
@@ -17,10 +17,10 @@ pub trait NodePatternParser {
 fn write_to_context(
     to_match: &str,
     essential: bool,
-    pattern: &mut Option<CompiledPattern>,
+    pattern: &Option<CompiledPattern>,
     ctx: &mut ParserContext,
 ) -> Option<()> {
-    match pattern.as_mut() {
+    match pattern.as_ref() {
         Some(compiled_pattern) if compiled_pattern.match_and_insert(to_match, ctx) => Some(()),
         Some(_) if essential => None,
         _ => Some(()),
@@ -28,7 +28,7 @@ fn write_to_context(
 }
 
 fn match_subsequence<T: RessaNodeExplorer>(
-    params: &mut Vec<&mut NodePattern>,
+    params: &[&NodePattern],
     explorable: &[T],
     ctx: &mut ExplorerContext,
     index: &LaastIndex,
@@ -39,7 +39,7 @@ fn match_subsequence<T: RessaNodeExplorer>(
     while start < explorable.len() {
         // Pre
         //        matched = true;
-        let mut pattern_iter = params.iter_mut();
+        let mut pattern_iter = params.iter();
 
         // Perform subsequence matching
         for i in start..end {
@@ -117,7 +117,7 @@ macro_rules! explore_all_subpatterns {
     ( $subpatterns:expr, $ctx:expr, $index:expr, $( $explorable:expr ),+ ) => {
         use crate::ressa::explorer::choose_exit;
 
-        for subpattern in $subpatterns.iter_mut() {
+        for subpattern in $subpatterns.iter() {
             let mut explore_all_found_essential = false;
             $(
                 if explore_all!(subpattern, $ctx, $index, $explorable).is_some() {
@@ -132,7 +132,7 @@ macro_rules! explore_all_subpatterns {
 impl NodePatternParser for ClassOrInterfaceComponent {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
@@ -140,13 +140,13 @@ impl NodePatternParser for ClassOrInterfaceComponent {
         write_to_context(
             &self.component.container_name,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &pattern.compiled_pattern.borrow(),
             &mut ctx.parser,
         )?;
         write_to_context(
             &self.component.component.package_name,
             pattern.essential,
-            &mut pattern.compiled_auxiliary_pattern,
+            &pattern.compiled_auxiliary_pattern.borrow(),
             &mut ctx.parser,
         )?;
 
@@ -167,30 +167,30 @@ impl NodePatternParser for ClassOrInterfaceComponent {
 impl NodePatternParser for MethodComponent {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         write_to_context(
             &self.component.instance_name,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &pattern.compiled_pattern.borrow(),
             &mut ctx.parser,
         )?;
 
         write_to_context(
             &self.return_type,
             pattern.essential,
-            &mut pattern.compiled_auxiliary_pattern,
+            &pattern.compiled_auxiliary_pattern.borrow(),
             &mut ctx.parser,
         )?;
 
         // Match method parameters
         let mut params = pattern
             .subpatterns
-            .iter_mut()
+            .iter()
             .filter(|child| matches!(child.identifier, crate::ressa::NodeType::MethodParam))
-            .collect::<Vec<&mut NodePattern>>();
+            .collect::<Vec<&NodePattern>>();
         match_subsequence(&mut params, &self.parameters, ctx, index)?;
 
         // If there's a method body, explore it
@@ -204,7 +204,7 @@ impl NodePatternParser for MethodComponent {
         // Search unordered parts of the signature
         for pattern in pattern
             .subpatterns
-            .iter_mut()
+            .iter()
             .filter(|child| !matches!(child.identifier, crate::ressa::NodeType::MethodParam))
         {
             explore_all!(
@@ -223,7 +223,7 @@ impl NodePatternParser for MethodComponent {
 impl NodePatternParser for MethodParamComponent {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
@@ -232,20 +232,20 @@ impl NodePatternParser for MethodParamComponent {
         // (done to cut one regex match)
         verify_match!(
             &*self.parameter_name,
-            &pattern.compiled_pattern,
+            &*pattern.compiled_pattern.borrow(),
             &ctx.parser,
             pattern.essential
         );
         write_to_context(
             &self.r#type,
             pattern.essential,
-            &mut pattern.compiled_auxiliary_pattern,
+            &pattern.compiled_auxiliary_pattern.borrow(),
             &mut ctx.parser,
         )?;
         write_to_context(
             &self.parameter_name,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &pattern.compiled_pattern.borrow(),
             &mut ctx.parser,
         )?;
 
@@ -263,27 +263,27 @@ impl NodePatternParser for MethodParamComponent {
 impl NodePatternParser for FieldComponent {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         // Verify
         verify_match!(
             &*self.field_name,
-            &pattern.compiled_pattern,
+            &*pattern.compiled_pattern.borrow(),
             &ctx.parser,
             pattern.essential
         );
         write_to_context(
             &self.r#type,
             pattern.essential,
-            &mut pattern.compiled_auxiliary_pattern,
+            &pattern.compiled_auxiliary_pattern.borrow(),
             &mut ctx.parser,
         )?;
         write_to_context(
             &self.field_name,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &pattern.compiled_pattern.borrow(),
             &mut ctx.parser,
         )?;
         let mut expr_vec = Vec::new();
@@ -310,7 +310,7 @@ impl NodePatternParser for FieldComponent {
 impl NodePatternParser for DeclStmt {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
@@ -338,15 +338,14 @@ impl NodePatternParser for DeclStmt {
                     self.variables.get(i)?.explore(
                         pattern
                             .subpatterns
-                            .get_mut(*decl_patterns.get(pattern_index)?)?,
+                            .get(*decl_patterns.get(pattern_index)?)?,
                         ctx,
                         index,
                     )?;
 
                     // Parse equality
-                    let non_decl_pattern = pattern
-                        .subpatterns
-                        .get_mut(*non_decl.get_mut(pattern_index)?)?;
+                    let non_decl_pattern =
+                        pattern.subpatterns.get(*non_decl.get(pattern_index)?)?;
                     if let Some(expr) = self.expressions.get(i)?.as_ref() {
                         expr.explore(non_decl_pattern, ctx, index)?;
                     } else if non_decl_pattern.essential {
@@ -357,16 +356,16 @@ impl NodePatternParser for DeclStmt {
             }
         } else if decl_patterns.len() == 1 {
             // Case 1: one Decl no non-decls
-            let pattern = pattern.subpatterns.get_mut(*decl_patterns.first()?)?;
+            let pattern = pattern.subpatterns.get(*decl_patterns.first()?)?;
             explore_all!(pattern, ctx, index, self.variables)?;
         } else {
             // Case 3: multiple non-Decls to fewer Decls
             let real_expressions = self.expressions.iter().flatten().collect::<Vec<&Expr>>();
             match_subsequence(
                 // Get the actual pattern references from the subpatterns array using the indices in decl_patterns (I'm sorry.)
-                &mut pattern
+                &pattern
                     .subpatterns
-                    .iter_mut()
+                    .iter()
                     .enumerate()
                     .filter(|(ndx, _)| decl_patterns.contains(ndx))
                     .map(|(_, p)| p)
@@ -376,7 +375,7 @@ impl NodePatternParser for DeclStmt {
                 index,
             )?;
             for ndx in non_decl.iter_mut() {
-                let pattern = pattern.subpatterns.get_mut(*ndx)?;
+                let pattern = pattern.subpatterns.get(*ndx)?;
                 explore_all!(pattern, ctx, index, real_expressions)?;
             }
         }
@@ -387,14 +386,14 @@ impl NodePatternParser for DeclStmt {
 impl NodePatternParser for VarDecl {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         // Verify
         verify_match!(
             &*self.ident.name,
-            &pattern.compiled_pattern,
+            &*pattern.compiled_pattern.borrow(),
             &ctx.parser,
             pattern.essential
         );
@@ -402,7 +401,7 @@ impl NodePatternParser for VarDecl {
             if let Some(var_type) = &self.var_type {
                 verify_match!(
                     &*var_type,
-                    &pattern.compiled_auxiliary_pattern,
+                    &*pattern.compiled_auxiliary_pattern.borrow(),
                     &ctx.parser,
                     pattern.essential
                 );
@@ -418,14 +417,14 @@ impl NodePatternParser for VarDecl {
         write_to_context(
             &self.ident.name,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &pattern.compiled_pattern.borrow(),
             &mut ctx.parser,
         )?;
         if let Some(var_type) = &self.var_type {
             write_to_context(
                 var_type,
                 pattern.essential,
-                &mut pattern.compiled_auxiliary_pattern,
+                &pattern.compiled_auxiliary_pattern.borrow(),
                 &mut ctx.parser,
             )
         } else {
@@ -437,7 +436,7 @@ impl NodePatternParser for VarDecl {
 impl NodePatternParser for CallExpr {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
@@ -488,14 +487,14 @@ impl NodePatternParser for CallExpr {
         write_to_context(
             raw_name,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &pattern.compiled_pattern.borrow(),
             &mut ctx.parser,
         )?;
         if let Some(lhs) = auxiliary_name {
             write_to_context(
                 lhs,
                 pattern.essential,
-                &mut pattern.compiled_auxiliary_pattern,
+                &pattern.compiled_auxiliary_pattern.borrow(),
                 &mut ctx.parser,
             )?;
         } else if pattern.auxiliary_pattern.is_some() {
@@ -504,7 +503,7 @@ impl NodePatternParser for CallExpr {
 
         // Check lefthand side, if it exists
         if let Some(lhs) = lhs.as_mut() {
-            for pattern in pattern.subpatterns.iter_mut() {
+            for pattern in pattern.subpatterns.iter() {
                 lhs.explore(pattern, ctx, index)?;
             }
         }
@@ -512,14 +511,14 @@ impl NodePatternParser for CallExpr {
         // Match method parameters
         let mut params = pattern
             .subpatterns
-            .iter_mut()
+            .iter()
             // .filter(|child| match child.identifier {
             //     NodeType::CallExpr | NodeType::VarDecl | NodeType::Ident | NodeType::Literal => {
             //         true
             //     }
             //     _ => false,
             // })
-            .collect::<Vec<&mut NodePattern>>();
+            .collect::<Vec<&NodePattern>>();
         match_subsequence(&mut params, &self.args, ctx, index)
     }
 }
@@ -527,20 +526,20 @@ impl NodePatternParser for CallExpr {
 impl NodePatternParser for AnnotationComponent {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         index: &LaastIndex,
     ) -> Option<()> {
         // Verify
         verify_match!(
             &*self.name,
-            &pattern.compiled_pattern,
+            &*pattern.compiled_pattern.borrow(),
             &ctx.parser,
             pattern.essential
         );
         verify_match!(
             &*self.value,
-            &pattern.compiled_auxiliary_pattern,
+            &*pattern.compiled_auxiliary_pattern.borrow(),
             &ctx.parser,
             pattern.essential
         );
@@ -552,13 +551,13 @@ impl NodePatternParser for AnnotationComponent {
         write_to_context(
             &self.name,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &pattern.compiled_pattern.borrow(),
             &mut ctx.parser,
         )?;
         write_to_context(
             &self.value,
             pattern.essential,
-            &mut pattern.compiled_auxiliary_pattern,
+            &pattern.compiled_auxiliary_pattern.borrow(),
             &mut ctx.parser,
         )
     }
@@ -567,32 +566,32 @@ impl NodePatternParser for AnnotationComponent {
 impl NodePatternParser for AnnotationValuePair {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         _index: &LaastIndex,
     ) -> Option<()> {
         verify_match!(
             &self.key,
-            &pattern.compiled_pattern,
+            &*pattern.compiled_pattern.borrow(),
             &ctx.parser,
             pattern.essential
         );
         verify_match!(
             &self.value,
-            &pattern.compiled_auxiliary_pattern,
+            &*pattern.compiled_auxiliary_pattern.borrow(),
             &ctx.parser,
             pattern.essential
         );
         write_to_context(
             &self.value,
             pattern.essential,
-            &mut pattern.compiled_auxiliary_pattern,
+            &pattern.compiled_auxiliary_pattern.borrow(),
             &mut ctx.parser,
         )?;
         write_to_context(
             &self.key,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &pattern.compiled_pattern.borrow(),
             &mut ctx.parser,
         )
     }
@@ -601,14 +600,14 @@ impl NodePatternParser for AnnotationValuePair {
 impl NodePatternParser for Ident {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         _index: &LaastIndex,
     ) -> Option<()> {
         write_to_context(
             &self.name,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &pattern.compiled_pattern.borrow(),
             &mut ctx.parser,
         )
     }
@@ -617,20 +616,20 @@ impl NodePatternParser for Ident {
 impl NodePatternParser for Literal {
     fn parse(
         &self,
-        pattern: &mut NodePattern,
+        pattern: &NodePattern,
         ctx: &mut ExplorerContext,
         _index: &LaastIndex,
     ) -> Option<()> {
         verify_match!(
             &self.value,
-            &pattern.compiled_pattern,
+            &*pattern.compiled_pattern.borrow(),
             &ctx.parser,
             pattern.essential
         );
         write_to_context(
             &self.value,
             pattern.essential,
-            &mut pattern.compiled_pattern,
+            &pattern.compiled_pattern.borrow(),
             &mut ctx.parser,
         )
     }
