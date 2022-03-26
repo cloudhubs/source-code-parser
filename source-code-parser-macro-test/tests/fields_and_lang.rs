@@ -10,7 +10,7 @@ macro_rules! fake_ressa_explore_impl {
     ( $( $struct_name:ty ),+ ) => {
         $(
             impl RessaNodeExplorer for $struct_name {
-                fn explore(&self, _pattern: &mut NodePattern, _ctx: &mut ExplorerContext, _index: &LaastIndex) -> Option<()> {
+                fn explore(&self, _pattern: &NodePattern, _ctx: &mut ExplorerContext, _index: &LaastIndex) -> Option<()> {
                     None
                 }
             }
