@@ -630,3 +630,21 @@ impl NodePatternParser for Literal {
         )
     }
 }
+
+impl NodePatternParser for BinaryExpr {
+    fn parse(
+        &self,
+        pattern: &mut NodePattern,
+        ctx: &mut ParserContext,
+        index: &LaastIndex,
+    ) -> Option<()> {
+        let op: String = self.op.clone().into();
+        let op = op.as_str();
+        verify_match!(op, &pattern.compiled_pattern, ctx, pattern.essential);
+
+        self.lhs.explore(&mut pattern.subpatterns[0], ctx, index)?;
+        self.rhs.explore(&mut pattern.subpatterns[1], ctx, index)?;
+
+        write_to_context(op, pattern.essential, &mut pattern.compiled_pattern, ctx)
+    }
+}
