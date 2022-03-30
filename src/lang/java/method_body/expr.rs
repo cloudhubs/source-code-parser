@@ -288,14 +288,14 @@ pub(crate) fn parse_switch(ast: &AST, component: &ComponentInfo) -> Option<Expr>
 
     let gen_cases = |cases: &mut Vec<CaseExpr>, guard: &Option<Expr>, in_case: &Vec<&AST>| {
         cases.push(CaseExpr::new(
-            guard.clone(),
-            Block::new(
+            guard.clone().map(Box::new),
+            Box::new(Block::new(
                 in_case
                     .iter()
                     .flat_map(|c| parse_node(c, component))
                     .collect(),
                 Java,
-            ),
+            )),
             Java,
         ))
     };
