@@ -1,3 +1,4 @@
+use derive_more::Display;
 use enum_ordinalize::Ordinalize;
 use rust_code_analysis::LANG;
 use serde::{Deserialize, Serialize};
@@ -68,7 +69,7 @@ pub enum AccessorType {
     Default,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, Serialize, Deserialize, Ordinalize)]
+#[derive(Display, Debug, Eq, PartialEq, Clone, Copy, Hash, Serialize, Deserialize, Ordinalize)]
 pub enum Language {
     Java,
     Cpp,

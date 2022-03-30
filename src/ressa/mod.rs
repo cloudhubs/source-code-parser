@@ -20,6 +20,9 @@ pub use index::*;
 pub mod result;
 pub use result::*;
 
+pub mod constraints;
+pub use constraints::*;
+
 use crate::{ast::NodeLanguage, Language, ModuleComponent};
 
 /// Visitor context; aggregates all information ReSSA needs, allowing data to be added
