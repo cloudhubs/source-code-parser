@@ -4,6 +4,7 @@ pub mod coerce;
 pub use coerce::*;
 
 pub mod types;
+use tracing::log::warn;
 pub use types::*;
 
 use crate::{
@@ -12,12 +13,10 @@ use crate::{
 };
 
 use super::Indexable;
-
-#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 struct SimpleIdent(String);
 impl SimpleIdent {
     fn new(ident: &Ident) -> SimpleIdent {
-        SimpleIdent(format!("{}#{}", ident.language, ident.name))
+        SimpleIdent(ident.name.clone())
     }
 }
 
@@ -29,12 +28,35 @@ impl ConstraintStack {
         // self.do_push_constraint(node, true);
     }
 
-    // fn do_push_constraint(&mut self, node: &Node, is_true: bool) -> Option<Vec<SimpleIdent>> {
-    //     None
+    // fn do_push_constraint(&mut self, node: &Node, is_true: bool) -> Option<ConstraintTree> {
+    //     match node {
+    //         // Node::Block(block) => Some(
+    //         //     block
+    //         //         .nodes
+    //         //         .iter()
+    //         //         .flat_map(|node| self.do_push_constraint(node, is_true))
+    //         //         .flatten()
+    //         //         .collect(),
+    //         // ),
+    //         Node::Stmt(stmt) => match stmt {
+    //             Stmt::DeclStmt(decl) => {
+    //                 // TODO impl
+    //             }
+    //             stmt => {
+    //                 warn!("Unexpected constraint {:#?}", stmt);
+    //                 None
+    //             }
+    //         },
+    //         Node::Expr(expr) => self.handle_expr(expr, is_true),
+    //         other => {
+    //             warn!("Unexpected constraint {:#?}", other);
+    //             None
+    //         }
+    //     }
     // }
 
     // /// Yes, this returns Option just so I can use `?`. I'm lazy.
-    // fn handle_expr(&mut self, expr: &Expr, is_true: bool) -> Option<Vec<SimpleIdent>> {
+    // fn handle_expr(&mut self, expr: &Expr, is_true: bool) -> Option<ConstraintTree> {
     //     match expr {
     //         Expr::AssignExpr(assign) => {
     //             let lhs_len = assign.lhs.len();
@@ -42,9 +64,8 @@ impl ConstraintStack {
 
     //             // Verify type of assign expr in question
     //             if lhs_len == 1 && rhs_len > 1 {
-    //                 // Tuple assign assumed
-    //                 let lhs = &assign.lhs[0];
-    //                 // let stack = self.get(SimpleIdent::from_strings(""))?;
+    //                 let ident = self.handle_expr(&assign.lhs[0], is_true)?;
+    //                 let constraints = self.flatten(&assign.rhs, is_true);
     //             } else if lhs_len == rhs_len {
     //                 // Set of assignments
     //                 let mut i = 0;
@@ -53,8 +74,10 @@ impl ConstraintStack {
     //                     //
     //                     i += 1;
     //                 }
+    //                 None
+    //             } else {
+    //                 None
     //             }
-    //             None
     //         }
     //         Expr::BinaryExpr(_) => todo!(),
     //         Expr::EndpointCallExpr(_) => todo!(),
@@ -63,8 +86,6 @@ impl ConstraintStack {
     //         Expr::DotExpr(_) => todo!(),
     //         Expr::IncDecExpr(_) => todo!(),
     //         // Expr::CaseExpr(case) => todo!(),
-    //         Expr::SwitchExpr(switch) => switch.cases.iter().map(f),
-
     //         Expr::UnaryExpr(unary) => match unary.op {
     //             // TODO implement the following
     //             // crate::ast::Op::Plus => {} // TODO This is potentially important in numeric comparisons
@@ -78,24 +99,50 @@ impl ConstraintStack {
     //             _ => self.handle_expr(&unary.expr, is_true),
     //         },
     //         Expr::InitListExpr(lst) => self.flatten(&lst.exprs, is_true),
-    //         Expr::Ident(ident) => Some(vec![SimpleIdent::new(ident)]),
-    //         Expr::Literal(lit) => Some(vec![]),
-    //         Expr::LogExpr(log) => self.flatten(&log.args, is_true),
-    //         Expr::CallExpr(call) => self.flatten(&call.args, is_true),
-    //         Expr::LambdaExpr(lambda) => Some(vec![]),
+
+    //         Expr::Ident(ident) => Some(new_ident(ident.name)),
+    //         Expr::Literal(lit) => Some(new_literal(lit.value)),
+
+    //         Expr::CallExpr(call) => {
+    //             for arg in call.args.iter() {
+    //                 // TODO dirty context
+    //             }
+    //             None
+    //         }
+
+    //         // Expr::LogExpr(_) => todo!(),
+    //         // Expr::LambdaExpr(_) => todo!(),
+    //         // Expr::SwitchExpr(_) => todo!(),
+    //         unhandled => {
+    //             warn!("Unhandled expression {:#?}", unhandled);
+    //             None
+    //         }
     //     }
     // }
 
-    // fn get(&mut self, ident: &SimpleIdent) -> Option<&mut Vec<Constraint>> {
+    // fn get(&mut self, ident: &str) -> Option<&mut Vec<Constraint>> {
     //     self.0.get_mut(ident)
     // }
 
-    // fn flatten(&self, args: &Vec<Expr>, is_true: bool) -> Option<Vec<SimpleIdent>> {
+    // fn flatten(&self, data: &Vec<Expr>, is_true: bool) -> Option<ConstraintTree> {
+    //     // Compute constraints
+    //     let result: Vec<Option<ConstraintTree>> = data
+    //         .iter()
+    //         .map(|expr| self.handle_expr(expr, is_true))
+    //         .collect();
+
+    //     // Verify all mapped correctly
+    //     if result.iter().find(|x| x.is_none()).is_some() {
+    //         return None;
+    //     }
+
+    //     // Generate results
     //     Some(
-    //         args.iter()
-    //             .flat_map(|expr| self.handle_expr(expr, is_true))
-    //             .flatten()
-    //             .collect(),
+    //         CompositionConstraint::new(
+    //             ConstraintLogic::And,
+    //             result.into_iter().flatten().collect(),
+    //         )
+    //         .into(),
     //     )
     // }
 }

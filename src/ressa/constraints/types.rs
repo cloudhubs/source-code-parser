@@ -24,8 +24,26 @@ impl Default for TernaryBool {
 #[derive(Debug, Clone, Deserialize)]
 pub enum ConstraintTree {
     VariableConstraint(String),
+    LiteralConstraint(String),
     LogicalConstraint(LogicalConstraint),
     CompositionConstraint(CompositionConstraint),
+}
+pub fn new_ident(ident: String) -> ConstraintTree {
+    ConstraintTree::VariableConstraint(ident)
+}
+
+pub fn new_literal(literal: String) -> ConstraintTree {
+    ConstraintTree::LiteralConstraint(literal)
+}
+impl From<LogicalConstraint> for ConstraintTree {
+    fn from(c: LogicalConstraint) -> Self {
+        ConstraintTree::LogicalConstraint(c)
+    }
+}
+impl From<CompositionConstraint> for ConstraintTree {
+    fn from(c: CompositionConstraint) -> Self {
+        ConstraintTree::CompositionConstraint(c)
+    }
 }
 
 // TODO expand with needed remaining
