@@ -15,8 +15,8 @@ pub enum TernaryBool {
 
 #[derive(Debug, Clone)]
 pub enum ConstraintTree {
-    VariableConstraint(pub String),
-    LogicalConstraint(pub LogicalConstraint),
+    VariableConstraint(String),
+    LogicalConstraint(LogicalConstraint),
 }
 
 // TODO expand with needed remaining
