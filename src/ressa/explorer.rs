@@ -4,6 +4,7 @@ use super::{Indexable, LaastIndex};
 use crate::ast::*;
 use crate::prophet::*;
 use enum_dispatch::enum_dispatch;
+use rune::parse::Expectation;
 
 /// Describes how to visit the nodes in the AST to find nodes of interest
 #[enum_dispatch(Node)]
@@ -90,8 +91,8 @@ ressa_dispatch_delegate_impl!(
     InitListExpr,
     SwitchExpr,
     Block,
-    IfStmt,
-    ForStmt,
+    // IfStmt,
+    // ForStmt,
     ForRangeStmt,
     TryCatchStmt,
     ReturnStmt,
@@ -101,7 +102,7 @@ ressa_dispatch_match_impl!(
     Ident,
     Literal,
     ClassOrInterfaceComponent,
-    MethodComponent,
+    // MethodComponent,
     MethodParamComponent,
     FieldComponent,
     DeclStmt,
@@ -121,13 +122,29 @@ where
     T: Indexable,
 {
     // PUSH_CONSTRAINT in concrete impl
+    // Stack keeps track of the keys you insert
+    let found_essential = explore_children(source, pattern, ctx, index);
+    // DIRTY_CONSTRAINT
+    // Dirty the keys inserted before (or flip for loops etc). Just don't clear them yet.
+    choose_exit(pattern.essential, found_essential)
+}
+
+pub fn explore_children<T>(
+    source: &T,
+    pattern: &NodePattern,
+    ctx: &mut ExplorerContext,
+    index: &LaastIndex,
+) -> bool
+where
+    T: Indexable,
+{
     let mut found_essential = false;
     for child in source.get_children().iter() {
         if child.explore(pattern, ctx, index).is_some() {
             found_essential = true;
         }
     }
-    choose_exit(pattern.essential, found_essential)
+    found_essential
 }
 
 pub fn explore_match<T>(
@@ -155,6 +172,50 @@ where
     // Explore subnodes, then return if this node matched
     let matched = explore(source, pattern, ctx, index).is_some();
     choose_exit(pattern.essential, matched || found)
+}
+
+impl RessaNodeExplorer for IfStmt {
+    fn explore(
+        &self,
+        pattern: &NodePattern,
+        ctx: &mut ExplorerContext,
+        index: &LaastIndex,
+    ) -> Option<()> {
+        ctx.constraint_stack.new_scope();
+        ctx.constraint_stack.push_constraint(self.cond);
+        let found_essential = explore_children(self, pattern, ctx, index);
+        ctx.constraint_stack.dirty_scope();
+        choose_exit(pattern.essential, found_essential)
+    }
+}
+
+impl RessaNodeExplorer for ForStmt {
+    fn explore(
+        &self,
+        pattern: &NodePattern,
+        ctx: &mut ExplorerContext,
+        index: &LaastIndex,
+    ) -> Option<()> {
+        ctx.constraint_stack.new_scope();
+        ctx.constraint_stack.push_constraint(self.condition);
+        let found_essential = explore_children(self, pattern, ctx, index);
+        ctx.constraint_stack.dirty_scope();
+        ctx.constraint_stack.push_constraint(self.post);
+        choose_exit(pattern.essential, found_essential)
+    }
+}
+
+impl RessaNodeExplorer for MethodComponent {
+    fn explore(
+        &self,
+        pattern: &NodePattern,
+        ctx: &mut ExplorerContext,
+        index: &LaastIndex,
+    ) -> Option<()> {
+        let r#match = explore_match(self, pattern, ctx, index);
+        ctx.constraint_stack.clear();
+        r#match
+    }
 }
 
 #[cfg(test)]
