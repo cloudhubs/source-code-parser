@@ -124,6 +124,7 @@ mod tests {
             true,
             "".into(),
             None,
+            None,
             false,
             Some(Language::default()),
         );
@@ -153,6 +154,7 @@ mod tests {
             ),
             true,
             "".into(),
+            None,
             None,
             false,
             Some(Language::default()),

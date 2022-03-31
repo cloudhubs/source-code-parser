@@ -182,6 +182,7 @@ mod tests {
             true,
             "".into(),
             None,
+            None,
             false,
             Some(Language::default()),
         );

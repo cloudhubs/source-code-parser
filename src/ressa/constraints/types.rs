@@ -1,33 +1,41 @@
 use derive_new::new;
+use serde::Deserialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Constraint {
+    #[serde(default)]
     pub truth_value: TernaryBool,
     pub value: ConstraintTree,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub enum TernaryBool {
     True,
     False,
-    Undefined,
+    Unknown,
 }
 
-#[derive(Debug, Clone)]
+impl Default for TernaryBool {
+    fn default() -> Self {
+        TernaryBool::True
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub enum ConstraintTree {
     VariableConstraint(String),
     LogicalConstraint(LogicalConstraint),
 }
 
 // TODO expand with needed remaining
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub enum ConstraintComposition {
     And,
     Or,
     Not,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub enum ConstraintLogic {
     NotEqual,
     Equal,
@@ -37,13 +45,13 @@ pub enum ConstraintLogic {
     GreaterThanEqualTo,
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, Deserialize)]
 pub struct CompositionConstraint {
     pub r#type: ConstraintComposition,
     pub children: Vec<Constraint>,
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, Deserialize)]
 pub struct LogicalConstraint {
     pub r#type: ConstraintLogic,
     pub lhs: Box<Constraint>,
