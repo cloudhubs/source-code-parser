@@ -2,8 +2,8 @@ use derive_new::new;
 
 #[derive(Debug, Clone)]
 pub struct Constraint {
-    truthValue: TernaryBool,
-    value: ConstraintTree,
+    pub truth_value: TernaryBool,
+    pub value: ConstraintTree,
 }
 
 #[derive(Debug, Clone)]
@@ -15,8 +15,8 @@ pub enum TernaryBool {
 
 #[derive(Debug, Clone)]
 pub enum ConstraintTree {
-    VariableConstraint(String),
-    LogicalConstraint(LogicalConstraint),
+    VariableConstraint(pub String),
+    LogicalConstraint(pub LogicalConstraint),
 }
 
 // TODO expand with needed remaining
