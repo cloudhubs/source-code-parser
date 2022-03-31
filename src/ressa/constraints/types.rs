@@ -1,7 +1,7 @@
 use derive_new::new;
 use serde::Deserialize;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, new)]
 pub struct Constraint {
     #[serde(default)]
     pub truth_value: TernaryBool,
@@ -13,6 +13,15 @@ pub enum TernaryBool {
     True,
     False,
     Unknown,
+}
+impl From<bool> for TernaryBool {
+    fn from(boolean: bool) -> Self {
+        if boolean {
+            TernaryBool::True
+        } else {
+            TernaryBool::False
+        }
+    }
 }
 
 impl Default for TernaryBool {

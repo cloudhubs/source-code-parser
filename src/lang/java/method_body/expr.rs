@@ -282,13 +282,17 @@ fn new_simple_param(ast: &AST) -> DeclStmt {
 }
 
 pub(crate) fn parse_switch(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
-    let mut condition = None;
+    let condition = parse_expr(
+        ast.find_child_by_type(&["parenthesized_expression"])?,
+        component,
+    )?;
     let mut guard = None;
     let mut cases: Vec<CaseExpr> = vec![];
 
     let gen_cases = |cases: &mut Vec<CaseExpr>, guard: &Option<Expr>, in_case: &Vec<&AST>| {
         cases.push(CaseExpr::new(
             guard.clone(),
+            condition.clone(),
             Block::new(
                 in_case
                     .iter()
@@ -300,47 +304,41 @@ pub(crate) fn parse_switch(ast: &AST, component: &ComponentInfo) -> Option<Expr>
         ))
     };
 
-    for child in ast.children.iter() {
-        match &*child.r#type {
-            "parenthesized_expression" => condition = parse_expr(&child.children[1], component),
-            "switch_block" => {
-                let mut warmed_up = false;
-                let mut in_case: Vec<&AST> = vec![];
+    for child in ast.find_all_children_by_type(&["switch_block"]) {
+        let mut warmed_up = false;
+        let mut in_case: Vec<&AST> = vec![];
 
-                for case_pt in child.children.iter() {
-                    match &*case_pt.r#type {
-                        "switch_label" => {
-                            // If we've recorded the first case, parse it
-                            if warmed_up {
-                                gen_cases(&mut cases, &guard, &in_case);
-                            } else {
-                                warmed_up = true;
-                            }
+        for case_pt in child.iter() {
+            match &*case_pt.r#type {
+                "switch_label" => {
+                    // If we've recorded the first case, parse it
+                    if warmed_up {
+                        gen_cases(&mut cases, &guard, &in_case);
+                    } else {
+                        warmed_up = true;
+                    }
 
-                            // Clean up
-                            in_case = vec![];
+                    // Clean up
+                    in_case = vec![];
 
-                            // Extract case guard for next one
-                            if case_pt.children[0].value != "default" {
-                                guard = parse_expr(&case_pt.children[1], component);
-                            } else {
-                                guard = None;
-                            }
-                        }
-                        _ => in_case.push(case_pt),
+                    // Extract case guard for next one
+                    if case_pt.children[0].value != "default" {
+                        guard = parse_expr(&case_pt.children[1], component);
+                    } else {
+                        guard = None;
                     }
                 }
-
-                // Ensure we don't have a straggler case
-                if !in_case.is_empty() {
-                    gen_cases(&mut cases, &guard, &in_case);
-                }
+                _ => in_case.push(case_pt),
             }
-            unknown => log_unknown_tag(unknown, "switch"),
+        }
+
+        // Ensure we don't have a straggler case
+        if !in_case.is_empty() {
+            gen_cases(&mut cases, &guard, &in_case);
         }
     }
 
-    Some(SwitchExpr::new(Box::new(condition?), cases, Java).into())
+    Some(SwitchExpr::new(Box::new(condition), cases, Java).into())
 }
 
 /// Parse a ternary operator into our rendition of this structure

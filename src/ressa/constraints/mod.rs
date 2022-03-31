@@ -30,7 +30,7 @@ impl ConstraintStack {
         true
     }
 
-    fn push_constraint(&mut self, node: &Node) {
+    pub fn push_constraint(&mut self, node: &Node) {
         // self.do_push_constraint(node, true);
     }
 
@@ -46,6 +46,8 @@ impl ConstraintStack {
     //         // ),
     //         Node::Stmt(stmt) => match stmt {
     //             Stmt::DeclStmt(decl) => {
+    //                 let vars = self.flatten(decl.variables, is_true);
+    //                 let vals = self.flatten(decl.expressions, is_true);
     //                 // TODO impl
     //             }
     //             stmt => {
@@ -62,7 +64,7 @@ impl ConstraintStack {
     // }
 
     // /// Yes, this returns Option just so I can use `?`. I'm lazy.
-    // fn handle_expr(&mut self, expr: &Expr, is_true: bool) -> Option<ConstraintTree> {
+    // fn handle_expr(&mut self, expr: &Expr, is_true: bool) -> Option<Constraint> {
     //     match expr {
     //         Expr::AssignExpr(assign) => {
     //             let lhs_len = assign.lhs.len();
@@ -71,13 +73,31 @@ impl ConstraintStack {
     //             // Verify type of assign expr in question
     //             if lhs_len == 1 && rhs_len > 1 {
     //                 let ident = self.handle_expr(&assign.lhs[0], is_true)?;
-    //                 let constraints = self.flatten(&assign.rhs, is_true);
+    //                 let constraints = self.flatten(&assign.rhs, is_true)?;
+    //                 Some(Constraint::new(
+    //                     is_true.into(),
+    //                     LogicalConstraint::new(
+    //                         ConstraintLogic::Equal,
+    //                         ident.into(),
+    //                         constraints.into(),
+    //                     )
+    //                     .into(),
+    //                 ))
     //             } else if lhs_len == rhs_len {
     //                 // Set of assignments
+    //                 let mut result = vec![];
     //                 let mut i = 0;
     //                 while i < lhs_len {
-    //                     let x = &assign.lhs[i];
-    //                     //
+    //                     let lhs = &assign.lhs[i];
+    //                     let rhs = &assign.rhs[i];
+    //                     result.push(
+    //                         LogicalConstraint::new(
+    //                             ConstraintLogic::Equal,
+    //                             self.handle_expr(lhs, is_true)?.into(),
+    //                             self.handle_expr(rhs, is_true)?.into(),
+    //                         )
+    //                         .into(),
+    //                     );
     //                     i += 1;
     //                 }
     //                 None
@@ -106,8 +126,8 @@ impl ConstraintStack {
     //         },
     //         Expr::InitListExpr(lst) => self.flatten(&lst.exprs, is_true),
 
-    //         Expr::Ident(ident) => Some(new_ident(ident.name)),
-    //         Expr::Literal(lit) => Some(new_literal(lit.value)),
+    //         Expr::Ident(ident) => Some(new_ident(ident.name).into()),
+    //         Expr::Literal(lit) => Some(new_literal(lit.value).into()),
 
     //         Expr::CallExpr(call) => {
     //             for arg in call.args.iter() {
@@ -130,7 +150,7 @@ impl ConstraintStack {
     //     self.0.get_mut(ident)
     // }
 
-    // fn flatten(&self, data: &Vec<Expr>, is_true: bool) -> Option<ConstraintTree> {
+    // fn flatten(&self, data: &Vec<Expr>, is_true: bool) -> Option<Constraint> {
     //     // Compute constraints
     //     let result: Vec<Option<ConstraintTree>> = data
     //         .iter()
@@ -143,13 +163,12 @@ impl ConstraintStack {
     //     }
 
     //     // Generate results
-    //     Some(
-    //         CompositionConstraint::new(
-    //             ConstraintLogic::And,
-    //             result.into_iter().flatten().collect(),
-    //         )
-    //         .into(),
+    //     let comp = CompositionConstraint::new(
+    //         ConstraintLogic::And,
+    //         result.into_iter().flatten().collect(),
     //     )
+    //     .into();
+    //     Some(Constraint::new(is_true.into()))
     // }
 }
 
