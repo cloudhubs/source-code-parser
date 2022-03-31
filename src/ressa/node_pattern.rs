@@ -1,4 +1,4 @@
-use super::{ExplorerContext, LaastIndex, LogicalConstraint, RessaNodeExplorer};
+use super::{CompositionConstraint, ExplorerContext, LaastIndex, RessaNodeExplorer};
 // use super::ressaDispatch;
 use super::{pattern_parser::NodePatternParser, Executor};
 use crate::ast::*;
@@ -51,7 +51,7 @@ pub struct NodePattern {
     pub auxiliary_pattern: Option<String>,
 
     /// Any constraint for matching this node
-    pub constraint: Option<LogicalConstraint>,
+    pub constraint: Option<CompositionConstraint>,
 
     /// Transparently forward to child nodes
     #[serde(default = "bool::default")]
