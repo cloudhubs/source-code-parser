@@ -25,6 +25,7 @@ impl Default for TernaryBool {
 pub enum ConstraintTree {
     VariableConstraint(String),
     LogicalConstraint(LogicalConstraint),
+    CompositionConstraint(CompositionConstraint),
 }
 
 // TODO expand with needed remaining
