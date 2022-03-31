@@ -241,14 +241,14 @@ fn switch_statement(switch_stmt: &AST) -> Option<SwitchExpr> {
     let cases = switch_stmt
         .find_child_by_type(&["compound_statement"])
         .map(|switch_stmt| switch_stmt.children.iter())?
-        .flat_map(switch_case)
+        .flat_map(|case_stmt| switch_case(case_stmt, cond.clone()))
         .collect();
 
     let switch_stmt = SwitchExpr::new(Box::new(cond), cases, Cpp);
     Some(switch_stmt)
 }
 
-fn switch_case(case_statement: &AST) -> Option<CaseExpr> {
+fn switch_case(case_statement: &AST, var: Expr) -> Option<CaseExpr> {
     let expr = case_statement.find_child_by_type(&["case", "default"])?;
     // todo: add literals to expression function
     let expr = match &*expr.r#type {
@@ -262,7 +262,7 @@ fn switch_case(case_statement: &AST) -> Option<CaseExpr> {
     }
     let nodes = block_nodes_iter(&case_statement.children[3..]);
     let block = Block::new(nodes, Cpp);
-    let case = CaseExpr::new(expr, block, Cpp);
+    let case = CaseExpr::new(expr, var, block, Cpp);
     Some(case)
 }
 
