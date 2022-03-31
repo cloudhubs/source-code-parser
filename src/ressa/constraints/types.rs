@@ -21,17 +21,31 @@ pub enum ConstraintTree {
 
 // TODO expand with needed remaining
 #[derive(Debug, Clone)]
-pub enum ConstraintType {
+pub enum ConstraintComposition {
     And,
     Or,
     Not,
+}
+
+#[derive(Debug, Clone)]
+pub enum ConstraintLogic {
+    NotEqual,
     Equal,
     LessThan,
     LessThanEqualTo,
+    GreaterThan,
+    GreaterThanEqualTo,
+}
+
+#[derive(Debug, Clone, new)]
+pub struct CompositionConstraint {
+    pub r#type: ConstraintComposition,
+    pub children: Vec<Constraint>,
 }
 
 #[derive(Debug, Clone, new)]
 pub struct LogicalConstraint {
-    pub r#type: ConstraintType,
-    pub children: Vec<Constraint>,
+    pub r#type: ConstraintLogic,
+    pub lhs: Box<Constraint>,
+    pub rhs: Box<Constraint>,
 }
