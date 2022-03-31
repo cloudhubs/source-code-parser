@@ -24,18 +24,6 @@ impl SimpleIdent {
 /// Mapping for known variables to known constraints
 pub struct ConstraintStack(HashMap<SimpleIdent, Vec<Constraint>>);
 
-pub enum TernaryBool {
-    TRUE,
-    FALSE,
-    UNDEFINED,
-}
-
-#[derive(Debug, Eq, PartialEq, Clone)]
-pub struct Constraint {
-    pub expr: Expr,
-    pub truthValue: bool,
-}
-
 impl ConstraintStack {
     fn push_constraint(&mut self, node: &Node) {
         // self.do_push_constraint(node, true);

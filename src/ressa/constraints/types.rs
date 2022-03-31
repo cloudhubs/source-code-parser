@@ -1,7 +1,20 @@
 use derive_new::new;
 
 #[derive(Debug, Clone)]
-pub enum Constraint {
+pub struct Constraint {
+    truthValue: TernaryBool,
+    value: ConstraintTree,
+}
+
+#[derive(Debug, Clone)]
+pub enum TernaryBool {
+    True,
+    False,
+    Undefined,
+}
+
+#[derive(Debug, Clone)]
+pub enum ConstraintTree {
     VariableConstraint(String),
     LogicalConstraint(LogicalConstraint),
 }
