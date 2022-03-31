@@ -186,12 +186,12 @@ impl NodePatternParser for MethodComponent {
         )?;
 
         // Match method parameters
-        let mut params = pattern
+        let params = pattern
             .subpatterns
             .iter()
             .filter(|child| matches!(child.identifier, crate::ressa::NodeType::MethodParam))
             .collect::<Vec<&NodePattern>>();
-        match_subsequence(&mut params, &self.parameters, ctx, index)?;
+        match_subsequence(&params, &self.parameters, ctx, index)?;
 
         // If there's a method body, explore it
         let mut tmp = vec![];
@@ -509,7 +509,7 @@ impl NodePatternParser for CallExpr {
         }
 
         // Match method parameters
-        let mut params = pattern
+        let params = pattern
             .subpatterns
             .iter()
             // .filter(|child| match child.identifier {
@@ -519,7 +519,7 @@ impl NodePatternParser for CallExpr {
             //     _ => false,
             // })
             .collect::<Vec<&NodePattern>>();
-        match_subsequence(&mut params, &self.args, ctx, index)
+        match_subsequence(&params, &self.args, ctx, index)
     }
 }
 

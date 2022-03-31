@@ -173,7 +173,7 @@ mod tests {
             Language::Unknown,
         )
         .into();
-        let mut np = NodePattern::new(
+        let np = NodePattern::new(
             NodeType::CallExpr,
             RefCell::new(None),
             RefCell::new(None),
@@ -187,6 +187,6 @@ mod tests {
         );
         let index = LaastIndex::new(HashMap::new(), HashMap::new());
         tracing::warn!("hello?");
-        c.explore(&mut np, &mut ExplorerContext::default(), &index);
+        c.explore(&np, &mut ExplorerContext::default(), &index);
     }
 }
