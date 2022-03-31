@@ -139,7 +139,17 @@ fn parse<N: NodePatternParser + RessaNodeExplorer>(
     index: &LaastIndex,
 ) -> bool {
     if !pattern.transparent {
-        node.parse(pattern, ctx, index).is_some()
+        // Check constraint if present, or default to true
+        let matches_constraint = pattern
+            .constraint
+            .as_ref()
+            .map(|constraint| ctx.constraint_stack.check(constraint))
+            .unwrap_or(true);
+        if matches_constraint {
+            node.parse(pattern, ctx, index).is_some()
+        } else {
+            false
+        }
     } else {
         let mut explore_all_found_essential = false;
         for subpattern in pattern.subpatterns.iter() {

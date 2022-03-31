@@ -120,6 +120,7 @@ pub fn explore<T>(
 where
     T: Indexable,
 {
+    // PUSH_CONSTRAINT in concrete impl
     let mut found_essential = false;
     for child in source.get_children().iter() {
         if child.explore(pattern, ctx, index).is_some() {

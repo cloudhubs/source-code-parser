@@ -13,6 +13,7 @@ use crate::{
 };
 
 use super::Indexable;
+#[derive(Debug, Clone, Hash, PartialEq)]
 struct SimpleIdent(String);
 impl SimpleIdent {
     fn new(ident: &Ident) -> SimpleIdent {
@@ -21,9 +22,14 @@ impl SimpleIdent {
 }
 
 /// Mapping for known variables to known constraints
+#[derive(Default, Debug, Clone)]
 pub struct ConstraintStack(HashMap<SimpleIdent, Vec<Constraint>>);
 
 impl ConstraintStack {
+    pub fn check(&self, constraint: &CompositionConstraint) -> bool {
+        true
+    }
+
     fn push_constraint(&mut self, node: &Node) {
         // self.do_push_constraint(node, true);
     }

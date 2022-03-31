@@ -30,7 +30,7 @@ use crate::{ast::NodeLanguage, Language, ModuleComponent};
 #[derive(Default, Debug, Clone)]
 pub struct ExplorerContext {
     pub parser: ParserContext,
-    pub constraint_stack: i32, // TODO implement
+    pub constraint_stack: ConstraintStack,
     pub frame_number: i32,
 }
 
