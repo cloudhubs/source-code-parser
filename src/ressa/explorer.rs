@@ -4,7 +4,6 @@ use super::{Indexable, LaastIndex};
 use crate::ast::*;
 use crate::prophet::*;
 use enum_dispatch::enum_dispatch;
-use rune::parse::Expectation;
 
 /// Describes how to visit the nodes in the AST to find nodes of interest
 #[enum_dispatch(Node)]
@@ -76,24 +75,24 @@ ressa_dispatch_delegate_impl!(
     ThrowStmt,
     LabelStmt,
     LambdaExpr,
-    CaseExpr,
+    // CaseExpr,
     ExprStmt,
     CatchStmt,
-    WhileStmt,
-    DoWhileStmt,
+    // WhileStmt,
+    // DoWhileStmt,
     WithResourceStmt,
     BinaryExpr,
     UnaryExpr,
     ParenExpr,
     DotExpr,
     ModuleComponent,
-    AssignExpr,
+    // AssignExpr,
     InitListExpr,
-    SwitchExpr,
+    SwitchExpr, // ignore
     Block,
     // IfStmt,
     // ForStmt,
-    ForRangeStmt,
+    ForRangeStmt, // ignore
     TryCatchStmt,
     ReturnStmt,
     ContainerComponent
@@ -105,9 +104,9 @@ ressa_dispatch_match_impl!(
     // MethodComponent,
     MethodParamComponent,
     FieldComponent,
-    DeclStmt,
+    // DeclStmt,
     VarDecl,
-    CallExpr,
+    // CallExpr,
     AnnotationComponent,
     AnnotationValuePair
 );
@@ -182,7 +181,8 @@ impl RessaNodeExplorer for IfStmt {
         index: &LaastIndex,
     ) -> Option<()> {
         ctx.constraint_stack.new_scope();
-        ctx.constraint_stack.push_constraint(self.cond);
+        ctx.constraint_stack
+            .push_constraint(&self.cond.clone().into());
         let found_essential = explore_children(self, pattern, ctx, index);
         ctx.constraint_stack.dirty_scope();
         choose_exit(pattern.essential, found_essential)
@@ -197,10 +197,87 @@ impl RessaNodeExplorer for ForStmt {
         index: &LaastIndex,
     ) -> Option<()> {
         ctx.constraint_stack.new_scope();
-        ctx.constraint_stack.push_constraint(self.condition);
+        if let Some(condition) = &self.condition {
+            ctx.constraint_stack
+                .push_constraint(&condition.clone().into());
+        }
         let found_essential = explore_children(self, pattern, ctx, index);
         ctx.constraint_stack.dirty_scope();
-        ctx.constraint_stack.push_constraint(self.post);
+        for constraint in self.post.iter() {
+            ctx.constraint_stack
+                .push_constraint(&constraint.clone().into());
+        }
+        choose_exit(pattern.essential, found_essential)
+    }
+}
+
+impl RessaNodeExplorer for CaseExpr {
+    fn explore(
+        &self,
+        pattern: &NodePattern,
+        ctx: &mut ExplorerContext,
+        index: &LaastIndex,
+    ) -> Option<()> {
+        ctx.constraint_stack.new_scope();
+        if let Some(cond) = &self.cond {
+            let bin_expr: Expr = BinaryExpr::new(
+                Box::new(self.var.clone()),
+                Op::EqualEqual,
+                Box::new(cond.clone()),
+                self.language,
+            )
+            .into();
+            ctx.constraint_stack.push_constraint(&bin_expr.into());
+        }
+        let found_essential = explore_children(self, pattern, ctx, index);
+        ctx.constraint_stack.dirty_scope();
+        choose_exit(pattern.essential, found_essential)
+    }
+}
+
+impl RessaNodeExplorer for WhileStmt {
+    fn explore(
+        &self,
+        pattern: &NodePattern,
+        ctx: &mut ExplorerContext,
+        index: &LaastIndex,
+    ) -> Option<()> {
+        ctx.constraint_stack.new_scope();
+        ctx.constraint_stack
+            .push_constraint(&self.condition.clone().into());
+        let found_essential = explore_children(self, pattern, ctx, index);
+        ctx.constraint_stack.dirty_scope();
+        choose_exit(pattern.essential, found_essential)
+    }
+}
+
+impl RessaNodeExplorer for DoWhileStmt {
+    fn explore(
+        &self,
+        pattern: &NodePattern,
+        ctx: &mut ExplorerContext,
+        index: &LaastIndex,
+    ) -> Option<()> {
+        ctx.constraint_stack.new_scope();
+        ctx.constraint_stack
+            .push_constraint(&self.condition.clone().into());
+        ctx.constraint_stack.dirty_scope();
+        let found_essential = explore_children(self, pattern, ctx, index);
+        ctx.constraint_stack.dirty_scope();
+        choose_exit(pattern.essential, found_essential)
+    }
+}
+
+impl RessaNodeExplorer for AssignExpr {
+    fn explore(
+        &self,
+        pattern: &NodePattern,
+        ctx: &mut ExplorerContext,
+        index: &LaastIndex,
+    ) -> Option<()> {
+        let assign_expr: Expr = self.clone().into();
+        ctx.constraint_stack.push_constraint(&assign_expr.into());
+        let found_essential = explore_children(self, pattern, ctx, index);
         choose_exit(pattern.essential, found_essential)
     }
 }
@@ -215,6 +292,57 @@ impl RessaNodeExplorer for MethodComponent {
         let r#match = explore_match(self, pattern, ctx, index);
         ctx.constraint_stack.clear();
         r#match
+    }
+}
+
+impl RessaNodeExplorer for CallExpr {
+    fn explore(
+        &self,
+        pattern: &NodePattern,
+        ctx: &mut ExplorerContext,
+        index: &LaastIndex,
+    ) -> Option<()> {
+        let r#match = explore_match(self, pattern, ctx, index);
+        for ident in self.args.iter().flat_map(get_idents) {
+            ctx.constraint_stack.dirty_var(ident);
+        }
+        r#match
+    }
+}
+
+fn get_idents(expr: &Expr) -> Vec<Ident> {
+    use Expr::*;
+    match expr {
+        AssignExpr(e) => e.lhs.iter().flat_map(get_idents).collect(),
+        BinaryExpr(e) => get_idents(&e.lhs)
+            .into_iter()
+            .chain(get_idents(&e.rhs).into_iter())
+            .collect(),
+        UnaryExpr(e) => get_idents(&e.expr),
+        CallExpr(e) => e.args.iter().flat_map(get_idents).collect(),
+        ParenExpr(e) => get_idents(&e.expr),
+        DotExpr(e) => get_idents(&e.expr),
+        IncDecExpr(e) => get_idents(&*e.expr),
+        InitListExpr(e) => e.exprs.iter().flat_map(get_idents).collect(),
+        Ident(e) => vec![e.clone()],
+        // IndexExpr(e) => get_ide,
+        // LambdaExpr(e) => e.language,
+        // Literal(e) => vec![],
+        // SwitchExpr(e) => e.language,
+        _ => vec![],
+    }
+}
+
+impl RessaNodeExplorer for DeclStmt {
+    fn explore(
+        &self,
+        pattern: &NodePattern,
+        ctx: &mut ExplorerContext,
+        index: &LaastIndex,
+    ) -> Option<()> {
+        let decl_stmt: Stmt = self.clone().into();
+        ctx.constraint_stack.push_constraint(&decl_stmt.into());
+        explore_match(self, pattern, ctx, index)
     }
 }
 
