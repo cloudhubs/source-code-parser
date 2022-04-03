@@ -1,4 +1,4 @@
-use std::{collections::HashMap, convert::TryInto, iter::zip};
+use std::{collections::HashMap, iter::zip};
 
 pub mod coerce;
 pub use coerce::*;
@@ -21,6 +21,8 @@ impl SimpleIdent {
 #[derive(Default, Debug, Clone)]
 pub struct ConstraintStack {
     constraints: HashMap<SimpleIdent, Vec<Constraint>>,
+    scope_record: Vec<(SimpleIdent, usize)>,
+    scope_list: Vec<usize>,
 }
 
 impl ConstraintStack {
@@ -28,8 +30,65 @@ impl ConstraintStack {
         true
     }
 
-    pub fn push_constraint(&mut self, node: &Node) {
-        self.do_push_constraint(node, TernaryBool::True);
+    pub fn new_scope(&mut self) {
+        self.scope_list.push(self.scope_record.len());
+    }
+
+    pub fn dirty_scope(&mut self) {
+        // Verify in-range (default 0: if no scopes made, everything in-scope)
+        let start = *self.scope_list.last().unwrap_or(&0);
+        if start > self.scope_record.len() {
+            warn!("Start {} out of range for scopes, ignoring", start);
+            self.scope_list.pop();
+            return;
+        }
+
+        // Skip to the scope's start
+        let mut iter = self.scope_record.iter();
+        let mut i = 0;
+        while i < start {
+            iter.next();
+            i += 1;
+        }
+
+        // Dirty the constraints in the scope
+        for (ident, ndx) in iter {
+            if let Some(stack) = self.constraints.get_mut(ident) {
+                if let Some(constraint) = stack.get_mut(*ndx) {
+                    constraint.truth_value = TernaryBool::Unknown;
+                } else {
+                    warn!("Unknown constraint number {}, skipping", ndx);
+                }
+            } else {
+                warn!("Unknown ident {:#?}, skipping", ident);
+            }
+        }
+
+        // Clear out the old scope
+        self.scope_list.pop();
+        self.scope_record.truncate(start);
+    }
+
+    pub fn dirty_var(&mut self, ident: Ident) -> Option<()> {
+        let constraints = self.constraints.get_mut(&SimpleIdent::new(&ident))?;
+        for constraint in constraints.iter_mut() {
+            constraint.truth_value = TernaryBool::Unknown;
+        }
+        Some(())
+    }
+
+    pub fn clear(&mut self) {
+        self.constraints.clear();
+        self.scope_list.clear();
+        self.scope_record.clear();
+    }
+
+    pub fn push_constraint(&mut self, node: &Node) -> Option<()> {
+        let constraint = self.do_push_constraint(node, TernaryBool::True)?;
+        for ident in constraint.find_affected_idents() {
+            self.record(SimpleIdent(ident.to_string()), constraint.clone());
+        }
+        Some(())
     }
 
     fn do_push_constraint(&mut self, node: &Node, is_true: TernaryBool) -> Option<Constraint> {
@@ -45,19 +104,17 @@ impl ConstraintStack {
             Node::Stmt(stmt) => match stmt {
                 Stmt::DeclStmt(decl) => {
                     // Get all variable names as constraints
-                    let vars = decl
+                    let mut vars = decl
                         .variables
                         .iter()
-                        .map(|decl| Constraint::new(is_true, new_ident(decl.ident.name)))
-                        .collect::<Vec<Constraint>>();
+                        .map(|decl| Constraint::new(is_true, new_ident(decl.ident.name.clone())))
+                        .collect::<Vec<_>>();
 
                     // Determine which are uninitialized and don't matter
-                    let mut i = 0;
-                    for var in decl.expressions.iter() {
+                    for (i, var) in decl.expressions.iter().enumerate() {
                         if var.is_none() {
                             vars.remove(i);
                         }
-                        i += 1;
                     }
 
                     // Convert all initialized values to constraints
@@ -100,7 +157,7 @@ impl ConstraintStack {
     }
 
     /// Yes, this returns Option just so I can use `?`. I'm lazy.
-    fn handle_expr(&mut self, expr: &Expr, is_true: TernaryBool) -> Option<Constraint> {
+    fn handle_expr(&self, expr: &Expr, is_true: TernaryBool) -> Option<Constraint> {
         match expr {
             Expr::AssignExpr(assign) => {
                 let lhs_len = assign.lhs.len();
@@ -112,7 +169,7 @@ impl ConstraintStack {
                     let constraints = self.flatten(&assign.rhs, is_true)?;
                     Some(Constraint::new(
                         is_true,
-                        RelationalConstraint::equal(ident.into(), constraints.into()).into(),
+                        RelationalConstraint::equal(ident, constraints).into(),
                     ))
                 } else if lhs_len == rhs_len {
                     // Set of assignments
@@ -121,8 +178,8 @@ impl ConstraintStack {
                         result.push(Constraint::new(
                             is_true,
                             RelationalConstraint::equal(
-                                self.handle_expr(lhs, is_true)?.into(),
-                                self.handle_expr(rhs, is_true)?.into(),
+                                self.handle_expr(lhs, is_true)?,
+                                self.handle_expr(rhs, is_true)?,
                             )
                             .into(),
                         ));
@@ -136,7 +193,7 @@ impl ConstraintStack {
                 }
             }
             Expr::BinaryExpr(bin) => {
-                if let Ok(relation) = bin.op.try_into() {
+                if let Some(relation) = ConstraintLogic::try_convert(&bin.op) {
                     // This binary expression a logical constraint
                     Some(Constraint::new(
                         is_true,
@@ -147,7 +204,7 @@ impl ConstraintStack {
                         )
                         .into(),
                     ))
-                } else if let Ok(struct_op) = bin.op.try_into() {
+                } else if let Some(struct_op) = ConstraintComposition::try_convert(&bin.op) {
                     // This binary expression a structural constraint
                     Some(Constraint::new(
                         is_true,
@@ -184,8 +241,8 @@ impl ConstraintStack {
                 }
             }
 
-            Expr::Ident(ident) => Some(Constraint::new(is_true, new_ident(ident.name))),
-            Expr::Literal(lit) => Some(Constraint::new(is_true, new_literal(lit.value))),
+            Expr::Ident(ident) => Some(Constraint::new(is_true, new_ident(ident.name.clone()))),
+            Expr::Literal(lit) => Some(Constraint::new(is_true, new_literal(lit.value.clone()))),
             Expr::UnaryExpr(unary) => match unary.op {
                 // TODO implement the following
                 // crate::ast::Op::Plus => {} // TODO This is potentially important in numeric comparisons
@@ -202,7 +259,7 @@ impl ConstraintStack {
             // TODO Make dirty context
             Expr::IncDecExpr(_) => None,
             Expr::CallExpr(call) => {
-                for arg in call.args.iter() {
+                for _arg in call.args.iter() {
                     // TODO dirty context
                 }
                 None
@@ -225,10 +282,6 @@ impl ConstraintStack {
         }
     }
 
-    fn get(&mut self, ident: &str) -> Option<&mut Vec<Constraint>> {
-        self.constraints.get_mut(&SimpleIdent(ident.into()))
-    }
-
     fn flatten_vec(&self, data: &[Expr], is_true: TernaryBool) -> Option<Vec<Constraint>> {
         // Compute constraints
         let result: Vec<Option<Constraint>> = data
@@ -237,7 +290,7 @@ impl ConstraintStack {
             .collect();
 
         // Verify all mapped correctly; otherwise yield None
-        if result.iter().find(|x| x.is_none()).is_none() {
+        if !result.iter().any(|x| x.is_none()) {
             Some(result.into_iter().flatten().collect())
         } else {
             None
@@ -245,19 +298,15 @@ impl ConstraintStack {
     }
 
     fn flatten(&self, data: &[Expr], is_true: TernaryBool) -> Option<Constraint> {
-        // Compute constraints
-        let result = self.flatten_vec(data, is_true);
-        if result.is_none() {
-            return None;
-        }
-
-        // Generate results
-        let comp =
-            StructuralConstraint::and(&result.into_iter().flatten().collect::<Vec<_>>()).into();
-        Some(Constraint::new(is_true, comp))
+        let result = self.flatten_vec(data, is_true)?;
+        let constraints = StructuralConstraint::and(&result.into_iter().collect::<Vec<_>>()).into();
+        Some(Constraint::new(is_true, constraints))
     }
-}
 
-fn standardize() {
-    //
+    fn record(&mut self, ident: SimpleIdent, constraint: Constraint) -> Option<()> {
+        let constraints = self.constraints.get_mut(&ident)?;
+        self.scope_record.push((ident, constraints.len()));
+        constraints.push(constraint);
+        Some(())
+    }
 }
