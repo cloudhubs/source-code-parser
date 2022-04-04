@@ -3,8 +3,11 @@ use std::{collections::HashMap, iter::zip};
 pub mod coerce;
 pub use coerce::*;
 
+pub mod util;
+pub use util::*;
+
 pub mod types;
-use tracing::log::warn;
+use tracing::log::{debug, warn};
 pub use types::*;
 
 use crate::ast::{Expr, Ident, Node, Op, Stmt};
@@ -31,10 +34,12 @@ impl ConstraintStack {
     }
 
     pub fn new_scope(&mut self) {
+        debug!("Scope created");
         self.scope_list.push(self.scope_record.len());
     }
 
     pub fn dirty_scope(&mut self) {
+        debug!("Scope dirtied");
         // Verify in-range (default 0: if no scopes made, everything in-scope)
         let start = *self.scope_list.last().unwrap_or(&0);
         if start > self.scope_record.len() {
@@ -69,8 +74,9 @@ impl ConstraintStack {
         self.scope_record.truncate(start);
     }
 
-    pub fn dirty_var(&mut self, ident: Ident) -> Option<()> {
-        let constraints = self.constraints.get_mut(&SimpleIdent::new(&ident))?;
+    pub fn dirty_var(&mut self, ident: &Ident) -> Option<()> {
+        debug!("Var {} dirtied", ident.name);
+        let constraints = self.constraints.get_mut(&SimpleIdent::new(ident))?;
         for constraint in constraints.iter_mut() {
             constraint.truth_value = TernaryBool::Unknown;
         }
@@ -78,16 +84,21 @@ impl ConstraintStack {
     }
 
     pub fn clear(&mut self) {
+        debug!("Constraints cleared");
         self.constraints.clear();
         self.scope_list.clear();
         self.scope_record.clear();
     }
 
     pub fn push_constraint(&mut self, node: &Node) -> Option<()> {
+        debug!("Pushing constraint");
         let constraint = self.do_push_constraint(node, TernaryBool::True)?;
-        for ident in constraint.find_affected_idents() {
+        let list = constraint.find_affected_idents();
+        debug!("Generated, copying {}x", list.len());
+        for ident in list {
             self.record(SimpleIdent(ident.to_string()), constraint.clone());
         }
+        debug!("Completed pushing constraint");
         Some(())
     }
 
@@ -157,7 +168,7 @@ impl ConstraintStack {
     }
 
     /// Yes, this returns Option just so I can use `?`. I'm lazy.
-    fn handle_expr(&self, expr: &Expr, is_true: TernaryBool) -> Option<Constraint> {
+    fn handle_expr(&mut self, expr: &Expr, is_true: TernaryBool) -> Option<Constraint> {
         match expr {
             Expr::AssignExpr(assign) => {
                 let lhs_len = assign.lhs.len();
@@ -220,9 +231,6 @@ impl ConstraintStack {
                 } else {
                     // Verify nothing important happening before exit
                     match bin.op {
-                        // TODO make dirty context
-                        // Op::PlusPlus
-                        // | Op::MinusMinus
                         Op::PlusEqual
                         | Op::MinusEqual
                         | Op::StarEqual
@@ -234,7 +242,9 @@ impl ConstraintStack {
                         | Op::TildeEqual
                         | Op::ShiftLeftEqual
                         | Op::ShiftRightEqual
-                        | Op::UnsignedShiftRightEqual => { /* Dirty context */ }
+                        | Op::UnsignedShiftRightEqual => {
+                            self.dirty_related(&bin.lhs);
+                        }
                         _ => { /* No-op */ }
                     }
                     None
@@ -244,14 +254,19 @@ impl ConstraintStack {
             Expr::Ident(ident) => Some(Constraint::new(is_true, new_ident(ident.name.clone()))),
             Expr::Literal(lit) => Some(Constraint::new(is_true, new_literal(lit.value.clone()))),
             Expr::UnaryExpr(unary) => match unary.op {
-                // TODO implement the following
                 // crate::ast::Op::Plus => {} // TODO This is potentially important in numeric comparisons
                 // crate::ast::Op::Minus => {} // TODO This is important in numeric comparisons
-                // crate::ast::Op::PlusPlus => {} // TODO: for x, invalidate all `x < #` constraints, change any `x == #` to `x > #`, and retain `x > #`
-                // crate::ast::Op::MinusMinus => {} // TODO: for x, invalidate all `x > #` constraints, change any `x == #` to `x < #`, and retain `x < #`
+                crate::ast::Op::PlusPlus | crate::ast::Op::MinusMinus => {
+                    // TODO: modify as follows:
+                    // PlusPlus: for x, invalidate all `x < #` constraints, change any `x == #` to `x > #`, and retain `x > #`
+                    // MinusMinus: for x, invalidate all `x > #` constraints, change any `x == #` to `x < #`, and retain `x < #`
+                    self.dirty_related(&unary.expr);
+                    None
+                }
+                // crate::ast::Op::MinusMinus => {}
                 crate::ast::Op::Tilde | crate::ast::Op::ExclamationPoint => Some(Constraint::new(
                     is_true,
-                    StructuralConstraint::not(&[self.handle_expr(expr, is_true.negate())?]).into(),
+                    StructuralConstraint::not(&[self.handle_expr(&unary.expr, is_true)?]).into(),
                 )),
                 _ => self.handle_expr(&unary.expr, is_true),
             },
@@ -259,9 +274,10 @@ impl ConstraintStack {
             // TODO Make dirty context
             Expr::IncDecExpr(_) => None,
             Expr::CallExpr(call) => {
-                for _arg in call.args.iter() {
-                    // TODO dirty context
+                for arg in call.args.iter() {
+                    self.dirty_related(arg);
                 }
+                self.dirty_related(&call.name);
                 None
             }
 
@@ -282,7 +298,7 @@ impl ConstraintStack {
         }
     }
 
-    fn flatten_vec(&self, data: &[Expr], is_true: TernaryBool) -> Option<Vec<Constraint>> {
+    fn flatten_vec(&mut self, data: &[Expr], is_true: TernaryBool) -> Option<Vec<Constraint>> {
         // Compute constraints
         let result: Vec<Option<Constraint>> = data
             .iter()
@@ -297,7 +313,7 @@ impl ConstraintStack {
         }
     }
 
-    fn flatten(&self, data: &[Expr], is_true: TernaryBool) -> Option<Constraint> {
+    fn flatten(&mut self, data: &[Expr], is_true: TernaryBool) -> Option<Constraint> {
         let result = self.flatten_vec(data, is_true)?;
         let constraints = StructuralConstraint::and(&result.into_iter().collect::<Vec<_>>()).into();
         Some(Constraint::new(is_true, constraints))
@@ -308,5 +324,11 @@ impl ConstraintStack {
         self.scope_record.push((ident, constraints.len()));
         constraints.push(constraint);
         Some(())
+    }
+
+    fn dirty_related(&mut self, expr: &Expr) {
+        for ident in get_idents(expr).iter() {
+            self.dirty_var(ident);
+        }
     }
 }

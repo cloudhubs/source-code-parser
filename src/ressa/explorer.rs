@@ -1,5 +1,7 @@
 /// WARNING: HERE THERE BE MACROS
-use super::{ressa_node_parse, ExplorerContext, IntoRessaNode, NodePattern, NodePatternParser};
+use super::{
+    get_idents, ressa_node_parse, ExplorerContext, IntoRessaNode, NodePattern, NodePatternParser,
+};
 use super::{Indexable, LaastIndex};
 use crate::ast::*;
 use crate::prophet::*;
@@ -310,29 +312,6 @@ impl RessaNodeExplorer for CallExpr {
     }
 }
 
-fn get_idents(expr: &Expr) -> Vec<Ident> {
-    use Expr::*;
-    match expr {
-        AssignExpr(e) => e.lhs.iter().flat_map(get_idents).collect(),
-        BinaryExpr(e) => get_idents(&e.lhs)
-            .into_iter()
-            .chain(get_idents(&e.rhs).into_iter())
-            .collect(),
-        UnaryExpr(e) => get_idents(&e.expr),
-        CallExpr(e) => e.args.iter().flat_map(get_idents).collect(),
-        ParenExpr(e) => get_idents(&e.expr),
-        DotExpr(e) => get_idents(&e.expr),
-        IncDecExpr(e) => get_idents(&*e.expr),
-        InitListExpr(e) => e.exprs.iter().flat_map(get_idents).collect(),
-        Ident(e) => vec![e.clone()],
-        // IndexExpr(e) => get_ide,
-        // LambdaExpr(e) => e.language,
-        // Literal(e) => vec![],
-        // SwitchExpr(e) => e.language,
-        _ => vec![],
-    }
-}
-
 impl RessaNodeExplorer for DeclStmt {
     fn explore(
         &self,
@@ -363,7 +342,7 @@ mod tests {
             Language::Unknown,
         )
         .into();
-        let mut np = NodePattern::new(
+        let np = NodePattern::new(
             NodeType::CallExpr,
             RefCell::new(None),
             RefCell::new(None),
@@ -378,6 +357,6 @@ mod tests {
         );
         let index = LaastIndex::new(HashMap::new(), HashMap::new());
         tracing::warn!("hello?");
-        c.explore(&mut np, &mut ExplorerContext::default(), &index);
+        c.explore(&np, &mut ExplorerContext::default(), &index);
     }
 }
