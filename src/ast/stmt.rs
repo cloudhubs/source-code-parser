@@ -10,7 +10,7 @@ use source_code_parser_macro::ChildFields;
 use source_code_parser_macro::NodeLanguage;
 
 #[enum_dispatch]
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, Hash, NodeLanguage, ChildFields)]
 #[serde(untagged)]
 pub enum Stmt {
     DeclStmt(DeclStmt),
@@ -65,7 +65,7 @@ impl Stmt {
 ///
 /// For other declarations like `x, y := foo(), bar()`, we represent this just by
 /// having two variables and two call expressions in the respective `Vec` fields.
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct DeclStmt {
     /// The declared variable(s).
     pub variables: Vec<VarDecl>,
@@ -93,7 +93,7 @@ impl From<Vec<DeclStmt>> for DeclStmt {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct VarDecl {
     /// The type of the declared variable.
     pub var_type: Option<String>,
@@ -108,7 +108,7 @@ pub struct VarDecl {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, From, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, From, new, Hash, NodeLanguage, ChildFields)]
 pub struct ExprStmt {
     pub expr: Expr,
     #[new(value = r#""expr_stmt""#)]
@@ -116,7 +116,7 @@ pub struct ExprStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct IfStmt {
     pub cond: Expr,
     pub body: Block,
@@ -126,7 +126,7 @@ pub struct IfStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct ForStmt {
     // Containing ExprStmt(BinExpr) or DeclStmt commonly
     pub init: Vec<Stmt>,
@@ -138,7 +138,7 @@ pub struct ForStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct ForRangeStmt {
     // Containing ExprStmt(BinExpr) or DeclStmt commonly
     pub init: Box<Stmt>,
@@ -149,7 +149,7 @@ pub struct ForRangeStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct WhileStmt {
     pub condition: Expr,
     pub body: Block,
@@ -158,7 +158,7 @@ pub struct WhileStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct DoWhileStmt {
     pub condition: Expr,
     pub body: Block,
@@ -167,7 +167,7 @@ pub struct DoWhileStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct ReturnStmt {
     pub expr: Option<Expr>,
     #[new(value = r#""return_stmt""#)]
@@ -175,7 +175,7 @@ pub struct ReturnStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct ImportStmt {
     // Whether the import is a specific type or a package/module etc.
     pub container: bool,
@@ -187,7 +187,7 @@ pub struct ImportStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct BreakStmt {
     /// Handle rare labelled breaks
     #[new(value = "Option::None")]
@@ -199,7 +199,7 @@ pub struct BreakStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct ContinueStmt {
     /// Handle rare labelled continues
     #[new(value = "Option::None")]
@@ -211,7 +211,7 @@ pub struct ContinueStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct ThrowStmt {
     pub expr: Option<Expr>,
     #[new(value = r#""throw_stmt""#)]
@@ -219,7 +219,7 @@ pub struct ThrowStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct TryCatchStmt {
     pub try_body: Block,
     pub catch_bodies: Vec<CatchStmt>,
@@ -229,7 +229,7 @@ pub struct TryCatchStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct CatchStmt {
     pub exc: DeclStmt,
     pub body: Block,
@@ -238,7 +238,7 @@ pub struct CatchStmt {
     pub language: Language,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct WithResourceStmt {
     pub resources: DeclStmt,
     pub body: Block,
@@ -248,7 +248,7 @@ pub struct WithResourceStmt {
 }
 
 /// Represents a label, as in goto or a labelled continue/break
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct LabelStmt {
     pub label: String,
     pub language: Language,

@@ -19,7 +19,7 @@ use crate::Language;
 // enum_dispatch adds in our From implementations for us
 
 #[enum_dispatch]
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, Hash, NodeLanguage, ChildFields)]
 #[serde(untagged)]
 pub enum Node {
     Block(Block),
@@ -27,7 +27,7 @@ pub enum Node {
     Expr(Expr),
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, new, Hash, NodeLanguage, ChildFields)]
 pub struct Block {
     pub nodes: Vec<Node>,
     #[new(value = r#""block""#)]

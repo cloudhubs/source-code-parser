@@ -4,7 +4,7 @@ use crate::ast::Expr;
 use serde::Serialize;
 use source_code_parser_macro::{ChildFields, NodeLanguage};
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, Hash)]
 pub struct ComponentInfo {
     pub path: String,
     pub package_name: String,
@@ -182,7 +182,7 @@ pub struct FieldComponent {
 }
 
 // For some reason prophet-utils relies on an actual javaparser AnnotationExpr instead of putting the info here. Needs fix.
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields, Hash)]
 pub struct AnnotationComponent {
     #[serde(flatten)]
     pub component: ComponentInfo,

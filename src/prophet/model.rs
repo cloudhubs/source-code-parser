@@ -4,7 +4,7 @@ use rust_code_analysis::LANG;
 use serde::{Deserialize, Serialize};
 use source_code_parser_macro::{ChildFields, NodeLanguage};
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, Hash)]
 pub enum InstanceType {
     #[serde(rename = "CLASSCOMPONENT")]
     ClassComponent,
@@ -49,7 +49,7 @@ pub enum ContainerType {
     Interface,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone, NodeLanguage, ChildFields)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, Hash, NodeLanguage, ChildFields)]
 pub struct AnnotationValuePair {
     #[serde(skip_serializing)]
     pub language: Language,

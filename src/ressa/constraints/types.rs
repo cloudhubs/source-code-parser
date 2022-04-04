@@ -16,7 +16,6 @@ pub struct Constraint {
 impl Constraint {
     /// Quick access to all idents this constriant touches on
     pub fn find_affected_idents(&self) -> Vec<&str> {
-        println!("Find affected idents");
         match &self.value {
             ConstraintTree::VariableConstraint(var) => vec![var],
             ConstraintTree::LiteralConstraint(_) => vec![],

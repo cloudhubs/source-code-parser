@@ -1,4 +1,8 @@
-use std::{collections::HashMap, iter::zip};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap, HashSet},
+    hash::{Hash, Hasher},
+    iter::zip,
+};
 
 pub mod coerce;
 pub use coerce::*;
@@ -7,7 +11,7 @@ pub mod util;
 pub use util::*;
 
 pub mod types;
-use tracing::log::{debug, warn};
+use tracing::log::debug;
 pub use types::*;
 
 use crate::ast::{Expr, Ident, Node, Op, Stmt};
@@ -26,10 +30,12 @@ pub struct ConstraintStack {
     constraints: HashMap<SimpleIdent, Vec<Constraint>>,
     scope_record: Vec<(SimpleIdent, usize)>,
     scope_list: Vec<usize>,
+    seen_exprs: HashSet<u64>,
 }
 
 impl ConstraintStack {
     pub fn check(&self, constraint: &StructuralConstraint) -> bool {
+        println!("{:#?}", self.constraints);
         true
     }
 
@@ -40,37 +46,28 @@ impl ConstraintStack {
 
     pub fn dirty_scope(&mut self) {
         debug!("Scope dirtied");
-        // Verify in-range (default 0: if no scopes made, everything in-scope)
-        let start = *self.scope_list.last().unwrap_or(&0);
+
+        // Verify in-range
+        let start = self.get_scope();
         if start > self.scope_record.len() {
-            warn!("Start {} out of range for scopes, ignoring", start);
-            self.scope_list.pop();
+            debug!("Start {} out of range for scopes, ignoring", start);
             return;
         }
 
-        // Skip to the scope's start
-        let mut iter = self.scope_record.iter();
-        let mut i = 0;
-        while i < start {
-            iter.next();
-            i += 1;
-        }
-
-        // Dirty the constraints in the scope
-        for (ident, ndx) in iter {
+        // Dirty the constraints in the current scope
+        for (ident, ndx) in self.scope_record[start..].iter() {
             if let Some(stack) = self.constraints.get_mut(ident) {
                 if let Some(constraint) = stack.get_mut(*ndx) {
                     constraint.truth_value = TernaryBool::Unknown;
                 } else {
-                    warn!("Unknown constraint number {}, skipping", ndx);
+                    debug!("Unknown constraint number {}, skipping", ndx);
                 }
             } else {
-                warn!("Unknown ident {:#?}, skipping", ident);
+                debug!("Unknown ident {:#?}, skipping", ident);
             }
         }
 
-        // Clear out the old scope
-        self.scope_list.pop();
+        // Delete the current scope
         self.scope_record.truncate(start);
     }
 
@@ -88,12 +85,26 @@ impl ConstraintStack {
         self.constraints.clear();
         self.scope_list.clear();
         self.scope_record.clear();
+        self.seen_exprs.clear();
     }
 
     pub fn push_constraint(&mut self, node: &Node) -> Option<()> {
+        // Verify unique
+        if !self.register_seen(node) {
+            debug!("Already seen, ignoring");
+            return None;
+        }
+
+        // Create and verify constraint
         debug!("Pushing constraint");
         let constraint = self.do_push_constraint(node, TernaryBool::True)?;
         let list = constraint.find_affected_idents();
+        if list.is_empty() {
+            debug!("No idents, skipping");
+            return None;
+        }
+
+        // Store constraint
         debug!("Generated, copying {}x", list.len());
         for ident in list {
             self.record(SimpleIdent(ident.to_string()), constraint.clone());
@@ -155,13 +166,13 @@ impl ConstraintStack {
                     ))
                 }
                 stmt => {
-                    warn!("Unexpected constraint {:#?}", stmt);
+                    debug!("Unexpected constraint {:#?}", stmt);
                     None
                 }
             },
             Node::Expr(expr) => self.handle_expr(expr, is_true),
             other => {
-                warn!("Unexpected constraint {:#?}", other);
+                debug!("Unexpected constraint {:#?}", other);
                 None
             }
         }
@@ -169,6 +180,7 @@ impl ConstraintStack {
 
     /// Yes, this returns Option just so I can use `?`. I'm lazy.
     fn handle_expr(&mut self, expr: &Expr, is_true: TernaryBool) -> Option<Constraint> {
+        self.register_seen(expr);
         match expr {
             Expr::AssignExpr(assign) => {
                 let lhs_len = assign.lhs.len();
@@ -292,7 +304,7 @@ impl ConstraintStack {
             // | Expr::DotExpr(_)
             // | Expr::CaseExpr(case) => unhandled
             unhandled => {
-                warn!("Unhandled expression {:#?}", unhandled);
+                debug!("Unhandled expression {:#?}", unhandled);
                 None
             }
         }
@@ -330,5 +342,19 @@ impl ConstraintStack {
         for ident in get_idents(expr).iter() {
             self.dirty_var(ident);
         }
+    }
+
+    fn get_scope(&mut self) -> usize {
+        self.scope_list.pop().unwrap_or(0)
+    }
+
+    fn register_seen<T>(&mut self, hashable: T) -> bool
+    where
+        T: Hash,
+    {
+        let hasher = &mut DefaultHasher::new();
+        hashable.hash(hasher);
+        let hash = hasher.finish();
+        !self.seen_exprs.insert(hash)
     }
 }
