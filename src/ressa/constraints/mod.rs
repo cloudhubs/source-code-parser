@@ -133,10 +133,14 @@ impl ConstraintStack {
                         .collect::<Vec<_>>();
 
                     // Determine which are uninitialized and don't matter
+                    let mut remove = vec![];
                     for (i, var) in decl.expressions.iter().enumerate() {
                         if var.is_none() {
-                            vars.remove(i);
+                            remove.push(i);
                         }
+                    }
+                    for var in remove.iter() {
+                        vars.remove(*var);
                     }
 
                     // Convert all initialized values to constraints
@@ -187,12 +191,18 @@ impl ConstraintStack {
                 let rhs_len = assign.rhs.len();
 
                 // Verify type of assign expr in question
-                if lhs_len == 1 && rhs_len > 1 {
-                    let ident = self.handle_expr(&assign.lhs[0], is_true)?;
-                    let constraints = self.flatten(&assign.rhs, is_true)?;
+                if lhs_len > 1 && rhs_len == 1 {
+                    let rhs_constraint = self.flatten(&assign.rhs, is_true)?;
+                    let full_constraints = self
+                        .flatten_vec(&assign.lhs, is_true)?
+                        .into_iter()
+                        .map(|ident| RelationalConstraint::equal(ident, rhs_constraint.clone()))
+                        .map(|constraint| Constraint::new(is_true, constraint.into()))
+                        .collect::<Vec<_>>();
+
                     Some(Constraint::new(
                         is_true,
-                        RelationalConstraint::equal(ident, constraints).into(),
+                        StructuralConstraint::and(&*full_constraints).into(),
                     ))
                 } else if lhs_len == rhs_len {
                     // Set of assignments
