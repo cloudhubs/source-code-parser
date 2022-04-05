@@ -8,11 +8,14 @@ pub mod coerce;
 pub use coerce::*;
 
 pub mod util;
+use tracing::log::debug;
 pub use util::*;
 
 pub mod types;
-use tracing::log::debug;
 pub use types::*;
+
+pub mod compute_idents;
+pub use compute_idents::*;
 
 use crate::ast::{Expr, Ident, Node, Op, Stmt};
 
@@ -27,6 +30,7 @@ impl SimpleIdent {
 /// Mapping for known variables to known constraints
 #[derive(Default, Debug, Clone)]
 pub struct ConstraintStack {
+    // constraints: Vec<Constraint>,
     constraints: HashMap<SimpleIdent, Vec<Constraint>>,
     scope_record: Vec<(SimpleIdent, usize)>,
     scope_list: Vec<usize>,
@@ -35,7 +39,21 @@ pub struct ConstraintStack {
 
 impl ConstraintStack {
     pub fn check(&self, constraint: &StructuralConstraint) -> bool {
-        println!("{:#?}", self.constraints);
+        let idents = constraint.find_idents();
+        let idents = idents
+            .iter()
+            .map(|ident| self.constraints.get(&SimpleIdent(ident.to_string())));
+
+        // If not all variables accounted for, can't match
+        if idents.clone().any(|x| x.is_none()) {
+            return false;
+        }
+
+        // Retrieve all constraints
+        let idents = idents.flatten().flatten().collect::<HashSet<_>>();
+        for ident in idents.iter() {
+            // Determine equivalence
+        }
         true
     }
 
@@ -98,7 +116,7 @@ impl ConstraintStack {
         // Create and verify constraint
         debug!("Pushing constraint");
         let constraint = self.do_push_constraint(node, TernaryBool::True)?;
-        let list = constraint.find_affected_idents();
+        let list = constraint.find_idents();
         if list.is_empty() {
             debug!("No idents, skipping");
             return None;
@@ -296,6 +314,7 @@ impl ConstraintStack {
             // TODO Make dirty context
             Expr::IncDecExpr(_) => None,
             Expr::CallExpr(call) => {
+                let lhs = self.handle_expr(&call.name, is_true);
                 for arg in call.args.iter() {
                     self.dirty_related(arg);
                 }

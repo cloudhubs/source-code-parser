@@ -6,37 +6,17 @@ use crate::ast::Op;
 // Top-level: Constraint
 
 /// An actual constraint (logic/structure + whether it should be met, unmet, or possibly met)
-#[derive(Debug, Clone, Deserialize, new)]
+#[derive(Debug, Clone, Deserialize, new, Hash, PartialEq, Eq)]
 pub struct Constraint {
     #[serde(default)]
     pub truth_value: TernaryBool,
     pub value: ConstraintTree,
 }
 
-impl Constraint {
-    /// Quick access to all idents this constriant touches on
-    pub fn find_affected_idents(&self) -> Vec<&str> {
-        match &self.value {
-            ConstraintTree::VariableConstraint(var) => vec![var],
-            ConstraintTree::LiteralConstraint(_) => vec![],
-            ConstraintTree::RelationalConstraint(rel) => {
-                let mut result = rel.lhs.find_affected_idents();
-                result.append(&mut rel.rhs.find_affected_idents());
-                result
-            }
-            ConstraintTree::StructuralConstraint(structural) => structural
-                .children
-                .iter()
-                .flat_map(|child| child.find_affected_idents())
-                .collect(),
-        }
-    }
-}
-
 // Ternary logic
 
 /// Three-way logic
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Hash, PartialEq, Eq)]
 pub enum TernaryBool {
     True,
     False,
@@ -61,10 +41,11 @@ impl Default for TernaryBool {
 
 /// Constraint tree: recursion on either structure or relations
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq)]
 pub enum ConstraintTree {
     VariableConstraint(String),
     LiteralConstraint(String),
+    MethodConstraint(MethodConstraint),
     RelationalConstraint(RelationalConstraint),
     StructuralConstraint(StructuralConstraint),
 }
@@ -79,6 +60,11 @@ pub fn new_literal(literal: String) -> ConstraintTree {
     ConstraintTree::LiteralConstraint(literal)
 }
 
+impl From<MethodConstraint> for ConstraintTree {
+    fn from(c: MethodConstraint) -> ConstraintTree {
+        ConstraintTree::MethodConstraint(c)
+    }
+}
 impl From<RelationalConstraint> for ConstraintTree {
     fn from(c: RelationalConstraint) -> Self {
         ConstraintTree::RelationalConstraint(c)
@@ -90,11 +76,33 @@ impl From<StructuralConstraint> for ConstraintTree {
     }
 }
 
+// Method constraint
+
+#[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq)]
+pub struct MethodConstraint {
+    pub callee: Option<Box<Constraint>>,
+    pub method: String,
+    pub args: Vec<Constraint>,
+}
+impl MethodConstraint {
+    pub fn new(
+        callee: Option<Constraint>,
+        method: String,
+        args: Vec<Constraint>,
+    ) -> MethodConstraint {
+        MethodConstraint {
+            callee: callee.map(|x| Box::new(x)),
+            method,
+            args,
+        }
+    }
+}
+
 // Structural constraints - indicate how things are linked together in a non-boolean manner
 
 // TODO expand with needed remaining
 /// Acknowledged structural relations
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq)]
 pub enum ConstraintComposition {
     And,
     Or,
@@ -129,7 +137,7 @@ impl ConstraintComposition {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq)]
 pub struct StructuralConstraint {
     pub r#type: ConstraintComposition,
     pub children: Vec<Constraint>,
@@ -157,7 +165,7 @@ impl StructuralConstraint {
 // Logical constraints - indicate boolean information about the relation between the two sides
 
 /// Acknowledged logical relations
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq)]
 pub enum ConstraintLogic {
     NotEqual,
     Equal,
@@ -185,7 +193,7 @@ impl ConstraintLogic {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq)]
 pub struct RelationalConstraint {
     pub r#type: ConstraintLogic,
     pub lhs: Box<Constraint>,
