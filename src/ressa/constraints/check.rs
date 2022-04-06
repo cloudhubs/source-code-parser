@@ -1,7 +1,5 @@
-use crate::ressa::ComputeIdent;
+use super::{Constraint, StructuralConstraint};
 
-use super::{Constraint, SimpleIdent, StructuralConstraint};
-
-pub fn check(candidate: &Constraint, to_match: &StructuralConstraint) -> bool {
+pub fn check(to_match: &StructuralConstraint, candidate: &[&Constraint]) -> bool {
     true
 }

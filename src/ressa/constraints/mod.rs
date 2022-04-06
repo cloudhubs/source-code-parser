@@ -1,3 +1,4 @@
+use core::slice::SlicePattern;
 use std::{
     collections::{hash_map::DefaultHasher, HashMap, HashSet},
     hash::{Hash, Hasher},
@@ -55,14 +56,15 @@ impl ConstraintStack {
             return false;
         }
 
-        // Verify if constraint met
+        // Verify if constraint met (iter/collect twice--first to dedup, then to get a slice)
         let constraints_to_check = idents.flatten().flatten().collect::<HashSet<_>>();
-        for candidate in constraints_to_check.iter() {
-            if check(candidate, to_match) {
-                return true;
-            }
-        }
-        false
+        check(
+            to_match,
+            constraints_to_check
+                .into_iter()
+                .collect::<Vec<_>>()
+                .as_slice(),
+        )
     }
 
     pub fn new_scope(&mut self) {
