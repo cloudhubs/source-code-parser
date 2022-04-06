@@ -17,10 +17,16 @@ pub use types::*;
 pub mod compute_idents;
 pub use compute_idents::*;
 
+pub mod check;
+pub use check::*;
+
+pub mod stringify;
+pub use stringify::*;
+
 use crate::ast::{Expr, Ident, Node, Op, Stmt};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-struct SimpleIdent(String);
+pub struct SimpleIdent(String);
 impl SimpleIdent {
     fn new(ident: &Ident) -> SimpleIdent {
         SimpleIdent(ident.name.clone())
@@ -38,8 +44,8 @@ pub struct ConstraintStack {
 }
 
 impl ConstraintStack {
-    pub fn check(&self, constraint: &StructuralConstraint) -> bool {
-        let idents = constraint.find_idents();
+    pub fn check(&self, to_match: &StructuralConstraint) -> bool {
+        let idents = to_match.find_idents();
         let idents = idents
             .iter()
             .map(|ident| self.constraints.get(&SimpleIdent(ident.to_string())));
@@ -49,12 +55,14 @@ impl ConstraintStack {
             return false;
         }
 
-        // Retrieve all constraints
-        let idents = idents.flatten().flatten().collect::<HashSet<_>>();
-        for ident in idents.iter() {
-            // Determine equivalence
+        // Verify if constraint met
+        let constraints_to_check = idents.flatten().flatten().collect::<HashSet<_>>();
+        for candidate in constraints_to_check.iter() {
+            if check(candidate, to_match) {
+                return true;
+            }
         }
-        true
+        false
     }
 
     pub fn new_scope(&mut self) {
@@ -115,7 +123,11 @@ impl ConstraintStack {
 
         // Create and verify constraint
         debug!("Pushing constraint");
-        let constraint = self.do_push_constraint(node, TernaryBool::True)?;
+        let constraint = self.do_push_constraint(node, TernaryBool::True);
+        if constraint.is_none() {
+            debug!("Error encountered parsing: {:#?}", node);
+        }
+        let constraint = constraint?;
         let list = constraint.find_idents();
         if list.is_empty() {
             debug!("No idents, skipping");
@@ -127,6 +139,16 @@ impl ConstraintStack {
         for ident in list {
             self.record(SimpleIdent(ident.to_string()), constraint.clone());
         }
+        debug!("Const: {}", constraint);
+        debug!(
+            "Context contains {} idents and {} constraints",
+            self.constraints.len(),
+            self.constraints
+                .values()
+                .flatten()
+                .collect::<HashSet<_>>()
+                .len()
+        );
         debug!("Completed pushing constraint");
         Some(())
     }
@@ -314,23 +336,56 @@ impl ConstraintStack {
             // TODO Make dirty context
             Expr::IncDecExpr(_) => None,
             Expr::CallExpr(call) => {
-                let lhs = self.handle_expr(&call.name, is_true);
-                for arg in call.args.iter() {
-                    self.dirty_related(arg);
-                }
+                // Convert lhs + dirty context for its idents
+                let lhs = self.handle_expr(&call.name, is_true)?;
                 self.dirty_related(&call.name);
-                None
+
+                // Convert args + dirty context for its idents
+                let args: Vec<Option<_>> = call
+                    .args
+                    .iter()
+                    .map(|arg| {
+                        self.dirty_related(arg);
+                        self.handle_expr(arg, is_true)
+                    })
+                    .collect();
+
+                // Verify all worked
+                if args.iter().any(|arg| arg.is_none()) {
+                    return None;
+                }
+                let args = args.into_iter().flatten().collect();
+
+                // Return call  structure
+                Some(Constraint::new(
+                    is_true,
+                    MethodConstraint::new(lhs.into(), args).into(),
+                ))
             }
+            Expr::DotExpr(dot) => Some(Constraint::new(
+                is_true,
+                StructuralConstraint::dot(&[
+                    self.handle_expr(&dot.selected, is_true)?,
+                    self.handle_expr(&dot.expr, is_true)?,
+                ])
+                .into(),
+            )),
+            Expr::ParenExpr(paren) => self.handle_expr(&paren.expr, is_true),
+            Expr::IndexExpr(index) => Some(Constraint::new(
+                is_true,
+                StructuralConstraint::dot(&[
+                    self.handle_expr(&index.expr, is_true)?,
+                    self.handle_expr(&index.index_expr, is_true)?,
+                ])
+                .into(),
+            )),
 
             // Unused
             // Expr::LogExpr(_)
             // | Expr::LambdaExpr(_)
             // | Expr::SwitchExpr(_)
             // | Expr::InitListExpr(_)
-            // | Expr::IndexExpr(_)
-            // | Expr::ParenExpr(_)
             // | Expr::EndpointCallExpr(_)
-            // | Expr::DotExpr(_)
             // | Expr::CaseExpr(case) => unhandled
             unhandled => {
                 debug!("Unhandled expression {:#?}", unhandled);
@@ -361,8 +416,14 @@ impl ConstraintStack {
     }
 
     fn record(&mut self, ident: SimpleIdent, constraint: Constraint) -> Option<()> {
-        let constraints = self.constraints.get_mut(&ident)?;
-        self.scope_record.push((ident, constraints.len()));
+        // If ident doesn't exist, add it
+        if !self.constraints.contains_key(&ident) {
+            self.constraints.insert(ident.clone(), vec![]);
+        }
+
+        // Record found constraint
+        let constraints = self.constraints.get_mut(&ident).unwrap();
+        self.scope_record.push((ident.clone(), constraints.len()));
         constraints.push(constraint);
         Some(())
     }

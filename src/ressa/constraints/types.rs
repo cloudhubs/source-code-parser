@@ -16,7 +16,7 @@ pub struct Constraint {
 // Ternary logic
 
 /// Three-way logic
-#[derive(Debug, Clone, Copy, Deserialize, Hash, PartialEq, Eq)]
+#[derive(derive_more::Display, Debug, Clone, Copy, Deserialize, Hash, PartialEq, Eq)]
 pub enum TernaryBool {
     True,
     False,
@@ -32,7 +32,6 @@ impl TernaryBool {
         }
     }
 }
-
 impl Default for TernaryBool {
     fn default() -> Self {
         TernaryBool::True
@@ -80,19 +79,13 @@ impl From<StructuralConstraint> for ConstraintTree {
 
 #[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq)]
 pub struct MethodConstraint {
-    pub callee: Option<Box<Constraint>>,
-    pub method: String,
+    pub called: Option<Box<Constraint>>,
     pub args: Vec<Constraint>,
 }
 impl MethodConstraint {
-    pub fn new(
-        callee: Option<Constraint>,
-        method: String,
-        args: Vec<Constraint>,
-    ) -> MethodConstraint {
+    pub fn new(callee: Option<Constraint>, args: Vec<Constraint>) -> MethodConstraint {
         MethodConstraint {
-            callee: callee.map(|x| Box::new(x)),
-            method,
+            called: callee.map(Box::new),
             args,
         }
     }
@@ -114,6 +107,7 @@ pub enum ConstraintComposition {
     ShiftLeft,
     UnsignedShiftLeft,
     ShiftRight,
+    Dot,
 }
 
 impl ConstraintComposition {
@@ -134,6 +128,17 @@ impl ConstraintComposition {
 
             _ => None,
         }
+    }
+
+    pub fn reorderable(&self) -> bool {
+        matches!(
+            self,
+            ConstraintComposition::And
+                | ConstraintComposition::Or
+                | ConstraintComposition::Not
+                | ConstraintComposition::Plus
+                | ConstraintComposition::Multiply
+        )
     }
 }
 
@@ -159,6 +164,10 @@ impl StructuralConstraint {
     /// Factory for NOT structure
     pub fn not(children: &[Constraint]) -> StructuralConstraint {
         StructuralConstraint::new(ConstraintComposition::Not, children)
+    }
+
+    pub fn dot(children: &[Constraint]) -> StructuralConstraint {
+        StructuralConstraint::new(ConstraintComposition::Dot, children)
     }
 }
 

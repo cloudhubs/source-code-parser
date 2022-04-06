@@ -41,7 +41,7 @@ impl ComputeIdent for MethodConstraint {
             .iter()
             .flat_map(|constraint| constraint.find_idents())
             .chain(
-                self.callee
+                self.called
                     .iter()
                     .flat_map(|callee| callee.find_idents())
                     .into_iter(),
