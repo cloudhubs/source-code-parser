@@ -81,7 +81,6 @@ ressa_dispatch_delegate_impl!(
     WhileStmt,
     DoWhileStmt,
     WithResourceStmt,
-    BinaryExpr,
     UnaryExpr,
     ParenExpr,
     DotExpr,
@@ -108,7 +107,8 @@ ressa_dispatch_match_impl!(
     VarDecl,
     CallExpr,
     AnnotationComponent,
-    AnnotationValuePair
+    AnnotationValuePair,
+    BinaryExpr
 );
 
 pub fn explore<T>(

@@ -19,6 +19,7 @@ pub(crate) fn parse_expr(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         "decimal_integer_literal"
         | "hex_integer_literal"
         | "binary_integer_literal"
+        | "character_literal"
         | "decimal_floating_point_literal"
         | "string_literal"
         | "false"
