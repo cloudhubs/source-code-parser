@@ -1,4 +1,4 @@
-use super::{LaastIndex, RessaNodeExplorer};
+use super::{ExplorerContext, LaastIndex, RessaNodeExplorer};
 // use super::ressaDispatch;
 use super::{pattern_parser::NodePatternParser, Executor};
 use crate::ast::*;
@@ -7,6 +7,7 @@ use crate::ressa::explorer::choose_exit;
 use derive_new::new;
 use regex::Regex;
 use serde::Deserialize;
+use std::cell::RefCell;
 
 use super::{ContextLocalVariableActions, ContextObjectActions, ParserContext};
 
@@ -24,11 +25,13 @@ pub struct NodePattern {
     /// with a #varname syntax (with ## being a literal #).
     /// Variables indicate the information we are looking for, like URLs and entity names.
     #[serde(skip)]
-    pub compiled_pattern: Option<CompiledPattern>,
+    #[serde(default)]
+    pub compiled_pattern: RefCell<Option<CompiledPattern>>,
 
     /// A pattern, like compiled_pattern, for checking the type of a variable for inforamtion
     #[serde(skip)]
-    pub compiled_auxiliary_pattern: Option<CompiledPattern>,
+    #[serde(default)]
+    pub compiled_auxiliary_pattern: RefCell<Option<CompiledPattern>>,
 
     /// Sub-patterns for this node pattern to be matched in the AST.
     /// Some subpatterns may be specified as required.
@@ -92,14 +95,15 @@ impl NodePattern {
     }
 
     /// Lazy-compile the regexes on this NodePattern
-    pub fn lazy_compile(&mut self) -> Option<()> {
-        if self.compiled_pattern.is_none() {
-            self.compiled_pattern = Some(compile_compiled_pattern(&*self.pattern)?);
+    pub fn lazy_compile(&self) -> Option<()> {
+        let mut compiled_pattern = self.compiled_pattern.borrow_mut();
+        if compiled_pattern.is_none() {
+            *compiled_pattern = Some(compile_compiled_pattern(&*self.pattern)?);
         }
-        if self.compiled_auxiliary_pattern.is_none() {
+        let mut compiled_auxiliary_pattern = self.compiled_auxiliary_pattern.borrow_mut();
+        if compiled_auxiliary_pattern.is_none() {
             if let Some(auxiliary_pattern) = &self.auxiliary_pattern {
-                self.compiled_auxiliary_pattern =
-                    Some(compile_compiled_pattern(&*auxiliary_pattern)?);
+                *compiled_auxiliary_pattern = Some(compile_compiled_pattern(&*auxiliary_pattern)?);
             }
         }
         Some(())
@@ -126,16 +130,16 @@ pub fn compile_compiled_pattern(pattern: &str) -> Option<CompiledPattern> {
 
 /// Parse the results
 fn parse<N: NodePatternParser + RessaNodeExplorer>(
-    pattern: &mut NodePattern,
+    pattern: &NodePattern,
     node: &N,
-    ctx: &mut ParserContext,
+    ctx: &mut ExplorerContext,
     index: &LaastIndex,
 ) -> bool {
     if !pattern.transparent {
         node.parse(pattern, ctx, index).is_some()
     } else {
         let mut explore_all_found_essential = false;
-        for subpattern in pattern.subpatterns.iter_mut() {
+        for subpattern in pattern.subpatterns.iter() {
             if node.explore(subpattern, ctx, index).is_some() {
                 explore_all_found_essential = true;
             }
@@ -146,9 +150,9 @@ fn parse<N: NodePatternParser + RessaNodeExplorer>(
 
 /// Run general ReSSA match acquired routine: compile patterns if needed, maintain context transactions, parse the node pattern, and
 pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
-    pattern: &mut NodePattern,
+    pattern: &NodePattern,
     node: &N,
-    ctx: &mut ParserContext,
+    ctx: &mut ExplorerContext,
     index: &LaastIndex,
 ) -> Option<()> {
     // Lazily compile patterns
@@ -161,9 +165,9 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     let passed = if parse(pattern, node, &mut transaction, index) {
         if pattern.callback.is_some() {
             // let tmp = transaction.clone();
-            match Executor::get().execute(pattern, transaction) {
+            match Executor::get().execute(pattern, transaction.parser) {
                 Ok(new_ctx) => {
-                    *ctx = new_ctx;
+                    ctx.parser = new_ctx;
                     true
                 }
                 Err(err) => {
@@ -185,7 +189,7 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
 
     ctx.frame_number -= 1;
     if ctx.frame_number == 0 {
-        ctx.clear_variables();
+        ctx.parser.clear_variables();
     }
 
     // Resume the search where we left off, or pass on an error indicating a required subpattern

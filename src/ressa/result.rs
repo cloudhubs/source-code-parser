@@ -84,7 +84,7 @@ where
 
     // Short-circuit any errors that occurred
     if let Some(Some(bad_result)) = err.into_iter().find(|err| err.is_some()) {
-        Err(bad_result)?;
+        return Err(bad_result);
     }
 
     // Coerce results out of the vec

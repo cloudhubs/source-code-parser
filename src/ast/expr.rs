@@ -28,6 +28,7 @@ pub enum Expr {
     Ident(Ident),
     Literal(Literal),
     SwitchExpr(SwitchExpr),
+    CaseExpr(CaseExpr),
 }
 
 impl Expr {
@@ -49,6 +50,7 @@ impl Expr {
             Ident(e) => e.language,
             Literal(e) => e.language,
             SwitchExpr(e) => e.language,
+            CaseExpr(e) => e.language,
         }
     }
 }
@@ -250,8 +252,8 @@ impl From<SwitchExpr> for Stmt {
 
 #[derive(Debug, Eq, PartialEq, Serialize, Clone, new, NodeLanguage, ChildFields)]
 pub struct CaseExpr {
-    pub cond: Option<Expr>,
-    pub body: Block,
+    pub cond: Option<Box<Expr>>,
+    pub body: Box<Block>,
     #[new(value = r#""case_expr""#)]
     r#type: &'static str,
     pub language: Language,

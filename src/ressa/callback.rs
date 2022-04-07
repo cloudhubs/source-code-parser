@@ -103,6 +103,7 @@ impl Executor {
 #[cfg(test)]
 mod tests {
     use crate::{ressa::NodeType, Language};
+    use std::cell::RefCell;
 
     use super::*;
 
@@ -110,8 +111,8 @@ mod tests {
     pub fn add_get_variables_from_script() {
         let pattern = NodePattern::new(
             NodeType::CallExpr,
-            None,
-            None,
+            RefCell::new(None),
+            RefCell::new(None),
             vec![],
             Some(
                 r#"
@@ -139,8 +140,8 @@ mod tests {
         ctx.make_variable("foo", "bar");
         let pattern = NodePattern::new(
             NodeType::CallExpr,
-            None,
-            None,
+            RefCell::new(None),
+            RefCell::new(None),
             vec![],
             Some(
                 r#"
