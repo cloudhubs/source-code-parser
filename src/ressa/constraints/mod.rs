@@ -1,4 +1,3 @@
-use core::slice::SlicePattern;
 use std::{
     collections::{hash_map::DefaultHasher, HashMap, HashSet},
     hash::{Hash, Hasher},
@@ -45,7 +44,7 @@ pub struct ConstraintStack {
 }
 
 impl ConstraintStack {
-    pub fn check(&self, to_match: &StructuralConstraint) -> bool {
+    pub fn check(&self, to_match: &Constraint) -> bool {
         let idents = to_match.find_idents();
         let idents = idents
             .iter()
@@ -86,7 +85,7 @@ impl ConstraintStack {
         for (ident, ndx) in self.scope_record[start..].iter() {
             if let Some(stack) = self.constraints.get_mut(ident) {
                 if let Some(constraint) = stack.get_mut(*ndx) {
-                    constraint.truth_value = TernaryBool::Unknown;
+                    constraint.guaranteed = false;
                 } else {
                     debug!("Unknown constraint number {}, skipping", ndx);
                 }
@@ -103,7 +102,7 @@ impl ConstraintStack {
         debug!("Var {} dirtied", ident.name);
         let constraints = self.constraints.get_mut(&SimpleIdent::new(ident))?;
         for constraint in constraints.iter_mut() {
-            constraint.truth_value = TernaryBool::Unknown;
+            constraint.guaranteed = false;
         }
         Some(())
     }
@@ -125,7 +124,7 @@ impl ConstraintStack {
 
         // Create and verify constraint
         debug!("Pushing constraint");
-        let constraint = self.do_push_constraint(node, TernaryBool::True);
+        let constraint = self.do_push_constraint(node);
         if constraint.is_none() {
             debug!("Error encountered parsing: {:#?}", node);
         }
@@ -155,13 +154,13 @@ impl ConstraintStack {
         Some(())
     }
 
-    fn do_push_constraint(&mut self, node: &Node, is_true: TernaryBool) -> Option<Constraint> {
+    fn do_push_constraint(&mut self, node: &Node) -> Option<ConstraintTree> {
         match node {
             // Node::Block(block) => Some(
             //     block
             //         .nodes
             //         .iter()
-            //         .flat_map(|node| self.do_push_constraint(node, is_true))
+            //         .flat_map(|node| self.do_push_constraint(node))
             //         .flatten()
             //         .collect(),
             // ),
@@ -171,7 +170,7 @@ impl ConstraintStack {
                     let mut vars = decl
                         .variables
                         .iter()
-                        .map(|decl| Constraint::new(is_true, new_ident(decl.ident.name.clone())))
+                        .map(|decl| new_ident(decl.ident.name.clone()))
                         .collect::<Vec<_>>();
 
                     // Determine which are uninitialized and don't matter
@@ -192,31 +191,24 @@ impl ConstraintStack {
                             .iter()
                             .flat_map(|d| d.clone())
                             .collect::<Vec<_>>(),
-                        is_true,
                     )?;
 
                     // Zip variables and initial values into constraints
                     let result = zip(vars.into_iter(), vals.into_iter())
                         .map(|(var_name, var_val)| {
-                            Constraint::new(
-                                is_true,
-                                RelationalConstraint::equal(var_name, var_val).into(),
-                            )
+                            RelationalConstraint::equal(var_name, var_val).into()
                         })
                         .collect::<Vec<_>>();
 
                     // Create final constraint value
-                    Some(Constraint::new(
-                        is_true,
-                        StructuralConstraint::and(&result).into(),
-                    ))
+                    Some(StructuralConstraint::and(&result).into())
                 }
                 stmt => {
                     debug!("Unexpected constraint {:#?}", stmt);
                     None
                 }
             },
-            Node::Expr(expr) => self.handle_expr(expr, is_true),
+            Node::Expr(expr) => self.handle_expr(expr),
             other => {
                 debug!("Unexpected constraint {:#?}", other);
                 None
@@ -225,7 +217,7 @@ impl ConstraintStack {
     }
 
     /// Yes, this returns Option just so I can use `?`. I'm lazy.
-    fn handle_expr(&mut self, expr: &Expr, is_true: TernaryBool) -> Option<Constraint> {
+    fn handle_expr(&mut self, expr: &Expr) -> Option<ConstraintTree> {
         self.register_seen(expr);
         match expr {
             Expr::AssignExpr(assign) => {
@@ -234,35 +226,29 @@ impl ConstraintStack {
 
                 // Verify type of assign expr in question
                 if lhs_len > 1 && rhs_len == 1 {
-                    let rhs_constraint = self.flatten(&assign.rhs, is_true)?;
+                    let rhs_constraint = self.flatten(&assign.rhs)?;
                     let full_constraints = self
-                        .flatten_vec(&assign.lhs, is_true)?
+                        .flatten_vec(&assign.lhs)?
                         .into_iter()
-                        .map(|ident| RelationalConstraint::equal(ident, rhs_constraint.clone()))
-                        .map(|constraint| Constraint::new(is_true, constraint.into()))
+                        .map(|ident| {
+                            RelationalConstraint::equal(ident, rhs_constraint.clone()).into()
+                        })
                         .collect::<Vec<_>>();
 
-                    Some(Constraint::new(
-                        is_true,
-                        StructuralConstraint::and(&*full_constraints).into(),
-                    ))
+                    Some(StructuralConstraint::and(&*full_constraints).into())
                 } else if lhs_len == rhs_len {
                     // Set of assignments
                     let mut result = vec![];
                     for (lhs, rhs) in zip(assign.lhs.iter(), assign.rhs.iter()) {
-                        result.push(Constraint::new(
-                            is_true,
+                        result.push(
                             RelationalConstraint::equal(
-                                self.handle_expr(lhs, is_true)?,
-                                self.handle_expr(rhs, is_true)?,
+                                self.handle_expr(lhs)?,
+                                self.handle_expr(rhs)?,
                             )
                             .into(),
-                        ));
+                        );
                     }
-                    Some(Constraint::new(
-                        is_true,
-                        StructuralConstraint::and(&result).into(),
-                    ))
+                    Some(StructuralConstraint::and(&result).into())
                 } else {
                     None
                 }
@@ -270,28 +256,23 @@ impl ConstraintStack {
             Expr::BinaryExpr(bin) => {
                 if let Some(relation) = ConstraintLogic::try_convert(&bin.op) {
                     // This binary expression a logical constraint
-                    Some(Constraint::new(
-                        is_true,
+                    Some(
                         RelationalConstraint::new(
                             relation,
-                            self.handle_expr(&bin.lhs, is_true)?,
-                            self.handle_expr(&bin.rhs, is_true)?,
+                            self.handle_expr(&bin.lhs)?,
+                            self.handle_expr(&bin.rhs)?,
                         )
                         .into(),
-                    ))
+                    )
                 } else if let Some(struct_op) = ConstraintComposition::try_convert(&bin.op) {
                     // This binary expression a structural constraint
-                    Some(Constraint::new(
-                        is_true,
+                    Some(
                         StructuralConstraint::new(
                             struct_op,
-                            &[
-                                self.handle_expr(&bin.lhs, is_true)?,
-                                self.handle_expr(&bin.rhs, is_true)?,
-                            ],
+                            &[self.handle_expr(&bin.lhs)?, self.handle_expr(&bin.rhs)?],
                         )
                         .into(),
-                    ))
+                    )
                 } else {
                     // Verify nothing important happening before exit
                     match bin.op {
@@ -315,8 +296,8 @@ impl ConstraintStack {
                 }
             }
 
-            Expr::Ident(ident) => Some(Constraint::new(is_true, new_ident(ident.name.clone()))),
-            Expr::Literal(lit) => Some(Constraint::new(is_true, new_literal(lit.value.clone()))),
+            Expr::Ident(ident) => Some(new_ident(ident.name.clone())),
+            Expr::Literal(lit) => Some(new_literal(lit.value.clone())),
             Expr::UnaryExpr(unary) => match unary.op {
                 // crate::ast::Op::Plus => {} // TODO This is potentially important in numeric comparisons
                 // crate::ast::Op::Minus => {} // TODO This is important in numeric comparisons
@@ -328,18 +309,17 @@ impl ConstraintStack {
                     None
                 }
                 // crate::ast::Op::MinusMinus => {}
-                crate::ast::Op::Tilde | crate::ast::Op::ExclamationPoint => Some(Constraint::new(
-                    is_true,
-                    StructuralConstraint::not(&[self.handle_expr(&unary.expr, is_true)?]).into(),
-                )),
-                _ => self.handle_expr(&unary.expr, is_true),
+                crate::ast::Op::Tilde | crate::ast::Op::ExclamationPoint => {
+                    Some(StructuralConstraint::not(&[self.handle_expr(&unary.expr)?]).into())
+                }
+                _ => self.handle_expr(&unary.expr),
             },
 
             // TODO Make dirty context
             Expr::IncDecExpr(_) => None,
             Expr::CallExpr(call) => {
                 // Convert lhs + dirty context for its idents
-                let lhs = self.handle_expr(&call.name, is_true)?;
+                let lhs = self.handle_expr(&call.name)?;
                 self.dirty_related(&call.name);
 
                 // Convert args + dirty context for its idents
@@ -348,7 +328,7 @@ impl ConstraintStack {
                     .iter()
                     .map(|arg| {
                         self.dirty_related(arg);
-                        self.handle_expr(arg, is_true)
+                        self.handle_expr(arg)
                     })
                     .collect();
 
@@ -359,28 +339,23 @@ impl ConstraintStack {
                 let args = args.into_iter().flatten().collect();
 
                 // Return call  structure
-                Some(Constraint::new(
-                    is_true,
-                    MethodConstraint::new(lhs.into(), args).into(),
-                ))
+                Some(MethodConstraint::new(lhs.into(), args).into())
             }
-            Expr::DotExpr(dot) => Some(Constraint::new(
-                is_true,
+            Expr::DotExpr(dot) => Some(
                 StructuralConstraint::dot(&[
-                    self.handle_expr(&dot.selected, is_true)?,
-                    self.handle_expr(&dot.expr, is_true)?,
+                    self.handle_expr(&dot.selected)?,
+                    self.handle_expr(&dot.expr)?,
                 ])
                 .into(),
-            )),
-            Expr::ParenExpr(paren) => self.handle_expr(&paren.expr, is_true),
-            Expr::IndexExpr(index) => Some(Constraint::new(
-                is_true,
+            ),
+            Expr::ParenExpr(paren) => self.handle_expr(&paren.expr),
+            Expr::IndexExpr(index) => Some(
                 StructuralConstraint::dot(&[
-                    self.handle_expr(&index.expr, is_true)?,
-                    self.handle_expr(&index.index_expr, is_true)?,
+                    self.handle_expr(&index.expr)?,
+                    self.handle_expr(&index.index_expr)?,
                 ])
                 .into(),
-            )),
+            ),
 
             // Unused
             // Expr::LogExpr(_)
@@ -396,12 +371,10 @@ impl ConstraintStack {
         }
     }
 
-    fn flatten_vec(&mut self, data: &[Expr], is_true: TernaryBool) -> Option<Vec<Constraint>> {
+    fn flatten_vec(&mut self, data: &[Expr]) -> Option<Vec<ConstraintTree>> {
         // Compute constraints
-        let result: Vec<Option<Constraint>> = data
-            .iter()
-            .map(|expr| self.handle_expr(expr, is_true))
-            .collect();
+        let result: Vec<Option<ConstraintTree>> =
+            data.iter().map(|expr| self.handle_expr(expr)).collect();
 
         // Verify all mapped correctly; otherwise yield None
         if !result.iter().any(|x| x.is_none()) {
@@ -411,13 +384,13 @@ impl ConstraintStack {
         }
     }
 
-    fn flatten(&mut self, data: &[Expr], is_true: TernaryBool) -> Option<Constraint> {
-        let result = self.flatten_vec(data, is_true)?;
-        let constraints = StructuralConstraint::and(&result.into_iter().collect::<Vec<_>>()).into();
-        Some(Constraint::new(is_true, constraints))
+    fn flatten(&mut self, data: &[Expr]) -> Option<ConstraintTree> {
+        let result = self.flatten_vec(data)?;
+        let constraints = StructuralConstraint::and(&result.into_iter().collect::<Vec<_>>());
+        Some(constraints.into())
     }
 
-    fn record(&mut self, ident: SimpleIdent, constraint: Constraint) -> Option<()> {
+    fn record(&mut self, ident: SimpleIdent, constraint: ConstraintTree) -> Option<()> {
         // If ident doesn't exist, add it
         if !self.constraints.contains_key(&ident) {
             self.constraints.insert(ident.clone(), vec![]);
@@ -426,7 +399,7 @@ impl ConstraintStack {
         // Record found constraint
         let constraints = self.constraints.get_mut(&ident).unwrap();
         self.scope_record.push((ident.clone(), constraints.len()));
-        constraints.push(constraint);
+        constraints.push(Constraint::create_constraint(constraint));
         Some(())
     }
 

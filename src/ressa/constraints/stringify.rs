@@ -9,10 +9,9 @@ use super::{
 
 impl Display for Constraint {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let prefix = match self.truth_value {
-            super::TernaryBool::True => "",
-            super::TernaryBool::False => "!",
-            super::TernaryBool::Unknown => "?",
+        let prefix = match self.guaranteed {
+            true => "",
+            false => "possibly ",
         };
         f.write_fmt(format_args!("{}{}", prefix, self.value))
     }

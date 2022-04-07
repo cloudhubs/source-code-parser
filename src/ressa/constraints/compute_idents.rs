@@ -8,7 +8,13 @@ pub trait ComputeIdent {
 
 impl ComputeIdent for Constraint {
     fn find_idents(&self) -> Vec<&str> {
-        match &self.value {
+        self.value.find_idents()
+    }
+}
+
+impl ComputeIdent for ConstraintTree {
+    fn find_idents(&self) -> Vec<&str> {
+        match &self {
             ConstraintTree::VariableConstraint(var) => vec![var],
             ConstraintTree::LiteralConstraint(_) => vec![],
             ConstraintTree::RelationalConstraint(rel) => rel.find_idents(),

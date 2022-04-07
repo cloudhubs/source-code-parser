@@ -5,36 +5,35 @@ use crate::ast::Op;
 
 // Top-level: Constraint
 
+fn default_true() -> bool {
+    true
+}
+
 /// An actual constraint (logic/structure + whether it should be met, unmet, or possibly met)
 #[derive(Debug, Clone, Deserialize, new, Hash, PartialEq, Eq)]
 pub struct Constraint {
+    /// Callback executed on success
     #[serde(default)]
-    pub truth_value: TernaryBool,
+    pub callback: Option<String>,
+
+    /// Whether this is essential to matching
+    #[serde(default = "default_true")]
+    pub essential: bool,
+
+    /// Indicates whether this constraint is required to be met; doubles as the flag
+    /// indicating a constraint is guaranteed as met, or possibly not met
+    #[serde(default = "default_true")]
+    pub guaranteed: bool,
+
+    /// Wrapped constraint
     pub value: ConstraintTree,
 }
-
-// Ternary logic
-
-/// Three-way logic
-#[derive(derive_more::Display, Debug, Clone, Copy, Deserialize, Hash, PartialEq, Eq)]
-pub enum TernaryBool {
-    True,
-    False,
-    Unknown,
-}
-impl TernaryBool {
-    /// Negation operation  (True <-> False, Unknown unaffected)
-    pub fn negate(&self) -> TernaryBool {
-        match self {
-            TernaryBool::True => TernaryBool::False,
-            TernaryBool::False => TernaryBool::True,
-            _ => TernaryBool::Unknown,
-        }
-    }
-}
-impl Default for TernaryBool {
-    fn default() -> Self {
-        TernaryBool::True
+impl Constraint {
+    pub fn create_constraint<T>(value: T) -> Constraint
+    where
+        T: Into<ConstraintTree>,
+    {
+        Constraint::new(None, true, true, value.into())
     }
 }
 
@@ -79,11 +78,11 @@ impl From<StructuralConstraint> for ConstraintTree {
 
 #[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq)]
 pub struct MethodConstraint {
-    pub called: Option<Box<Constraint>>,
-    pub args: Vec<Constraint>,
+    pub called: Option<Box<ConstraintTree>>,
+    pub args: Vec<ConstraintTree>,
 }
 impl MethodConstraint {
-    pub fn new(callee: Option<Constraint>, args: Vec<Constraint>) -> MethodConstraint {
+    pub fn new(callee: Option<ConstraintTree>, args: Vec<ConstraintTree>) -> MethodConstraint {
         MethodConstraint {
             called: callee.map(Box::new),
             args,
@@ -145,11 +144,11 @@ impl ConstraintComposition {
 #[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq)]
 pub struct StructuralConstraint {
     pub r#type: ConstraintComposition,
-    pub children: Vec<Constraint>,
+    pub children: Vec<ConstraintTree>,
 }
 
 impl StructuralConstraint {
-    pub fn new(r#type: ConstraintComposition, children: &[Constraint]) -> StructuralConstraint {
+    pub fn new(r#type: ConstraintComposition, children: &[ConstraintTree]) -> StructuralConstraint {
         StructuralConstraint {
             r#type,
             children: children.to_vec(),
@@ -157,16 +156,16 @@ impl StructuralConstraint {
     }
 
     /// Factory for AND structure
-    pub fn and(children: &[Constraint]) -> StructuralConstraint {
+    pub fn and(children: &[ConstraintTree]) -> StructuralConstraint {
         StructuralConstraint::new(ConstraintComposition::And, children)
     }
 
     /// Factory for NOT structure
-    pub fn not(children: &[Constraint]) -> StructuralConstraint {
+    pub fn not(children: &[ConstraintTree]) -> StructuralConstraint {
         StructuralConstraint::new(ConstraintComposition::Not, children)
     }
 
-    pub fn dot(children: &[Constraint]) -> StructuralConstraint {
+    pub fn dot(children: &[ConstraintTree]) -> StructuralConstraint {
         StructuralConstraint::new(ConstraintComposition::Dot, children)
     }
 }
@@ -205,12 +204,16 @@ impl ConstraintLogic {
 #[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq)]
 pub struct RelationalConstraint {
     pub r#type: ConstraintLogic,
-    pub lhs: Box<Constraint>,
-    pub rhs: Box<Constraint>,
+    pub lhs: Box<ConstraintTree>,
+    pub rhs: Box<ConstraintTree>,
 }
 
 impl RelationalConstraint {
-    pub fn new(r#type: ConstraintLogic, lhs: Constraint, rhs: Constraint) -> RelationalConstraint {
+    pub fn new(
+        r#type: ConstraintLogic,
+        lhs: ConstraintTree,
+        rhs: ConstraintTree,
+    ) -> RelationalConstraint {
         RelationalConstraint {
             r#type,
             lhs: Box::new(lhs),
@@ -219,7 +222,7 @@ impl RelationalConstraint {
     }
 
     /// Factory for equal relation
-    pub fn equal(lhs: Constraint, rhs: Constraint) -> RelationalConstraint {
+    pub fn equal(lhs: ConstraintTree, rhs: ConstraintTree) -> RelationalConstraint {
         RelationalConstraint::new(ConstraintLogic::Equal, lhs, rhs)
     }
 }
