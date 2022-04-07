@@ -83,7 +83,6 @@ ressa_dispatch_delegate_impl!(
     // WhileStmt,
     // DoWhileStmt,
     WithResourceStmt,
-    BinaryExpr,
     UnaryExpr,
     ParenExpr,
     DotExpr,
@@ -110,7 +109,8 @@ ressa_dispatch_match_impl!(
     VarDecl,
     // CallExpr,
     AnnotationComponent,
-    AnnotationValuePair
+    AnnotationValuePair,
+    BinaryExpr
 );
 
 pub fn explore<T>(
@@ -223,9 +223,9 @@ impl RessaNodeExplorer for CaseExpr {
         ctx.constraint_stack.new_scope();
         if let Some(cond) = &self.cond {
             let bin_expr: Expr = BinaryExpr::new(
-                Box::new(self.var.clone()),
+                self.var.clone(),
                 Op::EqualEqual,
-                Box::new(cond.clone()),
+                cond.clone(),
                 self.language,
             )
             .into();

@@ -53,12 +53,12 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
 
     // Explore
     let mut ctx = ExplorerContext::default();
-    for mut ressa in ressas.into_iter() {
+    for ressa in ressas.into_iter() {
         match ressa.language {
             // Wildcard language (apply to any language)
             Some(Language::Unknown) => {
                 for module in ast.iter() {
-                    module.explore(&mut ressa, &mut ctx, &project_index);
+                    module.explore(&ressa, &mut ctx, &project_index);
                 }
             }
 
@@ -66,7 +66,7 @@ pub fn run_ressa_parse(ast: &mut Vec<ModuleComponent>, ressas: Vec<NodePattern>)
                 // Apply to targeted language
                 if let Some(roots) = project_index.get_roots(ressa.get_language()) {
                     for module in roots.iter() {
-                        module.explore(&mut ressa, &mut ctx, &project_index);
+                        module.explore(&ressa, &mut ctx, &project_index);
                     }
                 }
             }

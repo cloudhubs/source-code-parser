@@ -249,6 +249,7 @@ pub enum NodeType {
     DeclStmt,
     Ident,
     Literal,
+    BinaryExpr,
 }
 
 pub trait IntoRessaNode {
@@ -285,7 +286,8 @@ into_ressa_node!(
     VarDecl: VarDecl,
     DeclStmt: DeclStmt,
     Ident: Ident,
-    Literal: Literal
+    Literal: Literal,
+    BinaryExpr: BinaryExpr
 );
 
 #[derive(Debug, Clone, new)]
