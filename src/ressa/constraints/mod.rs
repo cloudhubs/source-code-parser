@@ -36,8 +36,7 @@ impl SimpleIdent {
 /// Mapping for known variables to known constraints
 #[derive(Default, Debug, Clone)]
 pub struct ConstraintStack {
-    // constraints: Vec<Constraint>,
-    constraints: HashMap<SimpleIdent, Vec<Constraint>>,
+    pub constraints: HashMap<SimpleIdent, Vec<Constraint>>,
     scope_record: Vec<(SimpleIdent, usize)>,
     scope_list: Vec<usize>,
     seen_exprs: HashSet<u64>,
@@ -45,25 +44,26 @@ pub struct ConstraintStack {
 
 impl ConstraintStack {
     pub fn check(&self, to_match: &Constraint) -> bool {
-        let idents = to_match.find_idents();
-        let idents = idents
-            .iter()
-            .map(|ident| self.constraints.get(&SimpleIdent(ident.to_string())));
+        true
+        // let idents = to_match.find_idents();
+        // let idents = idents
+        //     .iter()
+        //     .map(|ident| self.constraints.get(&SimpleIdent(ident.to_string())));
 
-        // If not all variables accounted for, can't match
-        if idents.clone().any(|x| x.is_none()) {
-            return false;
-        }
+        // // If not all variables accounted for, can't match
+        // if idents.clone().any(|x| x.is_none()) {
+        //     return false;
+        // }
 
-        // Verify if constraint met (iter/collect twice--first to dedup, then to get a slice)
-        let constraints_to_check = idents.flatten().flatten().collect::<HashSet<_>>();
-        check(
-            to_match,
-            constraints_to_check
-                .into_iter()
-                .collect::<Vec<_>>()
-                .as_slice(),
-        )
+        // // Verify if constraint met (iter/collect twice--first to dedup, then to get a slice)
+        // let constraints_to_check = idents.flatten().flatten().collect::<HashSet<_>>();
+        // check(
+        //     to_match,
+        //     constraints_to_check
+        //         .into_iter()
+        //         .collect::<Vec<_>>()
+        //         .as_slice(),
+        // )
     }
 
     pub fn new_scope(&mut self) {
@@ -140,7 +140,7 @@ impl ConstraintStack {
         for ident in list {
             self.record(SimpleIdent(ident.to_string()), constraint.clone());
         }
-        debug!("Const: {}", constraint);
+        debug!("Constraint: {}", constraint);
         debug!(
             "Context contains {} idents and {} constraints",
             self.constraints.len(),
