@@ -129,15 +129,21 @@ impl ConstraintStack {
         if constraint.is_none() {
             debug!("Error encountered parsing: {:#?}", node);
         }
+
+        // Verify constraint conveys meaningful information
         let constraint = constraint?;
         if !assert_constraint && !constraint.valid_constraint() {
             println!("Invalid: {}", constraint);
         }
+
+        // Verify contains idents
         let list = constraint.find_idents();
         if list.is_empty() {
             debug!("No idents, skipping");
             return None;
         }
+
+        // Remove all idents that are invalidated by this constraint
 
         // Store constraint
         debug!("Generated, copying {}x", list.len());
