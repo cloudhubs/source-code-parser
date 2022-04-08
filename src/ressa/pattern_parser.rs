@@ -662,3 +662,15 @@ impl NodePatternParser for BinaryExpr {
         )
     }
 }
+
+impl NodePatternParser for AssignExpr {
+    fn parse(
+        &self,
+        pattern: &NodePattern,
+        ctx: &mut ExplorerContext,
+        index: &LaastIndex,
+    ) -> Option<()> {
+        explore_all_subpatterns!(pattern.subpatterns, ctx, index, self.lhs, self.rhs);
+        Some(())
+    }
+}

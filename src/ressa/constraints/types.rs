@@ -48,6 +48,18 @@ pub enum ConstraintTree {
     StructuralConstraint(StructuralConstraint),
 }
 
+impl ConstraintTree {
+    pub(crate) fn valid_constraint(&self) -> bool {
+        match self {
+            ConstraintTree::RelationalConstraint(_) => true,
+            ConstraintTree::StructuralConstraint(structural) => {
+                structural.children.iter().any(|s| s.valid_constraint())
+            }
+            _ => false,
+        }
+    }
+}
+
 /// Factory for an ident
 pub fn new_ident(ident: String) -> ConstraintTree {
     ConstraintTree::VariableConstraint(ident)

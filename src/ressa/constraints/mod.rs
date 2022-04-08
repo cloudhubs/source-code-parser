@@ -40,6 +40,7 @@ pub struct ConstraintStack {
     scope_record: Vec<(SimpleIdent, usize)>,
     scope_list: Vec<usize>,
     seen_exprs: HashSet<u64>,
+    locked: bool,
 }
 
 impl ConstraintStack {
@@ -115,10 +116,10 @@ impl ConstraintStack {
         self.seen_exprs.clear();
     }
 
-    pub fn push_constraint(&mut self, node: &Node) -> Option<()> {
+    pub fn push_constraint(&mut self, node: &Node, assert_constraint: bool) -> Option<()> {
         // Verify unique
         if !self.register_seen(node) {
-            debug!("Already seen, ignoring");
+            debug!("Already seen {:?}, ignoring", node);
             return None;
         }
 
@@ -129,6 +130,9 @@ impl ConstraintStack {
             debug!("Error encountered parsing: {:#?}", node);
         }
         let constraint = constraint?;
+        if !assert_constraint && !constraint.valid_constraint() {
+            println!("Invalid: {}", constraint);
+        }
         let list = constraint.find_idents();
         if list.is_empty() {
             debug!("No idents, skipping");
@@ -156,14 +160,6 @@ impl ConstraintStack {
 
     fn do_push_constraint(&mut self, node: &Node) -> Option<ConstraintTree> {
         match node {
-            // Node::Block(block) => Some(
-            //     block
-            //         .nodes
-            //         .iter()
-            //         .flat_map(|node| self.do_push_constraint(node))
-            //         .flatten()
-            //         .collect(),
-            // ),
             Node::Stmt(stmt) => match stmt {
                 Stmt::DeclStmt(decl) => {
                     // Get all variable names as constraints
@@ -180,9 +176,15 @@ impl ConstraintStack {
                             remove.push(i);
                         }
                     }
+
+                    // Index all nodes to ignore (so don't record later)
+                    self.locked = true;
                     for var in remove.iter() {
                         vars.remove(*var);
+                        let x: Expr = decl.variables[*var].ident.clone().into();
+                        self.do_push_constraint(&x.into());
                     }
+                    self.locked = false;
 
                     // Convert all initialized values to constraints
                     let vals = self.flatten_vec(
@@ -323,14 +325,8 @@ impl ConstraintStack {
                 self.dirty_related(&call.name);
 
                 // Convert args + dirty context for its idents
-                let args: Vec<Option<_>> = call
-                    .args
-                    .iter()
-                    .map(|arg| {
-                        self.dirty_related(arg);
-                        self.handle_expr(arg)
-                    })
-                    .collect();
+                let args: Vec<Option<_>> =
+                    call.args.iter().map(|arg| self.handle_expr(arg)).collect();
 
                 // Verify all worked
                 if args.iter().any(|arg| arg.is_none()) {
@@ -390,7 +386,11 @@ impl ConstraintStack {
         Some(constraints.into())
     }
 
-    fn record(&mut self, ident: SimpleIdent, constraint: ConstraintTree) -> Option<()> {
+    fn record(&mut self, ident: SimpleIdent, constraint: ConstraintTree) {
+        if self.locked {
+            return;
+        }
+
         // If ident doesn't exist, add it
         if !self.constraints.contains_key(&ident) {
             self.constraints.insert(ident.clone(), vec![]);
@@ -400,7 +400,6 @@ impl ConstraintStack {
         let constraints = self.constraints.get_mut(&ident).unwrap();
         self.scope_record.push((ident.clone(), constraints.len()));
         constraints.push(Constraint::create_constraint(constraint));
-        Some(())
     }
 
     fn dirty_related(&mut self, expr: &Expr) {
