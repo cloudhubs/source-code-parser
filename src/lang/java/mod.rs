@@ -61,12 +61,7 @@ fn find_components_internal(ast: AST, mut package: String, path: &str) -> Vec<Co
         .iter()
     {
         if let Some(class) = parse_class(node, &*package, path) {
-            // Save the methods
-            for method in class.component.methods.iter() {
-                components.push(ComponentType::MethodComponent(method.clone()));
-            }
-
-            // Save the class itself
+            // Save the class itself (don't extract and save the methods, this causes duplication)
             components.push(ComponentType::ClassOrInterfaceComponent(class));
         }
     }

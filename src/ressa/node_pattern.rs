@@ -179,10 +179,10 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     let passed = if parse(pattern, node, &mut transaction, index) {
         for (k, v) in ctx.constraint_stack.constraints.iter() {
             println!("{:?}: {} entries", k, v.len());
-            for constraint in v.iter().filter(|x| x.guaranteed) {
+            for constraint in v.iter() {
                 println!("{}", constraint);
             }
-            println!("");
+            println!();
         }
         println!("End of context\n\n");
         // println!(

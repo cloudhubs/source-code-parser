@@ -118,7 +118,7 @@ impl ConstraintStack {
 
     pub fn push_constraint(&mut self, node: &Node, assert_constraint: bool) -> Option<()> {
         // Verify unique
-        if !self.register_seen(node) {
+        if self.register_seen(node) {
             debug!("Already seen {:?}, ignoring", node);
             return None;
         }
@@ -133,7 +133,8 @@ impl ConstraintStack {
         // Verify constraint conveys meaningful information
         let constraint = constraint?;
         if !assert_constraint && !constraint.valid_constraint() {
-            println!("Invalid: {}", constraint);
+            debug!("Invalid: {}", constraint);
+            return None;
         }
 
         // Verify contains idents
@@ -165,6 +166,7 @@ impl ConstraintStack {
     }
 
     fn do_push_constraint(&mut self, node: &Node) -> Option<ConstraintTree> {
+        self.register_seen(node);
         match node {
             Node::Stmt(stmt) => match stmt {
                 Stmt::DeclStmt(decl) => {
@@ -185,8 +187,8 @@ impl ConstraintStack {
 
                     // Index all nodes to ignore (so don't record later)
                     self.locked = true;
-                    for var in remove.iter() {
-                        vars.remove(*var);
+                    for (decrementer, var) in remove.iter().enumerate() {
+                        vars.remove(*var - decrementer);
                         let x: Expr = decl.variables[*var].ident.clone().into();
                         self.do_push_constraint(&x.into());
                     }
@@ -345,8 +347,8 @@ impl ConstraintStack {
             }
             Expr::DotExpr(dot) => Some(
                 StructuralConstraint::dot(&[
-                    self.handle_expr(&dot.selected)?,
                     self.handle_expr(&dot.expr)?,
+                    self.handle_expr(&dot.selected)?,
                 ])
                 .into(),
             ),
@@ -418,13 +420,19 @@ impl ConstraintStack {
         self.scope_list.pop().unwrap_or(0)
     }
 
-    fn register_seen<T>(&mut self, hashable: T) -> bool
+    fn register_seen<T>(&mut self, hashable: &T) -> bool
     where
         T: Hash,
     {
-        let hasher = &mut DefaultHasher::new();
-        hashable.hash(hasher);
-        let hash = hasher.finish();
-        !self.seen_exprs.insert(hash)
+        !self.seen_exprs.insert(compute_hash(hashable))
     }
+}
+
+fn compute_hash<T>(hashable: &T) -> u64
+where
+    T: Hash,
+{
+    let hasher = &mut DefaultHasher::new();
+    hashable.hash(hasher);
+    hasher.finish()
 }

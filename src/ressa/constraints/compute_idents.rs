@@ -49,15 +49,9 @@ impl ComputeIdent for StructuralConstraint {
 
 impl ComputeIdent for MethodConstraint {
     fn find_idents(&self) -> HashSet<&str> {
-        self.args
+        self.called
             .iter()
-            .flat_map(|constraint| constraint.find_idents())
-            .chain(
-                self.called
-                    .iter()
-                    .flat_map(|callee| callee.find_idents())
-                    .into_iter(),
-            )
+            .flat_map(|callee| callee.find_idents())
             .collect()
     }
 }
