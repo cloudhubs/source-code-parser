@@ -28,8 +28,10 @@ pub(crate) fn is_common_junk_tag(tag: &str) -> bool {
     // The compiler no longer needs to be smart enough to combine match arms :)
     matches!(
         tag,
+        // Reserve words
+        "new" | "volatile" | "final" | "static" |
         // Control flow
-        "if" | "else" | "for" | "while" | "do" | "switch" | "try" | "catch" | "finally" |
+        "continue" | "break" | "if" | "else" | "for" | "while" | "do" | "switch" | "try" | "catch" | "finally" |
         // Type definitions
         "class" | "interface" | "enum" | 
         // Misc. Syntax

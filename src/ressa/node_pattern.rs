@@ -5,6 +5,7 @@ use crate::ast::*;
 use crate::prophet::*;
 use crate::ressa::explorer::choose_exit;
 use derive_new::new;
+use itertools::Itertools;
 use regex::Regex;
 use serde::Deserialize;
 use std::cell::RefCell;
@@ -176,6 +177,24 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
 
     let mut transaction = ctx.clone();
     let passed = if parse(pattern, node, &mut transaction, index) {
+        for (k, v) in ctx.constraint_stack.constraints.iter() {
+            println!("{:?}: {} entries", k, v.len());
+            for constraint in v.iter() {
+                println!("{}", constraint);
+            }
+            println!();
+        }
+        println!("End of context\n\n");
+        // println!(
+        //     "{}",
+        //     ctx.constraint_stack
+        //         .constraints
+        //         .iter()
+        //         .map(|(k, v)| {
+        //             format!("{:?}: {}", k, v.iter().map(|c| c.to_string()).join(", "))
+        //         })
+        //         .join("\n")
+        // );
         if pattern.callback.is_some() {
             // let tmp = transaction.clone();
             match Executor::get().execute(pattern, transaction.parser) {
@@ -230,6 +249,8 @@ pub enum NodeType {
     DeclStmt,
     Ident,
     Literal,
+    BinaryExpr,
+    AssignExpr,
 }
 
 pub trait IntoRessaNode {
@@ -266,7 +287,9 @@ into_ressa_node!(
     VarDecl: VarDecl,
     DeclStmt: DeclStmt,
     Ident: Ident,
-    Literal: Literal
+    Literal: Literal,
+    BinaryExpr: BinaryExpr,
+    AssignExpr: AssignExpr
 );
 
 #[derive(Debug, Clone, new)]

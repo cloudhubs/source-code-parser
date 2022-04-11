@@ -36,34 +36,35 @@ impl SimpleIdent {
 /// Mapping for known variables to known constraints
 #[derive(Default, Debug, Clone)]
 pub struct ConstraintStack {
-    // constraints: Vec<Constraint>,
-    constraints: HashMap<SimpleIdent, Vec<Constraint>>,
+    pub constraints: HashMap<SimpleIdent, Vec<Constraint>>,
     scope_record: Vec<(SimpleIdent, usize)>,
     scope_list: Vec<usize>,
     seen_exprs: HashSet<u64>,
+    locked: bool,
 }
 
 impl ConstraintStack {
     pub fn check(&self, to_match: &Constraint) -> bool {
-        let idents = to_match.find_idents();
-        let idents = idents
-            .iter()
-            .map(|ident| self.constraints.get(&SimpleIdent(ident.to_string())));
+        true
+        // let idents = to_match.find_idents();
+        // let idents = idents
+        //     .iter()
+        //     .map(|ident| self.constraints.get(&SimpleIdent(ident.to_string())));
 
-        // If not all variables accounted for, can't match
-        if idents.clone().any(|x| x.is_none()) {
-            return false;
-        }
+        // // If not all variables accounted for, can't match
+        // if idents.clone().any(|x| x.is_none()) {
+        //     return false;
+        // }
 
-        // Verify if constraint met (iter/collect twice--first to dedup, then to get a slice)
-        let constraints_to_check = idents.flatten().flatten().collect::<HashSet<_>>();
-        check(
-            to_match,
-            constraints_to_check
-                .into_iter()
-                .collect::<Vec<_>>()
-                .as_slice(),
-        )
+        // // Verify if constraint met (iter/collect twice--first to dedup, then to get a slice)
+        // let constraints_to_check = idents.flatten().flatten().collect::<HashSet<_>>();
+        // check(
+        //     to_match,
+        //     constraints_to_check
+        //         .into_iter()
+        //         .collect::<Vec<_>>()
+        //         .as_slice(),
+        // )
     }
 
     pub fn new_scope(&mut self) {
@@ -115,10 +116,10 @@ impl ConstraintStack {
         self.seen_exprs.clear();
     }
 
-    pub fn push_constraint(&mut self, node: &Node) -> Option<()> {
+    pub fn push_constraint(&mut self, node: &Node, assert_constraint: bool) -> Option<()> {
         // Verify unique
-        if !self.register_seen(node) {
-            debug!("Already seen, ignoring");
+        if self.register_seen(node) {
+            debug!("Already seen {:?}, ignoring", node);
             return None;
         }
 
@@ -128,19 +129,29 @@ impl ConstraintStack {
         if constraint.is_none() {
             debug!("Error encountered parsing: {:#?}", node);
         }
+
+        // Verify constraint conveys meaningful information
         let constraint = constraint?;
+        if !assert_constraint && !constraint.valid_constraint() {
+            debug!("Invalid: {}", constraint);
+            return None;
+        }
+
+        // Verify contains idents
         let list = constraint.find_idents();
         if list.is_empty() {
             debug!("No idents, skipping");
             return None;
         }
 
+        // Remove all idents that are invalidated by this constraint
+
         // Store constraint
         debug!("Generated, copying {}x", list.len());
         for ident in list {
             self.record(SimpleIdent(ident.to_string()), constraint.clone());
         }
-        debug!("Const: {}", constraint);
+        debug!("Constraint: {}", constraint);
         debug!(
             "Context contains {} idents and {} constraints",
             self.constraints.len(),
@@ -155,15 +166,8 @@ impl ConstraintStack {
     }
 
     fn do_push_constraint(&mut self, node: &Node) -> Option<ConstraintTree> {
+        self.register_seen(node);
         match node {
-            // Node::Block(block) => Some(
-            //     block
-            //         .nodes
-            //         .iter()
-            //         .flat_map(|node| self.do_push_constraint(node))
-            //         .flatten()
-            //         .collect(),
-            // ),
             Node::Stmt(stmt) => match stmt {
                 Stmt::DeclStmt(decl) => {
                     // Get all variable names as constraints
@@ -180,9 +184,15 @@ impl ConstraintStack {
                             remove.push(i);
                         }
                     }
-                    for var in remove.iter() {
-                        vars.remove(*var);
+
+                    // Index all nodes to ignore (so don't record later)
+                    self.locked = true;
+                    for (decrementer, var) in remove.iter().enumerate() {
+                        vars.remove(*var - decrementer);
+                        let x: Expr = decl.variables[*var].ident.clone().into();
+                        self.do_push_constraint(&x.into());
                     }
+                    self.locked = false;
 
                     // Convert all initialized values to constraints
                     let vals = self.flatten_vec(
@@ -323,14 +333,8 @@ impl ConstraintStack {
                 self.dirty_related(&call.name);
 
                 // Convert args + dirty context for its idents
-                let args: Vec<Option<_>> = call
-                    .args
-                    .iter()
-                    .map(|arg| {
-                        self.dirty_related(arg);
-                        self.handle_expr(arg)
-                    })
-                    .collect();
+                let args: Vec<Option<_>> =
+                    call.args.iter().map(|arg| self.handle_expr(arg)).collect();
 
                 // Verify all worked
                 if args.iter().any(|arg| arg.is_none()) {
@@ -343,8 +347,8 @@ impl ConstraintStack {
             }
             Expr::DotExpr(dot) => Some(
                 StructuralConstraint::dot(&[
-                    self.handle_expr(&dot.selected)?,
                     self.handle_expr(&dot.expr)?,
+                    self.handle_expr(&dot.selected)?,
                 ])
                 .into(),
             ),
@@ -390,7 +394,11 @@ impl ConstraintStack {
         Some(constraints.into())
     }
 
-    fn record(&mut self, ident: SimpleIdent, constraint: ConstraintTree) -> Option<()> {
+    fn record(&mut self, ident: SimpleIdent, constraint: ConstraintTree) {
+        if self.locked {
+            return;
+        }
+
         // If ident doesn't exist, add it
         if !self.constraints.contains_key(&ident) {
             self.constraints.insert(ident.clone(), vec![]);
@@ -400,7 +408,6 @@ impl ConstraintStack {
         let constraints = self.constraints.get_mut(&ident).unwrap();
         self.scope_record.push((ident.clone(), constraints.len()));
         constraints.push(Constraint::create_constraint(constraint));
-        Some(())
     }
 
     fn dirty_related(&mut self, expr: &Expr) {
@@ -413,13 +420,19 @@ impl ConstraintStack {
         self.scope_list.pop().unwrap_or(0)
     }
 
-    fn register_seen<T>(&mut self, hashable: T) -> bool
+    fn register_seen<T>(&mut self, hashable: &T) -> bool
     where
         T: Hash,
     {
-        let hasher = &mut DefaultHasher::new();
-        hashable.hash(hasher);
-        let hash = hasher.finish();
-        !self.seen_exprs.insert(hash)
+        !self.seen_exprs.insert(compute_hash(hashable))
     }
+}
+
+fn compute_hash<T>(hashable: &T) -> u64
+where
+    T: Hash,
+{
+    let hasher = &mut DefaultHasher::new();
+    hashable.hash(hasher);
+    hasher.finish()
 }

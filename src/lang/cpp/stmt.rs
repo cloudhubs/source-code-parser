@@ -262,7 +262,7 @@ fn switch_case(case_statement: &AST, var: Expr) -> Option<CaseExpr> {
     }
     let nodes = block_nodes_iter(&case_statement.children[3..]);
     let block = Block::new(nodes, Cpp);
-    let case = CaseExpr::new(expr, var, block, Cpp);
+    let case = CaseExpr::new(expr.map(Box::new), Box::new(var), Box::new(block), Cpp);
     Some(case)
 }
 
