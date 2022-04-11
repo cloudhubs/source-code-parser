@@ -234,6 +234,11 @@ impl ConstraintStack {
                 let lhs_len = assign.lhs.len();
                 let rhs_len = assign.rhs.len();
 
+                // Dirty all assigned in this
+                for expr in assign.lhs.iter() {
+                    self.dirty_related(expr);
+                }
+
                 // Verify type of assign expr in question
                 if lhs_len > 1 && rhs_len == 1 {
                     let rhs_constraint = self.flatten(&assign.rhs)?;
@@ -265,7 +270,12 @@ impl ConstraintStack {
             }
             Expr::BinaryExpr(bin) => {
                 if let Some(relation) = ConstraintLogic::try_convert(&bin.op) {
-                    // This binary expression a logical constraint
+                    // If assignment, dirty old constraints
+                    if relation == ConstraintLogic::Equal {
+                        self.dirty_related(&bin.lhs);
+                    }
+
+                    // Convert into relational constraint
                     Some(
                         RelationalConstraint::new(
                             relation,

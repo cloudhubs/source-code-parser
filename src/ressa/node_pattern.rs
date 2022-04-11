@@ -179,22 +179,12 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
     let passed = if parse(pattern, node, &mut transaction, index) {
         for (k, v) in ctx.constraint_stack.constraints.iter() {
             println!("{:?}: {} entries", k, v.len());
-            for constraint in v.iter() {
+            for constraint in v.iter().filter(|x| x.guaranteed) {
                 println!("{}", constraint);
             }
             println!();
         }
         println!("End of context\n\n");
-        // println!(
-        //     "{}",
-        //     ctx.constraint_stack
-        //         .constraints
-        //         .iter()
-        //         .map(|(k, v)| {
-        //             format!("{:?}: {}", k, v.iter().map(|c| c.to_string()).join(", "))
-        //         })
-        //         .join("\n")
-        // );
         if pattern.callback.is_some() {
             // let tmp = transaction.clone();
             match Executor::get().execute(pattern, transaction.parser) {
