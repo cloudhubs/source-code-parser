@@ -3,9 +3,10 @@ use super::{
     StructuralConstraint,
 };
 use downcast_rs::{impl_downcast, Downcast};
+use itertools::Itertools;
 use z3::{
-    ast::{self, Ast, Bool},
-    Config, Context, Solver, SortKind,
+    ast::{self, Ast},
+    Config, Context, SatResult, Solver, SortKind,
 };
 
 trait AstExt: Ast<'static> + Downcast {}
@@ -28,58 +29,103 @@ impl_dynamic_ast!(
 
 pub fn check(to_match: &Constraint, candidate: &[&Constraint]) -> bool {
     let cfg = Config::new();
-    let ctx = Box::leak(Box::new(Context::new(&cfg)));
-    let solver = Solver::new(&ctx);
+    //let ctx: &'static mut Context = Box::leak(Box::new(Context::new(&cfg)));
+    //let matched = check_inner(&ctx, to_match, candidate);
 
-    // We must drop Solver early so that we can drop ctx
-    drop(solver);
     // SAFETY: ctx was allocated using Box::new and leaked with Box::leak
     // so we can guarantee the lifetime lives forever and won't be deallocated
     // by other code, so this won't be a double free
-    let _ = unsafe { Box::from_raw(ctx) };
+    //let _ = unsafe { Box::from_raw(ctx) };
+
+    //matched
     true
 }
 
-fn add_constraint(
-    ctx: &'static Context,
-    solver: &'static Solver,
-    constraint: &ConstraintTree,
-) -> Option<Box<dyn AstExt>> {
+fn check_inner(ctx: &'static Context, to_match: &Constraint, candidate: &[&Constraint]) -> bool {
+    let to_match = match add_constraint(&ctx, &to_match.value) {
+        Some(constraint) => constraint,
+        _ => return true,
+    };
+    let bool_to_match = match to_match.downcast_ref::<ast::Bool>() {
+        Some(constraint) => constraint,
+        _ => return false,
+    };
+    let candidates: Vec<_> = candidate
+        .iter()
+        .flat_map(|c| add_constraint(&ctx, &c.value))
+        .collect();
+
+    let bool_candidates: Vec<_> = candidates
+        .iter()
+        .flat_map(|c| {
+            // Needs to be Bool to be assertable
+            if c.get_sort().kind() != SortKind::Bool {
+                None
+            } else {
+                Some(c)
+            }
+        })
+        .flat_map(|c| c.downcast_ref::<ast::Bool>())
+        .collect();
+
+    let solver = Solver::new(ctx);
+    solver.assert(&bool_to_match);
+    for condition in bool_candidates {
+        solver.assert(&condition);
+    }
+    solver.check() == SatResult::Sat
+}
+
+fn add_constraint(ctx: &'static Context, constraint: &ConstraintTree) -> Option<Box<dyn AstExt>> {
     use ConstraintTree::*;
     match constraint {
-        VariableConstraint(ident) => add_variable_constraint(ctx, solver, ident), //Some(Box::new(Bool::new_const(ctx, ident.clone()))),
-        MethodConstraint(method) => add_method_constraint(ctx, solver, method),
-        RelationalConstraint(relation) => add_relational_constraint(ctx, solver, relation),
-        StructuralConstraint(structural) => add_structural_constraint(ctx, solver, structural),
-        LiteralConstraint(lit) => add_literal_constraint(ctx, solver, lit), //Some(Box::new(ast::String::new_const(ctx, lit.clone()))),
+        VariableConstraint(ident) => add_variable_constraint(ctx, ident),
+        MethodConstraint(method) => add_method_constraint(ctx, method),
+        RelationalConstraint(relation) => add_relational_constraint(ctx, relation),
+        StructuralConstraint(structural) => add_structural_constraint(ctx, structural),
+        LiteralConstraint(lit) => add_literal_constraint(ctx, lit),
     }
 }
 
-fn add_variable_constraint(
-    ctx: &'static Context,
-    solver: &'static Solver,
-    constraint: &str,
-) -> Option<Box<dyn AstExt>> {
-    None
+fn add_variable_constraint(ctx: &'static Context, variable: &str) -> Option<Box<dyn AstExt>> {
+    // These are currently the same implementation
+    add_literal_constraint(ctx, variable)
 }
 
 fn add_method_constraint(
     ctx: &'static Context,
-    solver: &'static Solver,
     constraint: &MethodConstraint,
 ) -> Option<Box<dyn AstExt>> {
-    None
+    match &constraint.called {
+        Some(called) => {
+            let z3_called = add_constraint(ctx, called)?;
+            let name = z3_called.downcast_ref::<ast::String>()?.as_string()?;
+            // Not sure how to know the types of these children
+            //let args: Vec<_> = constraint
+            //    .args
+            //    .iter()
+            //    .flat_map(|arg| add_constraint(ctx, solver, called))
+            //    .collect();
+            Some(Box::new(ast::String::new_const(ctx, name)))
+        }
+        _ => None,
+    }
 }
 
 fn add_relational_constraint(
     ctx: &'static Context,
-    solver: &'static Solver,
     constraint: &RelationalConstraint,
 ) -> Option<Box<dyn AstExt>> {
-    let lhs = add_constraint(ctx, solver, &constraint.lhs)?;
-    let rhs = add_constraint(ctx, solver, &constraint.rhs)?;
+    let lhs = add_constraint(ctx, &constraint.lhs)?;
+    let rhs = add_constraint(ctx, &constraint.rhs)?;
 
     match (lhs.get_sort().kind(), rhs.get_sort().kind()) {
+        (SortKind::Seq, SortKind::Int) => {
+            let lhs_var = lhs.downcast_ref::<ast::String>()?.as_string()?;
+            let rhs_int = rhs.downcast_ref::<ast::Int>()?;
+            // Check constraint type
+            Some(Box::new(ast::Int::new_const(ctx, lhs_var)._eq(rhs_int)))
+        }
         (SortKind::Int, SortKind::Int) => {
             use ConstraintLogic::*;
             let lhs_int = lhs.downcast_ref::<ast::Int>()?;
@@ -92,7 +138,6 @@ fn add_relational_constraint(
                 GreaterThan => lhs_int.gt(rhs_int),
                 GreaterThanEqualTo => lhs_int.ge(rhs_int),
             };
-            // solver.assert(&c);
             Some(Box::new(c))
         }
         (lhs_sort, rhs_sort) => {
@@ -104,13 +149,12 @@ fn add_relational_constraint(
 
 fn add_structural_constraint(
     ctx: &'static Context,
-    solver: &'static Solver,
     constraint: &StructuralConstraint,
 ) -> Option<Box<dyn AstExt>> {
     let z3_children: Vec<_> = constraint
         .children
         .iter()
-        .flat_map(|child| add_constraint(ctx, solver, child))
+        .flat_map(|child| add_constraint(ctx, child))
         .collect();
 
     use super::ConstraintComposition::*;
@@ -135,9 +179,9 @@ fn add_structural_constraint(
             _ => None,
         },
         Plus | Minus | Multiply => {
-            // I just realized I don't think I can cast the children to ints
-            // since practically thing will end up as a tree of children
-            // realistically rather than a linear list of the ints..
+            // I'm not totally convinced I can always assume these are ints
+            // but I think it makes sense now because if we're using the
+            // plus/minus etc operator then the children should be this type
             let int_children: Vec<_> = z3_children
                 .iter()
                 .flat_map(|c| c.downcast_ref::<ast::Int>())
@@ -151,18 +195,19 @@ fn add_structural_constraint(
             Some(Box::new(op(ctx, &int_children)))
         }
         Dot => {
-            let _ = 0;
-            None
+            let name: String = z3_children
+                .iter()
+                .flat_map(|c| c.downcast_ref::<ast::String>())
+                .flat_map(ast::String::as_string)
+                .intersperse(".".to_owned())
+                .collect();
+            Some(Box::new(ast::String::new_const(ctx, name)))
         }
         // Ignoring Shifts because Z3 ints do not support them
         _ => None,
     }
 }
 
-fn add_literal_constraint(
-    ctx: &'static Context,
-    solver: &'static Solver,
-    constraint: &str,
-) -> Option<Box<dyn AstExt>> {
-    None
+fn add_literal_constraint(ctx: &'static Context, literal: &str) -> Option<Box<dyn AstExt>> {
+    Some(Box::new(ast::String::new_const(ctx, literal)))
 }

@@ -8,7 +8,7 @@ pub mod coerce;
 pub use coerce::*;
 
 pub mod util;
-use tracing::log::debug;
+use tracing::debug;
 pub use util::*;
 
 pub mod types;
