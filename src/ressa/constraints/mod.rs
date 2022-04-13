@@ -45,26 +45,25 @@ pub struct ConstraintStack {
 
 impl ConstraintStack {
     pub fn check(&self, to_match: &Constraint) -> bool {
-        true
-        // let idents = to_match.find_idents();
-        // let idents = idents
-        //     .iter()
-        //     .map(|ident| self.constraints.get(&SimpleIdent(ident.to_string())));
+        let idents = to_match.find_idents();
+        let idents = idents
+            .iter()
+            .map(|ident| self.constraints.get(&SimpleIdent(ident.to_string())));
 
-        // // If not all variables accounted for, can't match
-        // if idents.clone().any(|x| x.is_none()) {
-        //     return false;
-        // }
+        // If not all variables accounted for, can't match
+        if idents.clone().any(|x| x.is_none()) {
+            return false;
+        }
 
-        // // Verify if constraint met (iter/collect twice--first to dedup, then to get a slice)
-        // let constraints_to_check = idents.flatten().flatten().collect::<HashSet<_>>();
-        // check(
-        //     to_match,
-        //     constraints_to_check
-        //         .into_iter()
-        //         .collect::<Vec<_>>()
-        //         .as_slice(),
-        // )
+        // Verify if constraint met (iter/collect twice--first to dedup, then to get a slice)
+        let constraints_to_check = idents.flatten().flatten().collect::<HashSet<_>>();
+        check(
+            to_match,
+            constraints_to_check
+                .into_iter()
+                .collect::<Vec<_>>()
+                .as_slice(),
+        )
     }
 
     pub fn new_scope(&mut self) {
@@ -143,8 +142,6 @@ impl ConstraintStack {
             debug!("No idents, skipping");
             return None;
         }
-
-        // Remove all idents that are invalidated by this constraint
 
         // Store constraint
         debug!("Generated, copying {}x", list.len());
@@ -436,6 +433,10 @@ impl ConstraintStack {
     {
         !self.seen_exprs.insert(compute_hash(hashable))
     }
+
+    // fn find_matches(&self, idents: HashSet<&str>) -> Vec<Option<&str>> {
+
+    // }
 }
 
 fn compute_hash<T>(hashable: &T) -> u64

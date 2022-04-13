@@ -1,7 +1,7 @@
 use derive_new::new;
 use serde::Deserialize;
 
-use crate::ast::Op;
+use crate::{ast::Op, ressa::CachedCompiledPattern};
 
 // Top-level: Constraint
 
@@ -83,6 +83,41 @@ impl From<RelationalConstraint> for ConstraintTree {
 impl From<StructuralConstraint> for ConstraintTree {
     fn from(c: StructuralConstraint) -> Self {
         ConstraintTree::StructuralConstraint(c)
+    }
+}
+
+// Variable Constraint
+#[derive(Debug, Clone, Deserialize)]
+pub struct VariableConstraint {
+    pattern: String,
+    #[serde(skip)]
+    #[serde(default)]
+    compiled_pattern: CachedCompiledPattern,
+}
+
+impl VariableConstraint {
+    pub fn new(name: &str) -> VariableConstraint {
+        VariableConstraint {
+            pattern: name.to_string(),
+            compiled_pattern: CachedCompiledPattern::default(),
+        }
+    }
+
+    pub fn matches(&self, match_str: &str) -> bool {
+        self.compiled_pattern
+            .get_or_compile(&self.pattern)
+            .as_ref()
+            .map(|pattern| pattern.primitive_matches(match_str).is_some())
+            .unwrap_or(false)
+    }
+}
+
+impl From<String> for VariableConstraint {
+    fn from(pattern: String) -> Self {
+        VariableConstraint {
+            pattern,
+            compiled_pattern: CachedCompiledPattern::default(),
+        }
     }
 }
 

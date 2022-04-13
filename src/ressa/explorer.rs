@@ -354,10 +354,9 @@ impl RessaNodeExplorer for DeclStmt {
 
 #[cfg(test)]
 mod tests {
-    use std::cell::RefCell;
     use std::collections::HashMap;
 
-    use crate::ressa::NodeType;
+    use crate::ressa::{CachedCompiledPattern, NodeType};
 
     use super::*;
 
@@ -371,8 +370,8 @@ mod tests {
         .into();
         let np = NodePattern::new(
             NodeType::CallExpr,
-            RefCell::new(None),
-            RefCell::new(None),
+            CachedCompiledPattern::default(),
+            CachedCompiledPattern::default(),
             vec![],
             None,
             true,

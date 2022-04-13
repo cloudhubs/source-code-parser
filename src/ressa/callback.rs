@@ -102,8 +102,10 @@ impl Executor {
 
 #[cfg(test)]
 mod tests {
-    use crate::{ressa::NodeType, Language};
-    use std::cell::RefCell;
+    use crate::{
+        ressa::{CachedCompiledPattern, NodeType},
+        Language,
+    };
 
     use super::*;
 
@@ -111,8 +113,8 @@ mod tests {
     pub fn add_get_variables_from_script() {
         let pattern = NodePattern::new(
             NodeType::CallExpr,
-            RefCell::new(None),
-            RefCell::new(None),
+            CachedCompiledPattern::default(),
+            CachedCompiledPattern::default(),
             vec![],
             Some(
                 r#"
@@ -141,8 +143,8 @@ mod tests {
         ctx.make_variable("foo", "bar");
         let pattern = NodePattern::new(
             NodeType::CallExpr,
-            RefCell::new(None),
-            RefCell::new(None),
+            CachedCompiledPattern::default(),
+            CachedCompiledPattern::default(),
             vec![],
             Some(
                 r#"
