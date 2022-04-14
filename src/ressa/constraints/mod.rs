@@ -4,9 +4,6 @@ use std::{
     iter::zip,
 };
 
-pub mod coerce;
-pub use coerce::*;
-
 pub mod util;
 use tracing::log::debug;
 pub use util::*;
@@ -22,6 +19,9 @@ pub use check::*;
 
 pub mod stringify;
 pub use stringify::*;
+
+pub mod find_vars;
+pub use find_vars::*;
 
 use crate::ast::{Expr, Ident, Node, Op, Stmt};
 
@@ -171,7 +171,7 @@ impl ConstraintStack {
                     let mut vars = decl
                         .variables
                         .iter()
-                        .map(|decl| new_ident(decl.ident.name.clone()))
+                        .map(|decl| VariableConstraint::new(&*decl.ident.name))
                         .collect::<Vec<_>>();
 
                     // Determine which are uninitialized and don't matter
@@ -203,7 +203,7 @@ impl ConstraintStack {
                     // Zip variables and initial values into constraints
                     let result = zip(vars.into_iter(), vals.into_iter())
                         .map(|(var_name, var_val)| {
-                            RelationalConstraint::equal(var_name, var_val).into()
+                            RelationalConstraint::equal(var_name.into(), var_val).into()
                         })
                         .collect::<Vec<_>>();
 
@@ -313,7 +313,7 @@ impl ConstraintStack {
                 }
             }
 
-            Expr::Ident(ident) => Some(new_ident(ident.name.clone())),
+            Expr::Ident(ident) => Some(VariableConstraint::new(&*ident.name).into()),
             Expr::Literal(lit) => Some(new_literal(lit.value.clone())),
             Expr::UnaryExpr(unary) => match unary.op {
                 // crate::ast::Op::Plus => {} // TODO This is potentially important in numeric comparisons

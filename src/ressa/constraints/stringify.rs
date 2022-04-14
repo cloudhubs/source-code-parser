@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use super::{
     Constraint, ConstraintComposition, ConstraintLogic, ConstraintTree, MethodConstraint,
-    RelationalConstraint, StructuralConstraint,
+    RelationalConstraint, StructuralConstraint, VariableConstraint,
 };
 
 impl Display for Constraint {
@@ -41,11 +41,17 @@ impl Display for ConstraintTree {
         let result = match self {
             ConstraintTree::VariableConstraint(var) => var.to_string(),
             ConstraintTree::LiteralConstraint(var) => format!("lit({})", var),
-            ConstraintTree::MethodConstraint(method) => format!("{}", method),
-            ConstraintTree::RelationalConstraint(rel) => format!("{}", rel),
-            ConstraintTree::StructuralConstraint(structural) => format!("{}", structural),
+            ConstraintTree::MethodConstraint(method) => method.to_string(),
+            ConstraintTree::RelationalConstraint(rel) => rel.to_string(),
+            ConstraintTree::StructuralConstraint(structural) => structural.to_string(),
         };
         f.write_fmt(format_args!("{}", result))
+    }
+}
+
+impl Display for VariableConstraint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}", self.pattern))
     }
 }
 

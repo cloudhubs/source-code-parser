@@ -1,3 +1,5 @@
+use core::hash::Hash;
+
 use derive_new::new;
 use serde::Deserialize;
 
@@ -41,7 +43,7 @@ impl Constraint {
 
 #[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq)]
 pub enum ConstraintTree {
-    VariableConstraint(String),
+    VariableConstraint(VariableConstraint),
     LiteralConstraint(String),
     MethodConstraint(MethodConstraint),
     RelationalConstraint(RelationalConstraint),
@@ -60,16 +62,16 @@ impl ConstraintTree {
     }
 }
 
-/// Factory for an ident
-pub fn new_ident(ident: String) -> ConstraintTree {
-    ConstraintTree::VariableConstraint(ident)
-}
-
 /// Factory for a literal
 pub fn new_literal(literal: String) -> ConstraintTree {
     ConstraintTree::LiteralConstraint(literal)
 }
 
+impl From<VariableConstraint> for ConstraintTree {
+    fn from(c: VariableConstraint) -> ConstraintTree {
+        ConstraintTree::VariableConstraint(c)
+    }
+}
 impl From<MethodConstraint> for ConstraintTree {
     fn from(c: MethodConstraint) -> ConstraintTree {
         ConstraintTree::MethodConstraint(c)
@@ -89,7 +91,7 @@ impl From<StructuralConstraint> for ConstraintTree {
 // Variable Constraint
 #[derive(Debug, Clone, Deserialize)]
 pub struct VariableConstraint {
-    pattern: String,
+    pub pattern: String,
     #[serde(skip)]
     #[serde(default)]
     compiled_pattern: CachedCompiledPattern,
@@ -110,6 +112,10 @@ impl VariableConstraint {
             .map(|pattern| pattern.primitive_matches(match_str).is_some())
             .unwrap_or(false)
     }
+
+    pub fn as_str(&self) -> &str {
+        self.pattern.as_str()
+    }
 }
 
 impl From<String> for VariableConstraint {
@@ -118,6 +124,20 @@ impl From<String> for VariableConstraint {
             pattern,
             compiled_pattern: CachedCompiledPattern::default(),
         }
+    }
+}
+
+impl PartialEq for VariableConstraint {
+    fn eq(&self, other: &Self) -> bool {
+        self.pattern == other.pattern
+    }
+}
+
+impl Eq for VariableConstraint {}
+
+impl Hash for VariableConstraint {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.pattern.hash(state);
     }
 }
 

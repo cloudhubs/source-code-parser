@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 use super::{
     CachedCompiledPattern, Constraint, ExplorerContext, LaastIndex, ParserContext,
     RessaNodeExplorer,
