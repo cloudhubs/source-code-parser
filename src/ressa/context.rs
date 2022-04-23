@@ -2,7 +2,10 @@ use rune::{
     runtime::{Object, Shared, Value},
     Any,
 };
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Debug,
+};
 
 use super::RessaResult;
 
@@ -68,6 +71,9 @@ pub trait ContextObjectActions {
     /// Save to the context under the given name; returns the input, for ease of use
     fn save(&mut self, name: &str, val: Value) -> &Value;
 
+    /// Save a transient value to the context under the given name; returns the input, for ease of use
+    fn save_transient(&mut self, name: &str, val: Value) -> &Value;
+
     /// Retrieve from the context
     fn get(&self, name: &str) -> Option<&Value>;
 
@@ -119,7 +125,7 @@ impl ParserContext {
     fn make_object(&mut self, name: &str) {
         let obj_name: String = name.into();
         if !self.objectlike_data.contains_key(&obj_name) {
-            // tracing::info!("Making: {}", obj_name);
+            tracing::debug!("Making: {}", obj_name);
             (&mut self.objectlike_data).insert(obj_name, Object::new().into());
         }
     }
@@ -127,13 +133,21 @@ impl ParserContext {
 
 impl ContextObjectActions for ParserContext {
     fn save(&mut self, name: &str, value: Value) -> &Value {
-        // tracing::info!("Saving {}: {:?}", name, new_obj);
+        tracing::debug!("Saving {}: {:?}", name, value);
         self.objectlike_data.insert(self.resolve_tag(name), value);
         self.get(name).unwrap()
     }
 
+    fn save_transient(&mut self, name: &str, value: Value) -> &Value {
+        tracing::debug!("Saving transient {}: {:?}", name, value);
+        self.make_transient(name);
+        self.save(name, value)
+    }
+
     fn get(&self, name: &str) -> Option<&Value> {
-        self.objectlike_data.get(&self.resolve_tag(name))
+        let result = self.objectlike_data.get(&self.resolve_tag(name));
+        log("object", name, &result);
+        result
     }
 
     fn get_or_save(&mut self, name: &str, val: Value) -> &Value {
@@ -145,12 +159,12 @@ impl ContextObjectActions for ParserContext {
     }
 
     fn make_tag(&mut self, name: &str, resolves_to: &str) {
-        // tracing::info!("Made: ?{} => {}", name, resolves_to);
+        tracing::debug!("Made: ?{} => {}", name, resolves_to);
         self.do_make_attribute(name, RESOLVES_TO, Some(resolves_to.into()));
     }
 
     fn make_transient(&mut self, name: &str) {
-        // tracing::info!("Making transient {}", name);
+        tracing::debug!("Making transient {}", name);
         self.make_object(name);
         self.transients.insert(self.resolve_tag(name));
     }
@@ -175,7 +189,7 @@ impl ContextObjectActions for ParserContext {
 
 impl ContextLocalVariableActions for ParserContext {
     fn make_variable(&mut self, name: &str, val: &str) {
-        // tracing::info!("Made: ({:?}, {:?})", name, val);
+        tracing::debug!("Made: ({:?}, {:?})", name, val);
         // if let Some(overwritten) = self.variables.insert(name.into(), val.into()) {
         // tracing::warn!(
         //     "Warning: overwrote {} with {} for name {}",
@@ -187,11 +201,21 @@ impl ContextLocalVariableActions for ParserContext {
 
     fn get_variable(&self, name: &str) -> Option<String> {
         let var = self.variables.get(name).cloned();
-        // tracing::info!("Found: {:?}", var);
+        log("variable", name, &var);
         var
     }
 
     fn clear_variables(&mut self) {
         self.variables.clear();
+    }
+}
+
+fn log<T>(data_type: &str, name: &str, data: &Option<T>)
+where
+    T: Debug,
+{
+    tracing::debug!("Found {data_type} {name}={data:?}");
+    if data.is_none() {
+        tracing::debug!("Could not find {name}");
     }
 }

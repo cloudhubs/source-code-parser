@@ -45,120 +45,121 @@ pub struct ConstraintStack {
 
 impl ConstraintStack {
     pub fn check(&self, to_match: &Constraint) -> bool {
-        let idents = to_match.find_idents();
-        let idents = idents
-            .iter()
-            .map(|ident| self.constraints.get(&SimpleIdent(ident.to_string())));
+        // let idents = to_match.find_idents();
+        // let idents = idents
+        //     .iter()
+        //     .map(|ident| self.constraints.get(&SimpleIdent(ident.to_string())));
 
-        // If not all variables accounted for, can't match
-        if idents.clone().any(|x| x.is_none()) {
-            return false;
-        }
+        // // If not all variables accounted for, can't match
+        // if idents.clone().any(|x| x.is_none()) {
+        //     return false;
+        // }
 
-        // Verify if constraint met (iter/collect twice--first to dedup, then to get a slice)
-        let constraints_to_check = idents.flatten().flatten().collect::<HashSet<_>>();
-        check(
-            to_match,
-            constraints_to_check
-                .into_iter()
-                .collect::<Vec<_>>()
-                .as_slice(),
-        )
+        // // Verify if constraint met (iter/collect twice--first to dedup, then to get a slice)
+        // let constraints_to_check = idents.flatten().flatten().collect::<HashSet<_>>();
+        // check(
+        //     to_match,
+        //     constraints_to_check
+        //         .into_iter()
+        //         .collect::<Vec<_>>()
+        //         .as_slice(),
+        // )
+        true
     }
 
     pub fn new_scope(&mut self) {
-        debug!("Scope created");
-        self.scope_list.push(self.scope_record.len());
+        // debug!("Scope created");
+        // self.scope_list.push(self.scope_record.len());
     }
 
     pub fn dirty_scope(&mut self) {
-        debug!("Scope dirtied");
+        // debug!("Scope dirtied");
 
-        // Verify in-range
-        let start = self.get_scope();
-        if start > self.scope_record.len() {
-            debug!("Start {} out of range for scopes, ignoring", start);
-            return;
-        }
+        // // Verify in-range
+        // let start = self.get_scope();
+        // if start > self.scope_record.len() {
+        //     debug!("Start {} out of range for scopes, ignoring", start);
+        //     return;
+        // }
 
-        // Dirty the constraints in the current scope
-        for (ident, ndx) in self.scope_record[start..].iter() {
-            if let Some(stack) = self.constraints.get_mut(ident) {
-                if let Some(constraint) = stack.get_mut(*ndx) {
-                    constraint.guaranteed = false;
-                } else {
-                    debug!("Unknown constraint number {}, skipping", ndx);
-                }
-            } else {
-                debug!("Unknown ident {:#?}, skipping", ident);
-            }
-        }
+        // // Dirty the constraints in the current scope
+        // for (ident, ndx) in self.scope_record[start..].iter() {
+        //     if let Some(stack) = self.constraints.get_mut(ident) {
+        //         if let Some(constraint) = stack.get_mut(*ndx) {
+        //             constraint.guaranteed = false;
+        //         } else {
+        //             debug!("Unknown constraint number {}, skipping", ndx);
+        //         }
+        //     } else {
+        //         debug!("Unknown ident {:#?}, skipping", ident);
+        //     }
+        // }
 
-        // Delete the current scope
-        self.scope_record.truncate(start);
+        // // Delete the current scope
+        // self.scope_record.truncate(start);
     }
 
     pub fn dirty_var(&mut self, ident: &Ident) -> Option<()> {
-        debug!("Var {} dirtied", ident.name);
-        let constraints = self.constraints.get_mut(&SimpleIdent::new(ident))?;
-        for constraint in constraints.iter_mut() {
-            constraint.guaranteed = false;
-        }
+        // debug!("Var {} dirtied", ident.name);
+        // let constraints = self.constraints.get_mut(&SimpleIdent::new(ident))?;
+        // for constraint in constraints.iter_mut() {
+        //     constraint.guaranteed = false;
+        // }
         Some(())
     }
 
     pub fn clear(&mut self) {
-        debug!("Constraints cleared");
-        self.constraints.clear();
-        self.scope_list.clear();
-        self.scope_record.clear();
-        self.seen_exprs.clear();
+        // debug!("Constraints cleared");
+        // self.constraints.clear();
+        // self.scope_list.clear();
+        // self.scope_record.clear();
+        // self.seen_exprs.clear();
     }
 
     pub fn push_constraint(&mut self, node: &Node, assert_constraint: bool) -> Option<()> {
-        // Verify unique
-        if self.register_seen(node) {
-            debug!("Already seen {:?}, ignoring", node);
-            return None;
-        }
+        // // Verify unique
+        // if self.register_seen(node) {
+        //     debug!("Already seen {:?}, ignoring", node);
+        //     return None;
+        // }
 
-        // Create and verify constraint
-        debug!("Pushing constraint");
-        let constraint = self.do_push_constraint(node);
-        if constraint.is_none() {
-            debug!("Error encountered parsing: {:#?}", node);
-        }
+        // // Create and verify constraint
+        // debug!("Pushing constraint");
+        // let constraint = self.do_push_constraint(node);
+        // if constraint.is_none() {
+        //     debug!("Error encountered parsing: {:#?}", node);
+        // }
 
-        // Verify constraint conveys meaningful information
-        let constraint = constraint?;
-        if !assert_constraint && !constraint.valid_constraint() {
-            debug!("Invalid: {}", constraint);
-            return None;
-        }
+        // // Verify constraint conveys meaningful information
+        // let constraint = constraint?;
+        // if !assert_constraint && !constraint.valid_constraint() {
+        //     debug!("Invalid: {}", constraint);
+        //     return None;
+        // }
 
-        // Verify contains idents
-        let list = constraint.find_idents();
-        if list.is_empty() {
-            debug!("No idents, skipping");
-            return None;
-        }
+        // // Verify contains idents
+        // let list = constraint.find_idents();
+        // if list.is_empty() {
+        //     debug!("No idents, skipping");
+        //     return None;
+        // }
 
-        // Store constraint
-        debug!("Generated, copying {}x", list.len());
-        for ident in list {
-            self.record(SimpleIdent(ident.to_string()), constraint.clone());
-        }
-        debug!("Constraint: {}", constraint);
-        debug!(
-            "Context contains {} idents and {} constraints",
-            self.constraints.len(),
-            self.constraints
-                .values()
-                .flatten()
-                .collect::<HashSet<_>>()
-                .len()
-        );
-        debug!("Completed pushing constraint");
+        // // Store constraint
+        // debug!("Generated, copying {}x", list.len());
+        // for ident in list {
+        //     self.record(SimpleIdent(ident.to_string()), constraint.clone());
+        // }
+        // debug!("Constraint: {}", constraint);
+        // debug!(
+        //     "Context contains {} idents and {} constraints",
+        //     self.constraints.len(),
+        //     self.constraints
+        //         .values()
+        //         .flatten()
+        //         .collect::<HashSet<_>>()
+        //         .len()
+        // );
+        // debug!("Completed pushing constraint");
         Some(())
     }
 

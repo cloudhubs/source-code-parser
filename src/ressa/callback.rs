@@ -33,6 +33,7 @@ impl Executor {
         // Register context type and methods
         module.ty::<ParserContext>()?;
         module.inst_fn("save", ParserContext::save)?;
+        module.inst_fn("save_transient", ParserContext::save_transient)?;
         module.inst_fn("get", ParserContext::get)?;
         module.inst_fn("get_or_save", ParserContext::get_or_save)?;
         module.inst_fn("make_tag", ParserContext::make_tag)?;
