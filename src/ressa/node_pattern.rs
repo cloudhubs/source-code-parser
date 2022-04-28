@@ -1,6 +1,6 @@
 use super::{
-    CachedCompiledPattern, Constraint, ExplorerContext, LaastIndex, ParserContext,
-    RessaNodeExplorer,
+    check_match, CachedCompiledPattern, Constraint, ExplorerContext, Indexable, LaastIndex,
+    ParserContext, RessaNodeExplorer,
 };
 // use super::ressaDispatch;
 use super::{pattern_parser::NodePatternParser, Executor};
@@ -153,7 +153,7 @@ impl NodeLanguage for NodePattern {
 }
 
 /// Parse the results
-fn parse<N: NodePatternParser + RessaNodeExplorer>(
+fn parse<N: Indexable + IntoRessaNode + NodePatternParser>(
     pattern: &NodePattern,
     node: &N,
     ctx: &mut ExplorerContext,
@@ -174,7 +174,7 @@ fn parse<N: NodePatternParser + RessaNodeExplorer>(
     } else {
         let mut explore_all_found_essential = false;
         for subpattern in pattern.subpatterns.iter() {
-            if node.explore(subpattern, ctx, index).is_some() {
+            if check_match(node, subpattern, ctx, index).unwrap_or(false) {
                 explore_all_found_essential = true;
             }
         }
@@ -183,7 +183,7 @@ fn parse<N: NodePatternParser + RessaNodeExplorer>(
 }
 
 /// Run general ReSSA match acquired routine: compile patterns if needed, maintain context transactions, parse the node pattern, and
-pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
+pub fn ressa_node_parse<N: Indexable + IntoRessaNode + NodePatternParser>(
     pattern: &NodePattern,
     node: &N,
     ctx: &mut ExplorerContext,
@@ -238,7 +238,7 @@ pub fn ressa_node_parse<N: NodePatternParser + RessaNodeExplorer>(
 
     // Resume the search where we left off, or pass on an error indicating a required subpattern
     // failed to match, so this pattern should be considered failed.
-    if !passed && ctx.frame_number != 0 {
+    if !passed && pattern.essential && ctx.frame_number != 0 {
         None
     } else {
         Some(())

@@ -68,12 +68,12 @@
     "auth.controller.UserController#getAllUser": "GET /api/v1/users ResponseEntity<List<User>>",
     "auth.controller.UserController#deleteUserById": "DELETE /api/v1/users/{userId} ResponseEntity<Response>"
   },
-  "API - fdse.microservice": {
+  "API - basicservice": {
     "fdse.microservice.controller.BasicController#home": "GET /api/v1/basicservice/welcome String",
     "fdse.microservice.controller.BasicController#queryForTravel": "POST /api/v1/basicservice/basic/travel HttpEntity",
     "fdse.microservice.controller.BasicController#queryForStationId": "GET /api/v1/basicservice/basic/{stationName} HttpEntity"
   },
-  "API - fdse.microservice": {
+  "API - stationservice": {
     "fdse.microservice.controller.StationController#home": "GET /api/v1/stationservice/welcome String",
     "fdse.microservice.controller.StationController#query": "GET /api/v1/stationservice/stations HttpEntity",
     "fdse.microservice.controller.StationController#create": "POST /api/v1/stationservice/stations ResponseEntity<Response>",
@@ -367,6 +367,8 @@
     "GET /api/v1/travel2service/admin_trip": "travel2.controller.Travel2Controller#adminQueryAll",
     "PUT /api/v1/travelservice/trips": "travel.controller.TravelController#updateTrip",
     "PUT /api/v1/travel2service/trips": "travel2.controller.Travel2Controller#updateTrip",
+    "POST /api/v1/travelservice/trips": "travel.controller.TravelController#createTrip",
+    "POST /api/v1/travel2service/trips": "travel2.controller.Travel2Controller#createTrip",
     "DELETE /api/v1/travelservice/trips/{}": "travel.controller.TravelController#deleteTrip",
     "DELETE /api/v1/travel2service/trips/{}": "travel2.controller.Travel2Controller#deleteTrip"
   },
@@ -375,7 +377,7 @@
     "GET /api/v1/verifycode/verify/{}": "verifycode.controller.VerifyCodeController#verifyCode"
   },
 
-  "Calls - fdse.microservice": {
+  "Calls - basicservice": {
     "GET /api/v1/stationservice/stations/id/{}": "fdse.microservice.controller.StationController#queryForStationId",
     "GET /api/v1/trainservice/trains/{}": "train.controller.TrainController#retrieve",
     "GET /api/v1/routeservice/routes/{}": "route.controller.RouteController#queryById",
@@ -464,8 +466,8 @@
     "POST /api/v1/orderOtherService/orderOther": "other.controller.OrderOtherController#createNewOrder",
     "PUT /api/v1/orderservice/order": "order.controller.OrderController#saveOrderInfo",
     "PUT /api/v1/orderOtherService/orderOther": "other.controller.OrderOtherController#saveOrderInfo",
-    "POST /api/v1/orderservice/order/{}": "NO MATCH",
-    "POST /api/v1/orderOtherService/orderOther/{}": "NO MATCH",
+    "POST /api/v1/orderservice/order/{}": "order.controller.OrderController#getOrderById",
+    "POST /api/v1/orderOtherService/orderOther/{}": "other.controller.OrderOtherController#getOrderById",
     "GET /api/v1/orderservice/order/{}": "order.controller.OrderController#getOrderById",
     "GET /api/v1/orderOtherService/orderOther/{}": "other.controller.OrderOtherController#getOrderById",
     "GET /api/v1/stationservice/stations/name/{}": "fdse.microservice.controller.StationController#queryById",

@@ -112,18 +112,21 @@ impl CompiledPattern {
                         return None;
                     }
                 }
-                return Some(Box::new(move || {
+                Some(Box::new(move || {
                     for var_name in self.variables.iter() {
-                        ctx.make_variable(
-                            var_name,
-                            matches
-                                .name(var_name)
-                                .expect("Failed to match a variable name")
-                                .clone()
-                                .as_str(),
-                        );
+                        if let Some(val) = matches.name(var_name) {
+                            ctx.make_variable(var_name, val.as_str())
+                        }
+                        // ctx.make_variable(
+                        //     var_name,
+                        //     matches
+                        //         .name(var_name)
+                        //         .expect("Failed to match a variable name")
+                        //         .clone()
+                        //         .as_str(),
+                        // );
                     }
-                }));
+                }))
             }
             None => None,
         }
@@ -177,14 +180,17 @@ impl CompiledPattern {
 
                 // Extract variables to context
                 for var_name in self.variables.iter() {
-                    ctx.make_variable(
-                        var_name,
-                        matches
-                            .name(var_name)
-                            .expect("Failed to match a variable name")
-                            .clone()
-                            .as_str(),
-                    );
+                    if let Some(val) = matches.name(var_name) {
+                        ctx.make_variable(var_name, val.as_str())
+                    }
+                    // ctx.make_variable(
+                    //     var_name,
+                    //     matches
+                    //         .name(var_name)
+                    //         .expect("Failed to match a variable name")
+                    //         .clone()
+                    //         .as_str(),
+                    // );
                 }
                 true
             }

@@ -24,7 +24,9 @@ pub(crate) fn parse_node(ast: &AST, component: &ComponentInfo) -> Option<Node> {
             Some(Node::Stmt(parse_decl(ast, component).into()))
         }
         "if_statement" => parse_if(ast, component),
-        "try_catch" | "try_with_resources_statement" => parse_try_catch(ast, component),
+        "try_catch" | "try_with_resources_statement" | "try_statement" => {
+            parse_try_catch(ast, component)
+        }
         "expression_statement" => parse_expr_stmt(ast, component),
         "for_statement" => parse_for(ast, component),
         "enhanced_for_statement" => parse_enhanced_for(ast, component),

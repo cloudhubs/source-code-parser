@@ -238,6 +238,10 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     // Find all init, guard, and postcondition blocks
     for child in ast.children.iter() {
         match &*child.r#type {
+            "local_variable_declaration" => {
+                clauses[i].push(child);
+                i += 1;
+            }
             ";" | ")" => i += 1,
             unknown => {
                 if !is_common_junk_tag(unknown) {
@@ -248,25 +252,19 @@ pub(crate) fn parse_for(ast: &AST, component: &ComponentInfo) -> Option<Node> {
     }
 
     // Parse loop body (should be last)
-    let body;
     let raw_body = clauses.pop()?;
-    if !raw_body.is_empty() {
-        body = parse_child_nodes(raw_body[0], component);
+    let body = if !raw_body.is_empty() {
+        parse_child_nodes(raw_body[0], component)
     } else {
-        body = vec![];
-    }
+        vec![]
+    };
 
     // Parse for loop parts
     let parts: Vec<Option<Vec<Node>>> = clauses
         .iter()
         .map(|c| {
             if !c.is_empty() {
-                Some(
-                    c.iter()
-                        .map(|c| parse_node(c, component))
-                        .flatten()
-                        .collect(),
-                )
+                Some(c.iter().flat_map(|c| parse_node(c, component)).collect())
             } else {
                 None
             }

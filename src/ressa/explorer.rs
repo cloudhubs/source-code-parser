@@ -147,6 +147,29 @@ where
     found_essential
 }
 
+pub fn check_match<T>(
+    source: &T,
+    pattern: &NodePattern,
+    ctx: &mut ExplorerContext,
+    index: &LaastIndex,
+) -> Option<bool>
+where
+    T: Indexable + IntoRessaNode + NodePatternParser,
+{
+    // Check languages to validate remotely reasonable
+    let lang_match = pattern.language_matches(source);
+    if !lang_match && !index.language_in_subtree(pattern.get_language(), source) {
+        return choose_exit(pattern.essential, false).map(|_| false);
+    }
+
+    // Check if this node matches
+    if lang_match && pattern.matches(source) {
+        Some(ressa_node_parse(pattern, source, ctx, index).is_some())
+    } else {
+        Some(false)
+    }
+}
+
 pub fn explore_match<T>(
     source: &T,
     pattern: &NodePattern,
@@ -156,18 +179,7 @@ pub fn explore_match<T>(
 where
     T: Indexable + IntoRessaNode + NodePatternParser,
 {
-    // Check languages to validate remotely reasonable
-    let lang_match = pattern.language_matches(source);
-    if !lang_match && !index.language_in_subtree(pattern.get_language(), source) {
-        return choose_exit(pattern.essential, false);
-    }
-
-    // Check if this node matches
-    let found = if lang_match && pattern.matches(source) {
-        ressa_node_parse(pattern, source, ctx, index).is_some()
-    } else {
-        false
-    };
+    let found = check_match(source, pattern, ctx, index)?;
 
     // Explore subnodes, then return if this node matched
     let matched = explore(source, pattern, ctx, index).is_some();
