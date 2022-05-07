@@ -35,7 +35,7 @@ fn match_subsequence<T: RessaNodeExplorer>(
     index: &LaastIndex,
 ) -> Option<()> {
     let (mut start, mut end) = (0_usize, params.len());
-    let mut matched = params.is_empty() && explorable.is_empty();
+    let mut matched = !params.iter().any(|x| x.essential) && explorable.is_empty();
 
     while start < explorable.len() {
         // Pre
@@ -268,7 +268,8 @@ impl NodePatternParser for DeclStmt {
             }
 
             // Analyze pattern
-            for pattern_index in 0..decl_patterns.len() {
+            let len_both = decl_patterns.len();
+            for pattern_index in 0..len_both {
                 for i in 0..self.variables.len() {
                     // Parse variable declarations
                     self.variables.get(i)?.explore(
@@ -377,7 +378,7 @@ impl NodePatternParser for CallExpr {
                     }
                 } else {
                     // If no auxiliary pattern is provided, it is assumed we must visit the lefthand side
-                    lhs = Some(expr);
+                    lhs = Some(&*self.name);
                     None
                 };
                 match selected.as_ref() {

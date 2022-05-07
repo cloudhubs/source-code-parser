@@ -1,6 +1,9 @@
+use itertools::Itertools;
+
 use crate::java::method_body::node::{parse_child_nodes, parse_node};
 use crate::java::method_body::parse_block;
 use crate::java::util::parameter::parse_method_parameters;
+use crate::java::util::stringify_tree_children;
 use crate::java::util::vartype::find_type;
 use crate::java::util::vartype::parse_type_args;
 
@@ -81,7 +84,7 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
                         .collect::<Vec<Expr>>(),
                 );
             }
-            "method_invocation" => { /* Handled elsewhere */ }
+            "field_access" | "method_invocation" => { /* Handled elsewhere */ }
             "identifier" => {
                 let result = format!("{}{}", generic, comp.value);
                 name = Some(Literal::new(result, Java).into());
@@ -90,7 +93,6 @@ fn parse_method(ast: &AST, component: &ComponentInfo) -> Option<Expr> {
         }
     }
 
-    // TODO add in generic
     Some(Expr::CallExpr(CallExpr::new(
         Box::new(
             DotExpr::new(
@@ -163,15 +165,17 @@ fn parse_object_creation(ast: &AST, component: &ComponentInfo) -> Expr {
     let mut arg_list = vec![];
     for child in ast.children.iter() {
         match &*child.r#type {
+            "generic_type" => name = parse_type_args(child),
             "type_identifier" => name = child.value.clone(),
             "argument_list" => {
                 arg_list = parse_child_nodes(child, component)
                     .into_iter()
-                    .map(|node| match node {
-                        Node::Expr(expr) => Some(expr),
+                    .flat_map(|node| match node {
+                        Node::Stmt(Stmt::ExprStmt(ExprStmt { expr, .. })) | Node::Expr(expr) => {
+                            Some(expr)
+                        }
                         _ => None,
                     })
-                    .flatten()
                     .collect()
             }
             unknown => log_unknown_tag(unknown, "object creation"),
